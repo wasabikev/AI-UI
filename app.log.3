@@ -1,0 +1,54 @@
+2023-09-17 13:42:11,155 - app - INFO - Updated history for conversation with id 82: [{"content": "You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.", "role": "system"}, {"content": "Please produce some short text with markdown included for a UI test", "role": "user"}, {"content": "# User Interface Test\n\nThis is a sample text to test the user interface using **Markdown**. Below are some examples of markdown elements:\n\n## Headings\n\n### Heading 3\n#### Heading 4\n\n## Text Styling\n\n*Italic text* or _Italic text_\n**Bold text** or __Bold text__\n~~Strikethrough text~~\n\n## Lists\n\n#### Unordered List\n- Item 1\n- Item 2\n- Item 3\n\n#### Ordered List\n<ol>1. First item\n2.</ol> Second item\n<ol>3. Third item\n\n## Links and Images\n\n[Google](https://www.</ol>google.com)\n\n![Markdown Logo](https://markdown-here.com/img/icon256.png)\n\n## Code Blocks\n\n<pre><code class=\"language-python\">def greet(name):\n    print(\"Hello, \" + name + \"!\")\n</code></pre>\n\n## Tables\n\n| Name   | Age | Occupation   |\n|--------|-----|--------------|\n| John   | 28  | Programmer   |\n| Sarah  | 35  | Designer     |\n| Peter  | 42  | Accountant   |\n\n## Blockquotes\n\n> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vehicula nibh iaculis, aliquam leo a, mollis dolor.", "role": "assistant"}, {"content": "Please provide a short code example", "role": "user"}, {"content": "Sure! Here's a short code example in Python:\n\n<pre><code class=\"language-python\">def calculate_sum(a, b):\n    return a + b\n\nnum1 = 5\nnum2 = 3\n\nsum_result = calculate_sum(num1, num2)\nprint(\"The sum of\", num1, \"and\", num2, \"is\", sum_result)\n</code></pre>\n\nThis code defines a function `calculate_sum` that takes two arguments `a` and `b` and returns their sum. It then assigns two numbers, `num1` and `num2`, and calls the `calculate_sum` function with these values. Finally, it prints the result of the sum.", "role": "assistant"}, {"role": "user", "content": "Now just a markdown test (no code) please"}, {"role": "assistant", "content": "Sure! Here's a markdown test without any code:\n\n# Markdown Test\n\nThis is a sample text to test the Markdown formatting.\n\n## Headings\n\n### Heading 3\n#### Heading 4\n\n## Text Styling\n\n*Italic text* or _Italic text_\n**Bold text** or __Bold text__\n~~Strikethrough text~~\n\n## Lists\n\n#### Unordered List\n- Item 1\n- Item 2\n- Item 3\n\n#### Ordered List\n<ol>1. First item\n2.</ol> Second item\n<ol>3. Third item\n\n## Links and Images\n\n[Google](https://www.</ol>google.com)\n\n![Markdown Logo](https://markdown-here.com/img/icon256.png)\n\n## Tables\n\n| Name   | Age | Occupation   |\n|--------|-----|--------------|\n| John   | 28  | Programmer   |\n| Sarah  | 35  | Designer     |\n| Peter  | 42  | Accountant   |\n\n## Blockquotes\n\n> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vehicula nibh iaculis, aliquam leo a, mollis dolor."}]
+2023-09-17 13:42:11,179 - app - INFO - Responding with formatted chat output: Sure! Here's a markdown test without any code:
+
+# Markdown Test
+
+This is a sample text to test the Markdown formatting.
+
+## Headings
+
+### Heading 3
+#### Heading 4
+
+## Text Styling
+
+*Italic text* or _Italic text_
+**Bold text** or __Bold text__
+~~Strikethrough text~~
+
+## Lists
+
+#### Unordered List
+- Item 1
+- Item 2
+- Item 3
+
+#### Ordered List
+<ol>1. First item
+2.</ol> Second item
+<ol>3. Third item
+
+## Links and Images
+
+[Google](https://www.</ol>google.com)
+
+![Markdown Logo](https://markdown-here.com/img/icon256.png)
+
+## Tables
+
+| Name   | Age | Occupation   |
+|--------|-----|--------------|
+| John   | 28  | Programmer   |
+| Sarah  | 35  | Designer     |
+| Peter  | 42  | Accountant   |
+
+## Blockquotes
+
+> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vehicula nibh iaculis, aliquam leo a, mollis dolor.
+2023-09-17 13:42:11,184 - app - INFO - Updated conversation_id being returned: 82
+2023-09-17 13:53:57,900 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-09-17 13:53:57,902 - app - INFO - === New Request to /chat ===
+2023-09-17 13:53:57,903 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-09-17 13:53:57,904 - app - INFO - Received conversation_id: 82
+2023-09-17 13:53:57,905 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.', 'role': 'system'}, {'content': 'Please produce some short text with markdown included for a UI test', 'role': 'user'}, {'content': '# User Interface Test\n\nThis is a sample text to test the user interface using **Markdown**. Below are some examples of markdown elements:\n\n## Headings\n\n### Heading 3\n#### Heading 4\n\n## Text Styling\n\n*Italic text* or _Italic text_\n**Bold text** or __Bold text__\n~~Strikethrough text~~\n\n## Lists\n\n#### Unordered List\n- Item 1\n- Item 2\n- Item 3\n\n#### Ordered List\n<ol>1. First item\n2.</ol> Second item\n<ol>3. Third item\n\n## Links and Images\n\n[Google](https://www.</ol>google.com)\n\n![Markdown Logo](https://markdown-here.com/img/icon256.png)\n\n## Code Blocks\n\n<pre><code class="language-python">def greet(name):\n    print("Hello, " + name + "!")\n</code></pre>\n\n## Tables\n\n| Name   | Age | Occupation   |\n|--------|-----|--------------|\n| John   | 28  | Programmer   |\n| Sarah  | 35  | Designer     |\n| Peter  | 42  | Accountant   |\n\n## Blockquotes\n\n> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vehicula nibh iaculis, aliquam leo a, mollis dolor.', 'role': 'assistant'}, {'content': 'Please provide a short code example', 'role': 'user'}, {'content': 'Sure! Here\'s a short code example in Python:\n\n<pre><code class="language-python">def calculate_sum(a, b):\n    return a + b\n\nnum1 = 5\nnum2 = 3\n\nsum_result = calculate_sum(num1, num2)\nprint("The sum of", num1, "and", num2, "is", sum_result)\n</code></pre>\n\nThis code defines a function `calculate_sum` that takes two arguments `a` and `b` and returns their sum. It then assigns two numbers, `num1` and `num2`, and calls the `calculate_sum` function with these values. Finally, it prints the result of the sum.', 'role': 'assistant'}, {'content': 'Now just a markdown test (no code) please', 'role': 'user'}, {'content': "Sure! Here's a markdown test without any code:\n\n# Markdown Test\n\nThis is a sample text to test the Markdown formatting.\n\n## Headings\n\n### Heading 3\n#### Heading 4\n\n## Text Styling\n\n*Italic text* or _Italic text_\n**Bold text** or __Bold text__\n~~Strikethrough text~~\n\n## Lists\n\n#### Unordered List\n- Item 1\n- Item 2\n- Item 3\n\n#### Ordered List\n<ol>1. First item\n2.</ol> Second item\n<ol>3. Third item\n\n## Links and Images\n\n[Google](https://www.</ol>google.com)\n\n![Markdown Logo](https://markdown-here.com/img/icon256.png)\n\n## Tables\n\n| Name   | Age | Occupation   |\n|--------|-----|--------------|\n| John   | 28  | Programmer   |\n| Sarah  | 35  | Designer     |\n| Peter  | 42  | Accountant   |\n\n## Blockquotes\n\n> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vehicula nibh iaculis, aliquam leo a, mollis dolor.", 'role': 'assistant'}, {'role': 'user', 'content': "I didn't know that you could output images. (?!)"}]
+2023-09-17 13:53:57,910 - app - INFO - Fetched conversation with id 82 from provided ID/session.
