@@ -1,0 +1,281 @@
+body, html {
+    background-color: #E4EFF2;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.hidden {
+    display: none;
+}
+
+.title-container {
+    flex: 1 0 auto;
+}
+
+#conversation-title {
+    line-height: 1.5; /* or any other appropriate value */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block; /* Makes the block element display inline */
+    max-width: 100%; 
+    margin-left: 15px; /* Optional: Adds some spacing */
+    vertical-align: middle; /* Aligns it vertically with adjacent inline elements */
+}
+
+#token-data {
+    margin-left: 15px;
+    font-size: 0.9em; /* This reduces the font size a bit. Adjust the value as needed. */
+    margin-top: 10px; /* This brings the line down a bit. Adjust the value as needed. */
+}
+
+#token-data span {
+    margin-right: 20px; /* This adds some space between each token count. */
+}
+
+
+.col-3.text-right {
+    display: flex;
+    justify-content: flex-start; /* Align children to the left */
+    align-items: center;
+    margin-left: -120px;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+ }
+ 
+
+#edit-title-btn, #delete-conversation-btn {
+    vertical-align: middle; /* Ensures vertical alignment */
+    margin-left: 5px; /* Adjust this value as needed */
+}
+
+#delete-conversation-btn .fa-trash {
+    font-size: 0.8em; /* Adjust this value as necessary */
+}
+
+.btn-outline-secondary, .btn-outline-danger {
+    margin-bottom: 0; /* Removes bottom margin */
+}
+
+.chat-container {
+    height: 450px;
+    border: 1px solid #dedede;
+    border-radius: 5px;
+    overflow-y: scroll;
+    padding-left: 0px;
+    padding-right: 0px;
+    margin-bottom: 15px;
+    background-color: white;
+    width: 100%;
+    box-sizing: border-box;
+}
+.chat-entry {
+    margin-bottom: 0px;
+}
+
+.system-message {
+    background-color: #8A7187;
+    color: white;  
+    padding-left: 50px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-right: 200px;
+    border-radius: 4px;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd; /* thin grey border */
+    width: 100%;
+}
+
+.user {
+    color:#5863F8;
+}
+/* For user messages */
+.user-message {
+    background-color: white;
+    padding-left: 50px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-right: 200px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.user-message span {
+    color: #5863F8; /* Any color you prefer */
+    /* ... add any other styling properties as needed ... */
+}
+
+
+.far.fa-user {
+    margin-right: 8px;  /* Add some space between the icon and the message */
+    color: #5863F8;        /* Color it blue like the user text */
+}
+
+i.fas.fa-robot {
+    margin-right: 5px; /* Add some spacing between the icon and the text */
+    vertical-align: middle; /* Aligns the icon with the text */
+    color: #3F484B;
+}
+
+.bot {
+    color: black;
+}
+/* For bot messages */
+.bot-message {
+    background-color: #f5f5f5;
+    padding-left: 50px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-right: 200px;
+    border-radius: 4px;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd; /* thin grey border */
+    width: 100%;
+}
+.chat-section {
+    position: relative;  /* Make this new container the relative element for the loading spinner */
+}
+
+#user_input {
+    width: 800px;
+    height: 38px;  /* Optional, only if you find the heights don't match */
+    flex: 0 0 auto;  /* Prevents it from growing or shrinking */
+    max-height: 50vh; /* Adjust this value to your needs. 50vh means 50% of the viewport height. */
+    overflow-y: auto;
+}
+.bottom-form {
+    position: fixed;
+    bottom: 10%;  
+    left: 18%;   
+    display: flex;   Makes its children display in a line */
+    align-items: center;  /* Vertically aligns children in the center */
+    background-color: transparent; /* Ensures the background is transparent */
+    z-index: 999;  /* Ensures this layer stays on top */
+}
+#new-chat-btn {
+    margin-bottom: 25px;
+}
+.btn-send {
+    background-color: #5863F8; 
+    margin-left: 15px;  /* Adds some space between the textarea and button */
+    height: 38px;  /* Ensures it matches the height of the textarea */
+}
+.no-bootstrap {
+    height: auto !important;
+    max-height: none !important;
+  }
+
+.loading {
+    position: absolute;
+    left: 15%; /* Adjust these values according to your needs */
+    top: 50px; /* Adjust these values according to your needs */
+    display: none;
+    width: 100px;
+    height: 100px;
+}
+.loading {
+    position: absolute;
+    left: 5%;
+    top: -50px;
+    display: none;
+    width: 100px;
+    height: 100px;
+}
+.row.align-items-center.py-4 {
+    position: relative;
+}
+h2 {
+    font-size: 1.5em;
+}
+
+.sidebar {
+    background-color: #3F484B;
+    color: #fff;
+    flex: 0 0 250px;
+    padding: 20px 20px 10px 20px;
+    overflow-y: auto; 
+    height: 100vh;
+    scrollbar-color: #7F898B #3F484B;
+    scrollbar-width: thin;
+    z-index: 10;
+}
+
+/* Making Scrollbar Smaller */
+.sidebar::-webkit-scrollbar {
+    width: 12px;
+    opacity: 1; /* Ensuring scrollbar is always visible */
+}
+
+/* Scrollbar Color Customization */
+.sidebar::-webkit-scrollbar-track {
+    background: #3F484B; 
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: #7F898B; 
+}
+
+.sidebar:hover::-webkit-scrollbar-thumb {
+    background-color: #7F898B; 
+}
+
+
+
+.main-content {
+    flex: 1; /* Flex property here */
+    padding-left: 20px;
+    padding-right: 20px;
+    border-top: 1px solid red; /* Temporary visual aid */
+}
+
+.dropdown {
+    z-index: 1;
+    min-width: 100px;
+}
+
+.conversation-item {
+    margin-bottom: 10px; /* space between conversation items */
+    cursor: pointer; /* indicate clickability */
+    padding: 5px; /* some padding for better appearance */
+    border: 1px solid #ccc; /* a light border */
+    border-radius: 5px; /* rounded edges */
+    transition: background-color 0.2s; /* smooth color transition */
+}
+
+.conversation-item:hover {
+    background-color: #7F898B; /* light gray background on hover */
+}
+
+.conversation-title {
+    font-size: 16px; /* adjust as needed */
+    font-weight: bold; /* bold title */
+    margin-bottom: 5px; /* space between title and metadata */
+}
+
+.conversation-meta {
+    font-size: 12px; /* smaller font for metadata */
+}
+
+.token-count, .model-name {
+    margin-right: 10px; /* space between the two metadata items */
+}
+
+textarea {
+    overflow: hidden; /* this ensures the scroll isn't shown */
+    resize: none;     /* this disables manual resizing */
+}
+.auto-height {
+    height: auto;
+  }
+
+
+/* textarea.form-control { */
+ /*    height: auto !important;  Override Bootstrap's fixed height for textareas */
+/* } */
+
