@@ -10,23 +10,60 @@ let messages = [
 let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
 
-function displayMessage(message) {
-    let prefix = '';
-    let messageClass = '';
-    
-    if (message.role === 'system') {
-        prefix = 'System: ';
-        messageClass = 'system-message';
-    } else if (message.role === 'user') {
-        prefix = '<i class="far fa-user"></i> ';
-        messageClass = 'user-message';
-    } else if (message.role === 'assistant') {
-        prefix = '<i class="fas fa-robot"></i> ';
-        messageClass = 'bot-message';
-    }
-    
-    $('#chat').append('<div class="chat-entry ' + message.role + ' ' + messageClass + '">' + prefix + message.content + '</div>');
+function renderOpenAI(content) {
+    console.log('renderOpenAI called with content:', content);
+
+    // Insert a line break before the first numbered item
+    let isFirstNumberedItem = true;
+    content = content.replace(/\n\n(\d+\. )/g, (match, p1) => {
+        if (isFirstNumberedItem) {
+            isFirstNumberedItem = false;
+            return '<br><br>\n\n' + p1;
+        }
+        return match;
+    });
+
+    // Regular expression to match content inside triple backticks, capturing the optional language declaration
+    const regex = /```(\w+)?([\s\S]*?)```/g;
+
+    // Function to process matched content
+    const replacer = (match, lang, p1) => {
+        console.log('Matched content inside backticks with language:', lang, 'Content:', p1.trim());
+
+        let renderedContent;
+        if (!lang || lang === 'markdown') {
+            // If no language is provided or the language is markdown, process it with the Markdown parser
+            renderedContent = marked.parse(p1.trim());
+        } else {
+            // Otherwise, treat it as a code block
+            renderedContent = '<pre><code class="' + (lang ? 'language-' + lang : '') + '">' + p1.trim() + '</code></pre>';
+        }
+        console.log('Rendered Content:', renderedContent);
+        
+        // Create a temporary element to hold the rendered content
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = renderedContent;
+
+        // Apply Prism highlighting to the content inside the temporary element
+        Prism.highlightAllUnder(tempElement);
+
+        // Log Prism highlighting to the content inside the temporary element
+        console.log('Highlighted content:', tempElement.innerHTML);
+
+        // Return the highlighted content
+        return tempElement.innerHTML;
+    };
+
+    // Replace content inside triple backticks with processed content
+    const processedContent = content.replace(regex, replacer);
+    console.log('Final processed content:', processedContent);
+
+    return processedContent;
 }
+
+
+
+
 
 function updateConversationList() {
     console.log('Starting to update conversation list...');
@@ -105,7 +142,6 @@ $('#edit-title-btn').click(function() {
 });
 
 
-
 $('#delete-conversation-btn').click(function() {
     const confirmation = confirm('Are you sure you want to delete this conversation? This action cannot be undone.');
     if (confirmation) {
@@ -122,6 +158,7 @@ $('#delete-conversation-btn').click(function() {
         });
     }
 });
+
 
 // This function shows the conversation controls (title, rename and delete buttons)
 function showConversationControls(title = "AI &infin; UI", tokens = {prompt: 0, completion: 0, total: 0}) {
@@ -208,21 +245,16 @@ function loadConversation(conversationId) {
                         prefix = '<i class="fas fa-robot"></i> ';
                         messageClass = 'bot-message';
                     }
-
-                    const renderedContent = marked.parse(message.content);
+                    // Use marked to render the message content as HTML
+                    const renderedContent = renderOpenAI(message.content);
                     $('#chat').append('<div class="chat-entry ' + message.role + ' ' + messageClass + '">' + prefix + renderedContent + '</div>');
                 }
             );
-            
-
+  
             // Important! Update the 'messages' array with the loaded conversation history
             messages = history;
 
             console.log(`Chat updated with messages from conversation id: ${conversationId}`);
-
-            // Trigger Prism's syntax highlighting after loading the conversation
-            Prism.highlightAll();
-
 
             // Scroll to the bottom after populating the chat
             const chatContainer = document.getElementById('chat');
@@ -241,7 +273,6 @@ function modelNameMapping(modelName) {
         default: return "Unknown Model"; // Handle any unexpected values
     }
 }
-
 
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
