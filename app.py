@@ -229,11 +229,7 @@ def chat():
     chat_output = response['choices'][0]['message']['content']
     print("Response from OpenAI:", response)
 
-    # Format the output with format_text function
-    formatted_chat_output = format_text(chat_output)
-    print("Formatted chat output:", formatted_chat_output)
-
-    new_message = {"role": "assistant", "content": formatted_chat_output}
+    new_message = {"role": "assistant", "content": chat_output}
     print("new message being added:", new_message)
     messages.append(new_message)  # Append AI's message to the list
     
@@ -289,11 +285,11 @@ def chat():
     # Update the session's conversation_id every time
     session['conversation_id'] = conversation.id
     
-    app.logger.info(f'Responding with formatted chat output: {formatted_chat_output}')
+    #app.logger.info(f'Responding with formatted chat output: {formatted_chat_output}')
     app.logger.info(f'Updated conversation_id being returned: {conversation.id}')
 
     return jsonify({
-        'chat_output': formatted_chat_output, 
+        'chat_output': chat_output, #IMPORTANT to have this raw output for the chat interface
         'conversation_id': conversation.id, 
         'conversation_title': conversation.title, 
         'usage': token_data

@@ -1,45 +1,8 @@
-2023-09-17 13:54:16,745 - app - INFO - Updated history for conversation with id 82: [{"content": "You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.", "role": "system"}, {"content": "Please produce some short text with markdown included for a UI test", "role": "user"}, {"content": "# User Interface Test\n\nThis is a sample text to test the user interface using **Markdown**. Below are some examples of markdown elements:\n\n## Headings\n\n### Heading 3\n#### Heading 4\n\n## Text Styling\n\n*Italic text* or _Italic text_\n**Bold text** or __Bold text__\n~~Strikethrough text~~\n\n## Lists\n\n#### Unordered List\n- Item 1\n- Item 2\n- Item 3\n\n#### Ordered List\n<ol>1. First item\n2.</ol> Second item\n<ol>3. Third item\n\n## Links and Images\n\n[Google](https://www.</ol>google.com)\n\n![Markdown Logo](https://markdown-here.com/img/icon256.png)\n\n## Code Blocks\n\n<pre><code class=\"language-python\">def greet(name):\n    print(\"Hello, \" + name + \"!\")\n</code></pre>\n\n## Tables\n\n| Name   | Age | Occupation   |\n|--------|-----|--------------|\n| John   | 28  | Programmer   |\n| Sarah  | 35  | Designer     |\n| Peter  | 42  | Accountant   |\n\n## Blockquotes\n\n> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vehicula nibh iaculis, aliquam leo a, mollis dolor.", "role": "assistant"}, {"content": "Please provide a short code example", "role": "user"}, {"content": "Sure! Here's a short code example in Python:\n\n<pre><code class=\"language-python\">def calculate_sum(a, b):\n    return a + b\n\nnum1 = 5\nnum2 = 3\n\nsum_result = calculate_sum(num1, num2)\nprint(\"The sum of\", num1, \"and\", num2, \"is\", sum_result)\n</code></pre>\n\nThis code defines a function `calculate_sum` that takes two arguments `a` and `b` and returns their sum. It then assigns two numbers, `num1` and `num2`, and calls the `calculate_sum` function with these values. Finally, it prints the result of the sum.", "role": "assistant"}, {"content": "Now just a markdown test (no code) please", "role": "user"}, {"content": "Sure! Here's a markdown test without any code:\n\n# Markdown Test\n\nThis is a sample text to test the Markdown formatting.\n\n## Headings\n\n### Heading 3\n#### Heading 4\n\n## Text Styling\n\n*Italic text* or _Italic text_\n**Bold text** or __Bold text__\n~~Strikethrough text~~\n\n## Lists\n\n#### Unordered List\n- Item 1\n- Item 2\n- Item 3\n\n#### Ordered List\n<ol>1. First item\n2.</ol> Second item\n<ol>3. Third item\n\n## Links and Images\n\n[Google](https://www.</ol>google.com)\n\n![Markdown Logo](https://markdown-here.com/img/icon256.png)\n\n## Tables\n\n| Name   | Age | Occupation   |\n|--------|-----|--------------|\n| John   | 28  | Programmer   |\n| Sarah  | 35  | Designer     |\n| Peter  | 42  | Accountant   |\n\n## Blockquotes\n\n> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vehicula nibh iaculis, aliquam leo a, mollis dolor.", "role": "assistant"}, {"role": "user", "content": "I didn't know that you could output images. (?!)"}, {"role": "assistant", "content": "Yes, as an AI assistant, I can provide you with the image URL, and you can include it in your markdown to display the image."}, {"role": "user", "content": "What images do you have access to?"}, {"role": "assistant", "content": "As an AI assistant, I don't have direct access to a specific set of images. However, I can provide image URLs from publicly accessible sources on the internet. If you have any specific images in mind or need assistance with finding images related to a particular topic, please let me know and I'll do my best to assist you."}]
-2023-09-17 13:54:16,756 - app - INFO - Responding with formatted chat output: As an AI assistant, I don't have direct access to a specific set of images. However, I can provide image URLs from publicly accessible sources on the internet. If you have any specific images in mind or need assistance with finding images related to a particular topic, please let me know and I'll do my best to assist you.
-2023-09-17 13:54:16,757 - app - INFO - Updated conversation_id being returned: 82
-2023-09-18 11:16:11,295 - app - INFO - Received model: gpt-4-0613
-2023-09-18 11:16:11,296 - app - INFO - === New Request to /chat ===
-2023-09-18 11:16:11,296 - app - INFO - Received model: gpt-4-0613
-2023-09-18 11:16:11,297 - app - INFO - Received conversation_id: None
-2023-09-18 11:16:11,299 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': "I have a project that I've been working on for some time, and now that the key UI and components are done, I'd like to get it uploaded to Github.  I'd like to do this for a few reasons. 1) Version control. (currently I'm maintaining backups of key files manually). 2) to be able to showcase what I'm working on. and 3) I'd like to leverage Github for the next phase of the project, which will be a context aware code assistant.  \nI'm not very experinced with Github and I need help."}]
-2023-09-18 11:16:28,970 - app - INFO - Responding with formatted chat output: I'd be happy to guide you through the process of uploading your project to GitHub. Here are some general steps:
-
-<ol>1. Install Git: If it's not already installed in your PC, download and install Git from the official website.</ol> 
-
-<ol>2. Signup & Create a Repository on GitHub: If you've not already, create an account on Github and create a new repository.</ol>
-
-<ol>3. Initialize git in your local project: Go to your project's directory by command-line interface and type `git init`.</ol> It initializes a new git repository locally. You can view hidden files in your project directory to verify.
-
-<ol>4. Configure your GitHub credentials: Execute the following commands in the terminal, replacing `your_username` and `your_email` with your actual GitHub username and email.</ol> These identify you as the author of commits.
-```
-git config --global user.name "your_username"
-git config --global user.email "your_email"
-```
-<ol>5. Connect GitHub Repo: From GitHub, copy the HTTPS URL of your created repository and set it as the remote repository for your local repository with this command: 
-```
-git remote add origin https://github.</ol>com/your_username/repo_name.git
-```
-<ol>6. Commit your project: Pass the commands below.</ol> First, to track the files in the project: `git add .` Then, to commit and save the snapshot of the current state of the project: `git commit -m "your message here"`. The message describes the reason for the specific snapshot.
-
-<ol>7. Push to GitHub: After committing your project, push your repository to GitHub using 
-```
-git push origin main
-```
-or 
-```
-git push origin master
-```
-(Use `main` or `master` depending on what default branch your repository is set to use.</ol>)
-
-<ol>8. For subsequent commits and pushes, all you need is the `git add .</ol>` , `git commit -m "your message here"` , `git push origin main/master` sequence.
-
-That's it. Now you've uploaded your project to GitHub and you can enjoy version control, show your work to the world and build upon it for your AI assistant project.
-
-Git and Github offer much more - forking, branching, pull requests, and a ton of other features that are useful for collaboration and maintaining large projects. As you use GitHub more, you'll likely pick up these features as needed.
-
-As you begin developing your context aware code assistant based on LLM technology, you might have more specific needs in terms of version control and collaboration. Some best practices include committing often, writing clear commit messages, and using branches for developing new features or experiments. Do not hesitate to ask for assistance as you start working on those parts.
-2023-09-18 11:16:28,986 - app - INFO - Updated conversation_id being returned: 84
+2023-10-02 15:50:21,978 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'Please provide an example of python instructions in an ordered list.'}]
+2023-10-02 15:50:28,669 - app - INFO - Updated conversation_id being returned: 104
+2023-10-02 16:18:12,478 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-10-02 16:18:12,481 - app - INFO - === New Request to /chat ===
+2023-10-02 16:18:12,487 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-10-02 16:18:12,489 - app - INFO - Received conversation_id: None
+2023-10-02 16:18:12,493 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'please provide a small example of C++ code'}]
+2023-10-02 16:18:16,308 - app - INFO - Updated conversation_id being returned: 105
