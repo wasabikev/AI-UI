@@ -10,8 +10,49 @@ let messages = [
 let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
 
+function detectAndRenderMarkdown(content) {
+    // Check for headers, lists, links, etc.
+    const markdownPatterns = [
+        /^# .+/gm,       // Headers
+        /^\* .+/gm,      // Unordered lists
+        /^\d+\. .+/gm,   // Ordered lists
+        /\[.+\]\(.+\)/g // Links
+    ];
+
+    let containsMarkdown = false;
+    for (let pattern of markdownPatterns) {
+        if (pattern.test(content)) {
+            containsMarkdown = true;
+            break;
+        }
+    }
+
+    // If potential markdown structures are detected, process the content with the Markdown parser
+    if (containsMarkdown) {
+        // Avoid processing content inside triple backticks
+        const codeBlockRegex = /```[\s\S]*?```/g;
+        const codeBlocks = [...content.matchAll(codeBlockRegex)];
+
+        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%'); // Temporary placeholder
+
+        content = marked.parse(content);
+
+        // Restore code blocks
+        let blockIndex = 0;
+        content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
+            return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
+        });
+    }
+
+    return content;
+}
+
+// This function renders the content inside triple backticks - the OpenAI Playground style.
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
+
+    // First, check for potential markdown structures and process them
+    content = detectAndRenderMarkdown(content);
 
     // Insert a line break before the first numbered item
     let isFirstNumberedItem = true;
@@ -23,13 +64,16 @@ function renderOpenAI(content) {
         return match;
     });
 
+    // Insert an additional newline between numbered list items
+    content = content.replace(/(\n)(\d+\. )/g, '\n\n$2');
+
     // Regular expression to match content inside triple backticks, capturing the optional language declaration
     const regex = /```(\w+)?([\s\S]*?)```/g;
 
     // Function to process matched content
     const replacer = (match, lang, p1) => {
         console.log('Matched content inside backticks with language:', lang, 'Content:', p1.trim());
-
+    
         let renderedContent;
         if (!lang || lang === 'markdown') {
             // If no language is provided or the language is markdown, process it with the Markdown parser
@@ -43,16 +87,17 @@ function renderOpenAI(content) {
         // Create a temporary element to hold the rendered content
         const tempElement = document.createElement('div');
         tempElement.innerHTML = renderedContent;
-
+    
         // Apply Prism highlighting to the content inside the temporary element
         Prism.highlightAllUnder(tempElement);
-
+    
         // Log Prism highlighting to the content inside the temporary element
         console.log('Highlighted content:', tempElement.innerHTML);
-
+    
         // Return the highlighted content
-        return tempElement.innerHTML;
+        return tempElement.innerHTML || match; // Ensure we return the original match if nothing else
     };
+    
 
     // Replace content inside triple backticks with processed content
     const processedContent = content.replace(regex, replacer);
@@ -60,9 +105,6 @@ function renderOpenAI(content) {
 
     return processedContent;
 }
-
-
-
 
 
 function updateConversationList() {
