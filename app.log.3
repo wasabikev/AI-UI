@@ -1,11 +1,11 @@
-2023-10-02 14:15:30,402 - app - ERROR - Exception on /c/script.js [GET]
+2023-10-03 16:45:43,680 - app - ERROR - Exception on /c/image.jpg [GET]
 Traceback (most recent call last):
   File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
     self.dialect.do_execute(
   File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
     cursor.execute(statement, parameters)
-psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "script.js"
-LINE 3: WHERE conversation.id = 'script.js'
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "image.jpg"
+LINE 3: WHERE conversation.id = 'image.jpg'
                                 ^
 
 
@@ -74,31 +74,16 @@ Traceback (most recent call last):
     self.dialect.do_execute(
   File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
     cursor.execute(statement, parameters)
-sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "script.js"
-LINE 3: WHERE conversation.id = 'script.js'
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "image.jpg"
+LINE 3: WHERE conversation.id = 'image.jpg'
                                 ^
 
 [SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities 
 FROM conversation 
 WHERE conversation.id = %(pk_1)s]
-[parameters: {'pk_1': 'script.js'}]
+[parameters: {'pk_1': 'image.jpg'}]
 (Background on this error at: https://sqlalche.me/e/20/9h9h)
-2023-10-02 14:25:43,335 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-10-02 14:25:43,338 - app - INFO - === New Request to /chat ===
-2023-10-02 14:25:43,340 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-10-02 14:25:43,341 - app - INFO - Received conversation_id: None
-2023-10-02 14:25:43,343 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'Please produce a test sentence'}]
-2023-10-02 14:25:44,760 - app - INFO - Updated conversation_id being returned: 102
-2023-10-02 14:25:56,097 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-10-02 14:25:56,103 - app - INFO - === New Request to /chat ===
-2023-10-02 14:25:56,106 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-10-02 14:25:56,108 - app - INFO - Received conversation_id: 102
-2023-10-02 14:25:56,110 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'Please produce a test sentence'}, {'role': 'assistant', 'content': 'Sure, here\'s a sample sentence: "The quick brown fox jumps over the lazy dog."'}, {'role': 'user', 'content': 'Please produce a test sentence with Markdown.'}]
-2023-10-02 14:25:56,115 - app - INFO - Fetched conversation with id 102 from provided ID/session.
-2023-10-02 14:25:57,061 - app - INFO - Updating conversation with id 102. Previous history: [{"role": "system", "content": "You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology."}, {"role": "user", "content": "Please produce a test sentence"}, {"role": "assistant", "content": "Sure, here's a sample sentence: \"The quick brown fox jumps over the lazy dog.\""}]
-2023-10-02 14:25:57,062 - app - INFO - Updated history for conversation with id 102: [{"role": "system", "content": "You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology."}, {"role": "user", "content": "Please produce a test sentence"}, {"role": "assistant", "content": "Sure, here's a sample sentence: \"The quick brown fox jumps over the lazy dog.\""}, {"role": "user", "content": "Please produce a test sentence with Markdown."}, {"role": "assistant", "content": "Certainly! Here's an example sentence written in Markdown: \n\n**Hello**, *world*! This is a ~~test~~ sentence."}]
-2023-10-02 14:25:57,070 - app - INFO - Updated conversation_id being returned: 102
-2023-10-02 14:26:12,788 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-10-02 14:26:12,789 - app - INFO - === New Request to /chat ===
-2023-10-02 14:26:12,790 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-10-02 14:26:12,791 - app - INFO - Received conversation_id: 102
+2023-10-03 16:47:03,944 - app - INFO - Received model: gpt-4-0613
+2023-10-03 16:47:03,945 - app - INFO - === New Request to /chat ===
+2023-10-03 16:47:03,947 - app - INFO - Received model: gpt-4-0613
+2023-10-03 16:47:03,948 - app - INFO - Received conversation_id: 108
