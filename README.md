@@ -1,5 +1,4 @@
-# AI ∞ UI 
-# A Web Interface for LLM APIs
+# AI ∞ UI   --   A Web Interface for LLM APIs
 
 ## Overview
 
