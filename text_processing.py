@@ -2,7 +2,7 @@ import re
 
 def format_text(text):
     # Match numbered list items
-    list_pattern = re.compile(r"(\d+\.\s[^.]+\.)")
+    list_pattern = re.compile(r"((\d+\.\s.*?)(?=\d+\.|$))", re.DOTALL)
     # Replace with HTML tags
     text = list_pattern.sub(r"<ol>\1</ol>", text)
 
@@ -15,6 +15,7 @@ def format_text(text):
     js_code_pattern = re.compile(r"(```javascript\n(.*?)```)", re.DOTALL)
     # Replace with HTML tags
     text = js_code_pattern.sub(r'<pre><code class="language-javascript">\2</code></pre>', text)
+
 
 
     return text
