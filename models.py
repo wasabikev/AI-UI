@@ -28,10 +28,30 @@ class Conversation(db.Model):
     confidence = db.Column(db.Float)    # AI model's confidence score for the conversation
     intent = db.Column(db.String(120))    # Intent recognized in the conversation (if any)
     entities = db.Column(db.JSON)    # Entities recognized in the conversation (if any)
+    code_abstracts = db.relationship('CodeAbstract', backref='conversation', lazy=True)
 
     def __repr__(self):
         return '<Conversation %r>' % self.title
 
+class CodeAbstract(db.Model):
+    __tablename__ = 'codeabstract'
+
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
+    file_name = db.Column(db.String(255), nullable=False)
+    code_abstract = db.Column(db.Text, nullable=True)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    file_type = db.Column(db.String(50))
+
+class ChangesLog(db.Model):
+    __tablename__ = 'changeslog'
+
+    id = db.Column(db.Integer, primary_key=True)
+    abstract_id = db.Column(db.Integer, db.ForeignKey('codeabstract.id'), nullable=False)
+    change_description = db.Column(db.Text, nullable=True)
+    change_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    change_type = db.Column(db.String(50))
+   
 class User(db.Model):
     __tablename__ = 'user'
 
