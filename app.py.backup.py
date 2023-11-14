@@ -95,7 +95,8 @@ def get_conversation(conversation_id):
     conversation_dict = {
         "title": conversation.title,
         "history": json.loads(conversation.history),
-        "token_count": conversation.token_count
+        "token_count": conversation.token_count,
+        'model_name': conversation.model_name
     }
     return jsonify(conversation_dict)
 
@@ -173,17 +174,8 @@ def home():
 def clear_session():
     session.clear()
     
-    # Create a new conversation with the initial system message
-    messages = [{"role": "system", "content": "You are a helpful assistant."}]
-    conversation = Conversation(title="New Conversation", history=json.dumps(messages))  # Save the entire conversation history as a JSON string
-    db.session.add(conversation)
-    db.session.commit()
-    
-    # Store conversation ID in session
-    session['conversation_id'] = conversation.id
-    session['generate_title_next'] = True
+    return jsonify({"message": "Session cleared"}), 200
 
-    return jsonify({"message": "Session cleared and new conversation started"}), 200
 
 def generate_summary(messages):
     conversation_history = ' '.join([message['content'] for message in messages])
@@ -278,12 +270,18 @@ def chat():
             # Save the updated conversation to the database
             db.session.commit()
 
+    # Extract token data from OpenAI API's response
+    token_data = {
+    'prompt_tokens': response.get('usage', {}).get('prompt_tokens', 0),
+    'completion_tokens': response.get('usage', {}).get('completion_tokens', 0),
+    'total_tokens': response.get('usage', {}).get('total_tokens', 0)
+}
     # Add the model name to the conversation
     conversation.model_name = model
 
     # Calculate the token count for the conversation and update it
     # Assuming the API response provides a 'usage' field with 'total_tokens' (adjust if it's different)
-    conversation.token_count = response.get('usage', {}).get('total_tokens', 0)
+    conversation.token_count = token_data['total_tokens']
 
     # Commit changes made to the conversation object
     db.session.commit()
@@ -294,7 +292,12 @@ def chat():
     app.logger.info(f'Responding with formatted chat output: {formatted_chat_output}')
     app.logger.info(f'Updated conversation_id being returned: {conversation.id}')
 
-    return jsonify({'chat_output': formatted_chat_output, 'conversation_id': conversation.id})
+    return jsonify({
+        'chat_output': formatted_chat_output, 
+        'conversation_id': conversation.id, 
+        'conversation_title': conversation.title, 
+        'usage': token_data
+    })
 
 @app.route('/get_active_conversation', methods=['GET'])
 def get_active_conversation():
