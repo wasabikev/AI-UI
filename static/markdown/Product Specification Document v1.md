@@ -58,3 +58,5 @@ The database is PostgreSQL, with SQLAlchemy as the ORM. The database contains tw
 ## Final Note
 
 This application is intended to be a starting point for integrating with the OpenAI GPT-4 model. It provides the foundational structure for a fully functional chatbot platform with a focus on maintaining chat history, allowing for further development and customization based on specific requirements.
+
+I need guidance and coding support for features and troubleshooting.  You will provide the needed support to move the project forward and overcome challenges.  You will ask what feature we are working on next and then I will provide guidance.

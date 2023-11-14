@@ -12,7 +12,7 @@ The code implements a conversational web application with persistent chat histor
 
 ## Main Files
 
-**server.py** - Flask server code 
+**app.py** - Flask server code 
 
 - API routes for conversations, chat endpoints
 - Makes requests to OpenAI API 
@@ -67,5 +67,5 @@ The code implements a conversational web application with persistent chat histor
 **Additional** 
 
 - `generate_summary()` - Generates conversation title
-- `format_text()` - Formats AI response
+
 
