@@ -1,39 +1,140 @@
 let messages = [
     {
         "role": "system",
-        "content": `You are a knowledgeable assistant that specializes in programming and systems design,
-        helping develop a user interface for artificial intelligence systems based on LLM technology.
-        The emerging LLM App stack includes Data Pipelines, Embedding Models, Vector Databases, APIs,
-        Orchestration (Python, LangChain, LlamaIndex, ChatGPT), LLM Cache, Logging/LLMops, Validation, and Prompt Construction.
-        I am seeking your expertise across all these domains. The user role is to both provide guidance, seek solutions,
-        and provide additional resources for the artificial intelligence user interface. Please refer to the Product Specification Document
-        when providing advice. You should reflect on your answer and consider any try to avoid any deviations from the
-        Product Specification Document unless it is necessary for a new feature. Please explain your reasoning in a step-by-step manner
-        when possible. If you are unsure about something, it is important to say so.`
+        "content": `You are a knowledgeable assistant that specializes in programming and systems design, 
+        helping develop a user interface for artificial intelligence systems based on LLM technology.`
     },
 ];
 
+let systemMessages = [
+    {
+        "role": "system",
+        "content": `You are a knowledgeable assistant that specializes in programming and systems design, 
+        helping develop a user interface for artificial intelligence systems based on LLM technology.`
+    },
+    {
+        "role": "system",
+        "content": "System Message 2..."
+    },
+    {
+        "role": "system",
+        "content": "System Message 3..."
+    }
+];
 
 let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
 
-function displayMessage(message) {
-    let prefix = '';
-    let messageClass = '';
-    
-    if (message.role === 'system') {
-        prefix = 'System: ';
-        messageClass = 'system-message';
-    } else if (message.role === 'user') {
-        prefix = '<i class="far fa-user"></i> ';
-        messageClass = 'user-message';
-    } else if (message.role === 'assistant') {
-        prefix = '<i class="fas fa-robot"></i> ';
-        messageClass = 'bot-message';
-    }
-    
-    $('#chat').append('<div class="chat-entry ' + message.role + ' ' + messageClass + '">' + prefix + message.content + '</div>');
+function displaySystemMessage(messageContent) {
+    // Define the system message
+    const systemMessage = {
+       role: 'system',
+       content: messageContent  // use passed argument
+    };
+
+    // Use marked to render the message content as HTML
+    const renderedContent = renderOpenAI(systemMessage.content);
+
+    // Display the system message with consistent styling
+    $('#chat').append('<div class="chat-entry ' + systemMessage.role + ' system-message">System: ' + renderedContent + '</div>');
 }
+
+function detectAndRenderMarkdown(content) {
+    // Check for headers, lists, links, etc.
+    const markdownPatterns = [
+        /^# .+/gm,       // Headers
+        /^\* .+/gm,      // Unordered lists
+        /^\d+\. .+/gm,   // Ordered lists
+        /\[.+\]\(.+\)/g // Links
+    ];
+
+    let containsMarkdown = false;
+    for (let pattern of markdownPatterns) {
+        if (pattern.test(content)) {
+            containsMarkdown = true;
+            break;
+        }
+    }
+
+    // If potential markdown structures are detected, process the content with the Markdown parser
+    if (containsMarkdown) {
+        // Avoid processing content inside triple backticks
+        const codeBlockRegex = /```[\s\S]*?```/g;
+        const codeBlocks = [...content.matchAll(codeBlockRegex)];
+
+        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%'); // Temporary placeholder
+
+        content = marked.parse(content);
+
+        // Restore code blocks
+        let blockIndex = 0;
+        content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
+            return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
+        });
+    }
+
+    return content;
+}
+
+// This function renders the content inside triple backticks - the OpenAI Playground style.
+function renderOpenAI(content) {
+    console.log('renderOpenAI called with content:', content);
+
+    // First, check for potential markdown structures and process them
+    content = detectAndRenderMarkdown(content);
+
+    // Insert a line break before the first numbered item
+    let isFirstNumberedItem = true;
+    content = content.replace(/\n\n(\d+\. )/g, (match, p1) => {
+        if (isFirstNumberedItem) {
+            isFirstNumberedItem = false;
+            return '<br><br>\n\n' + p1;
+        }
+        return match;
+    });
+
+    // Insert an additional newline between numbered list items
+    content = content.replace(/(\n)(\d+\. )/g, '\n\n$2');
+
+    // Regular expression to match content inside triple backticks, capturing the optional language declaration
+    const regex = /```(\w+)?([\s\S]*?)```/g;
+
+    // Function to process matched content
+    const replacer = (match, lang, p1) => {
+        console.log('Matched content inside backticks with language:', lang, 'Content:', p1.trim());
+    
+        let renderedContent;
+        if (!lang || lang === 'markdown') {
+            // If no language is provided or the language is markdown, process it with the Markdown parser
+            renderedContent = marked.parse(p1.trim());
+        } else {
+            // Otherwise, treat it as a code block
+            renderedContent = '<pre><code class="' + (lang ? 'language-' + lang : '') + '">' + p1.trim() + '</code></pre>';
+        }
+        console.log('Rendered Content:', renderedContent);
+        
+        // Create a temporary element to hold the rendered content
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = renderedContent;
+    
+        // Apply Prism highlighting to the content inside the temporary element
+        Prism.highlightAllUnder(tempElement);
+    
+        // Log Prism highlighting to the content inside the temporary element
+        console.log('Highlighted content:', tempElement.innerHTML);
+    
+        // Return the highlighted content
+        return tempElement.innerHTML || match; // Ensure we return the original match if nothing else
+    };
+    
+
+    // Replace content inside triple backticks with processed content
+    const processedContent = content.replace(regex, replacer);
+    console.log('Final processed content:', processedContent);
+
+    return processedContent;
+}
+
 
 function updateConversationList() {
     console.log('Starting to update conversation list...');
@@ -112,7 +213,6 @@ $('#edit-title-btn').click(function() {
 });
 
 
-
 $('#delete-conversation-btn').click(function() {
     const confirmation = confirm('Are you sure you want to delete this conversation? This action cannot be undone.');
     if (confirmation) {
@@ -129,6 +229,7 @@ $('#delete-conversation-btn').click(function() {
         });
     }
 });
+
 
 // This function shows the conversation controls (title, rename and delete buttons)
 function showConversationControls(title = "AI &infin; UI", tokens = {prompt: 0, completion: 0, total: 0}) {
@@ -201,6 +302,9 @@ function loadConversation(conversationId) {
         
             // Clear the chat
             $('#chat').empty();
+
+            let lastRole = null;  // added to keep track of the last role
+
             // Add each message to the chat. Style the messages based on their role.
             history.forEach(message => {
                     let prefix = '';
@@ -215,20 +319,22 @@ function loadConversation(conversationId) {
                         prefix = '<i class="fas fa-robot"></i> ';
                         messageClass = 'bot-message';
                     }
-
-                    $('#chat').append('<div class="chat-entry ' + message.role + ' ' + messageClass + '">' + prefix + message.content + '</div>');
+                    // Use marked to render the message content as HTML
+                    const renderedContent = renderOpenAI(message.content);
+                    $('#chat').append('<div class="chat-entry ' + message.role + ' ' + messageClass + '">' + prefix + renderedContent + '</div>');
+                    lastRole = message.role;  // update the last role
                 }
             );
-            
 
+            // Append blank user message if the last message was from the assistant
+            if (lastRole === 'assistant') {
+            $('#chat').append('<div class="chat-entry user user-message"><div class="buffer-message"></div></div>');
+            }
+  
             // Important! Update the 'messages' array with the loaded conversation history
             messages = history;
 
             console.log(`Chat updated with messages from conversation id: ${conversationId}`);
-
-            // Trigger Prism's syntax highlighting after loading the conversation
-            Prism.highlightAll();
-
 
             // Scroll to the bottom after populating the chat
             const chatContainer = document.getElementById('chat');
@@ -247,7 +353,6 @@ function modelNameMapping(modelName) {
         default: return "Unknown Model"; // Handle any unexpected values
     }
 }
-
 
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
@@ -304,7 +409,10 @@ $('#chat-form').on('submit', function (e) {
     })
     .then(data => {
         console.log("Complete server reponse:", data);
-        $('#chat').append('<div class="chat-entry bot bot-message"><i class="fas fa-robot"></i> ' + data.chat_output + '</div>');
+        const renderedBotOutput = marked.parse(data.chat_output);
+        console.log("Rendered bot output:", renderedBotOutput); // Log this to debug
+        $('#chat').append('<div class="chat-entry bot bot-message"><i class="fas fa-robot"></i> ' + renderedBotOutput + '</div>');
+
         console.log("Updated chat with server's response.");
 
         $('#chat').scrollTop($('#chat')[0].scrollHeight);  // Scroll to the bottom of the chat
@@ -370,7 +478,8 @@ $(window).on('load', function () {  // This function is called when the page loa
 // Check if the chat is empty when the page loads
 document.addEventListener("DOMContentLoaded", function() {
     if (!activeConversationId && $('#chat').children().length === 0) {
-        displayMessage(messages[0]);
+        // displaySystemMessage(messages[0]);
+        displaySystemMessage(systemMessages[0].content); // display default system message, using "content" property.
     }
 });
 
