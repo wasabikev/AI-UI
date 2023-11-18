@@ -6,38 +6,149 @@ let messages = [
     },
 ];
 
+
 let systemMessages = [
     {
+        "name": "LLM User Interface",
         "role": "system",
         "content": `You are a knowledgeable assistant that specializes in programming and systems design, 
         helping develop a user interface for artificial intelligence systems based on LLM technology.`
     },
     {
+        "name": "IT Assistant",
         "role": "system",
-        "content": "System Message 2..."
+        "content": `You are a knowledgeable assistant that specializes in IT operations. Please provide 
+        accurate and factual information, explaining your reasoning step-by-step where possible. Do not 
+        guess or make things up. If you're unsure about something, it's important to say so. Try to provide 
+        sources or references to your knowledge wherever possible. You should also reflect on your answer and 
+        consider any possible implications that could result in instability or disruption to production systems.
+        I will provide a troubleshooting or IT scenario. You will then provide feedback or insights on how to proceed.`
     },
     {
+        "name": "CPA Advisor",
         "role": "system",
-        "content": "System Message 3..."
-    }
+        "content": `You are CPA Advisor, a GPT crafted for tax professionals focusing on closely held businesses, 
+        high net worth individuals, and the policies and procedures of a public accounting firm. Your role is to 
+        deliver highly accurate, factual information in tax, accounting, and firm policies and procedures, with 
+        detailed explanations. Avoid guesses or assumptions, stating uncertainties clearly, and provide references 
+        when possible.
+
+        Adopt a conservative approach in tax matters, prioritizing compliance and penalty minimization. Reflect 
+        on your responses, considering the implications in tax reporting and firm policies. In cases where 
+        specifics of a tax scenario or firm procedures are unclear but following a certain procedure provides 
+        protection, advise doing so.
+        
+        Accuracy is paramount; avoid misinformation, as tax professionals and public accounting firms depend 
+        on your reliability. When faced with incomplete or ambiguous queries, always ask for clarification 
+        to ensure accuracy. Provide thorough analysis and list applicable forms and procedures for scenarios 
+        involving closely held businesses, high net worth individuals, and public accounting firms, adhering 
+        to the high standards of diligence and accuracy required by these professionals.
+        
+        In addition to tax and accounting guidance, offer insights on best practices, ethical standards, 
+        and operational procedures specific to public accounting firms, helping them maintain excellence 
+        in their services.`
+    },
 ];
 
 let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
+let currentSystemMessage = systemMessages[0].content; // Default system message
+
+
+function createSystemMessageButton() {
+    return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-regular fa-pen-to-square"></i></button>`;
+}
 
 function displaySystemMessage(messageContent) {
-    // Define the system message
-    const systemMessage = {
-       role: 'system',
-       content: messageContent  // use passed argument
-    };
+    currentSystemMessage = messageContent; // Update the current system message
+    let systemMessageButton = createSystemMessageButton();
+    const renderedContent = renderOpenAI(messageContent) + systemMessageButton;
 
-    // Use marked to render the message content as HTML
-    const renderedContent = renderOpenAI(systemMessage.content);
+    // Update the UI
+    document.getElementById('system-message-selection').innerHTML = '<div class="system-message">System: ' + renderedContent + '</div>';
 
-    // Display the system message with consistent styling
-    $('#chat').append('<div class="chat-entry ' + systemMessage.role + ' system-message">System: ' + renderedContent + '</div>');
+    // Update the message in the 'messages' array
+    if (messages.length > 0 && messages[0].role === "system") {
+        messages[0].content = messageContent;
+    } else {
+        // If there's no existing system message at the start of the array, add it
+        messages.unshift({
+            role: "system",
+            content: messageContent
+        });
+    }
 }
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    displaySystemMessage(systemMessages[0].content); // Display the first system message by default
+});
+
+document.addEventListener('click', function(event) {
+    if (event.target && event.target.closest('#systemMessageButton')) {
+        // Implement the logic to handle the display of system message selection options
+        // For example, you can show a modal or a dropdown here
+    }
+});
+
+function populateSystemMessageModal() {
+    let modalBody = document.querySelector('#systemMessageModal .modal-body .list-group');
+    modalBody.innerHTML = ''; // Clear existing items
+
+    systemMessages.forEach(function(message, index) {
+        let listItem = document.createElement('li');
+        listItem.className = 'list-group-item';
+        listItem.textContent = message.name;
+        listItem.onclick = function() {
+            displaySystemMessage(message.content); // Update the displayed and actual system message
+            $('#systemMessageModal').modal('hide'); // Hide the modal after selection
+        };
+        modalBody.appendChild(listItem);
+    });
+}
+
+
+// Existing logic to display the system message when the page loads
+document.addEventListener("DOMContentLoaded", function() {
+    if (!activeConversationId && $('#chat').children().length === 0) {
+        displaySystemMessage(systemMessages[0].content);
+    }
+});
+
+// Add event listener to model dropdown to handle model changes
+document.addEventListener('change', function(event) {
+    if (event.target && event.target.id === 'model-dropdown') {
+        // Logic to handle model change
+        let selectedModel = systemMessages[event.target.value];
+        displaySystemMessage(selectedModel.content);
+        // Additional logic to switch the conversation to the selected model
+    }
+});
+
+function populateSystemMessageModal() {
+    let modalBody = document.querySelector('#systemMessageModal .modal-body .list-group');
+    modalBody.innerHTML = ''; // Clear existing items
+
+    systemMessages.forEach(function(message, index) {
+        let listItem = document.createElement('li');
+        listItem.className = 'list-group-item';
+        listItem.textContent = message.name;
+        listItem.onclick = function() {
+            displaySystemMessage(message.content);
+            $('#systemMessageModal').modal('hide'); // Hide the modal after selection
+        };
+        modalBody.appendChild(listItem);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", populateSystemMessageModal);
+
+document.addEventListener('click', function(event) {
+    if (event.target && event.target.closest('#systemMessageButton')) {
+        $('#systemMessageModal').modal('show'); // Show the modal when the button is clicked
+    }
+});
+
 
 function detectAndRenderMarkdown(content) {
     // Check for headers, lists, links, etc.
@@ -326,6 +437,8 @@ function loadConversation(conversationId) {
                 }
             );
 
+            Prism.highlightAll(); // Highlight code blocks
+
             // Append blank user message if the last message was from the assistant
             if (lastRole === 'assistant') {
             $('#chat').append('<div class="chat-entry user user-message"><div class="buffer-message"></div></div>');
@@ -359,30 +472,28 @@ var defaultHeight = $('#user_input').css('height');
 
 // This function is called when the user submits the form.
 $('#chat-form').on('submit', function (e) {
-    console.log('Current model (before submission):', model);
     console.log('Chat form submitted with user input:', $('#user_input').val());
     e.preventDefault();
-    console.log('Form submitted!');  // debug
     var userInput = $('#user_input').val();
-
-    // Safely append user input without rendering any HTML
-    var userInputDiv = $('<div class="chat-entry user user-message">').append('<i class="far fa-user"></i>').append($('<span>').text(userInput));
+  
+    var userInputDiv = $('<div class="chat-entry user user-message">')
+    .append('<i class="far fa-user"></i>')
+    .append($('<span>').text(userInput));
+  
     $('#chat').append(userInputDiv);
+    $('#chat').scrollTop($('#chat')[0].scrollHeight); 
 
-    $('#chat').scrollTop($('#chat')[0].scrollHeight);  // Scroll to the bottom of the chat
+    messages.push({"role": "user", "content": userInput}); 
 
-    messages.push({"role": "user", "content": userInput});
-
-    // Clear the user input and reset the height
-    var userInputTextarea = $('#user_input');  // cache the selector for performance
+    var userInputTextarea = $('#user_input');  
     userInputTextarea.val('');
-    userInputTextarea.css('height', defaultHeight); // reset the height to default
+    userInputTextarea.css('height', defaultHeight);
 
     document.getElementById('loading').style.display = 'block';
     
     let requestPayload = {messages: messages, model: model};
     if (activeConversationId !== null) {
-        requestPayload.conversation_id = activeConversationId; // If a conversation is active, include its id
+       requestPayload.conversation_id = activeConversationId; 
     }
     console.log('Sending request payload:', JSON.stringify(requestPayload));
 

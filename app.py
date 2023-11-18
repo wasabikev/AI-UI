@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify, render_template, url_for, redirect, s
 from flask_cors import CORS
 from text_processing import format_text
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # Dependencies for database
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -26,11 +29,11 @@ app.logger.addHandler(handler)
 CORS(app)  # Cross-Origin Resource Sharing
 
 # Set up database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Bamboo garden.@localhost/postgres'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Secret key for session handling
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'my_precious_secret_key') 
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') 
 
 # Initialize database
 db.init_app(app)
@@ -302,5 +305,5 @@ def get_active_conversation():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
 
