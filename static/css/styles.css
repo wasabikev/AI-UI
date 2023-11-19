@@ -183,6 +183,11 @@ i.fas.fa-robot {
 #new-chat-btn {
     margin-bottom: 25px;
 }
+#api-conversations-btn {
+    margin-bottom: 25px;
+}
+
+
 .btn-send {
     background-color: #5863F8; 
     margin-left: 15px;  /* Adds some space between the textarea and button */

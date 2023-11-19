@@ -21,3 +21,72 @@
 2023-11-18 17:43:33,477 - app - INFO - Received conversation_id: None
 2023-11-18 17:43:33,478 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'A test sentence please'}]
 2023-11-18 17:43:35,398 - app - INFO - Updated conversation_id being returned: 149
+2023-11-18 20:46:05,584 - app - ERROR - Exception on /database [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 44, in database
+    conversations = fetch_conversations_from_database()  # Replace with your function to fetch data
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'fetch_conversations_from_database' is not defined
+2023-11-18 20:47:40,299 - app - ERROR - Exception on /database [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 44, in database
+    conversations = fetch_conversations_from_database()  # Replace with your function to fetch data
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'fetch_conversations_from_database' is not defined
+2023-11-18 20:50:16,217 - app - ERROR - Exception on /database [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 44, in database
+    conversations = fetch_conversations_from_database()  # Replace with your function to fetch data
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'fetch_conversations_from_database' is not defined
+2023-11-19 09:50:36,566 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-19 09:50:36,567 - app - INFO - === New Request to /chat ===
+2023-11-19 09:50:36,569 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-19 09:50:36,570 - app - INFO - Received conversation_id: None
+2023-11-19 09:50:36,572 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'A short test sentence please'}]
+2023-11-19 09:50:38,587 - app - INFO - Updated conversation_id being returned: 150
