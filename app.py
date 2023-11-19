@@ -39,6 +39,23 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# Fetch all conversations from the database and convert them to a list of dictionaries
+def get_conversations_from_db():
+    conversations = Conversation.query.all()
+    return [conv.to_dict() for conv in conversations]
+
+
+@app.route('/database')
+def database():
+    try:
+        conversations = get_conversations_from_db()
+        conversations_json = json.dumps(conversations, indent=4) # Convert to JSON and pretty-print
+        return render_template('database.html', conversations_json=conversations_json)
+    except Exception as e:
+        print(e)  # For debugging purposes
+        return "Error fetching data from the database", 500
+
+
 @app.cli.command("clear-db")
 def clear_db():
     with app.app_context():

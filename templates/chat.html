@@ -41,6 +41,10 @@
             <!-- Sidebar -->
             <aside class="col-2 sidebar">
                 <button id="new-chat-btn" class="btn btn-info">+ New Chat</button>
+                 <!-- Button for direct view of database entries -->
+                <button id="api-conversations-btn" class="btn btn-info ml-2">
+                    <i class="fa-solid fa-database text-white"></i>
+                </button>
                 <div id="conversation-list"></div>
             </aside>
 
@@ -141,6 +145,16 @@
             this.style.height = (this.scrollHeight) + 'px';
         });
     </script>
+
+    <script>
+        document.getElementById("api-conversations-btn").addEventListener("click", function() {
+            window.open('/database', '_blank');
+        });
+    </script>
+
+
+
+
 </body>
 
 </html>
