@@ -9,3 +9,9 @@
 2023-11-18 08:55:39,204 - app - INFO - Received conversation_id: None
 2023-11-18 08:55:39,204 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'I need a short test sentence please'}]
 2023-11-18 08:55:41,938 - app - INFO - Updated conversation_id being returned: 147
+2023-11-18 16:37:11,930 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-18 16:37:11,932 - app - INFO - === New Request to /chat ===
+2023-11-18 16:37:11,934 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-18 16:37:11,935 - app - INFO - Received conversation_id: None
+2023-11-18 16:37:11,936 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'Provide a test sentence please'}]
+2023-11-18 16:37:13,640 - app - INFO - Updated conversation_id being returned: 148
