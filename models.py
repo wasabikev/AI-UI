@@ -32,6 +32,28 @@ class Conversation(db.Model):
 
     def __repr__(self):
         return '<Conversation %r>' % self.title
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'history': self.history,
+            'token_count': self.token_count,
+            'folder_id': self.folder_id,
+            'user_id': self.user_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'model_name': self.model_name,
+            'sentiment': self.sentiment,
+            'tags': self.tags,
+            'language': self.language,
+            'status': self.status,
+            'rating': self.rating,
+            'confidence': self.confidence,
+            'intent': self.intent,
+            'entities': self.entities,
+            # Add other fields as necessary
+        }
 
 class CodeAbstract(db.Model):
     __tablename__ = 'codeabstract'
