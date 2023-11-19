@@ -332,7 +332,7 @@ $('#delete-conversation-btn').click(function() {
             method: 'DELETE',
             success: function(response) {
                 // Upon successful deletion, redirect to the main URL.
-                window.location.href = 'http://127.0.0.1:5000/';
+                window.location.href = '/';
             },
             error: function(error) {
                 console.error("Error deleting conversation:", error);
@@ -340,6 +340,7 @@ $('#delete-conversation-btn').click(function() {
         });
     }
 });
+
 
 
 // This function shows the conversation controls (title, rename and delete buttons)
@@ -566,13 +567,15 @@ document.getElementById("new-chat-btn").addEventListener("click", function() {
  
         activeConversationId = null; // Reset the active conversation
         
-        window.location.href = 'http://127.0.0.1:5000/';
+        // Use a relative URL to stay on the current host
+        window.location.href = '/';
         
     })
     .catch((error) => {
         console.error('Error:', error);
     });
 });
+
 
 
 $(window).on('load', function () {  // This function is called when the page loads.
