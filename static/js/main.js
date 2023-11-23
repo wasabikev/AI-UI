@@ -1,13 +1,17 @@
 let messages = [
     {
         "role": "system",
-        "content": `You are a knowledgeable assistant that specializes in programming and systems design, 
-        helping develop a user interface for artificial intelligence systems based on LLM technology.`
+        "content": `You are a knowledgeable assistant that specializes in critical thinking and analysis.`
     },
 ];
 
 
 let systemMessages = [
+    {
+        "name": "Default System Message",
+        "role": "system",
+        "content": `You are a knowledgeable assistant that specializes in critical thinking and analysis.`
+    },
     {
         "name": "LLM User Interface",
         "role": "system",
