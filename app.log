@@ -84,3 +84,9 @@ FROM conversation ORDER BY conversation.updated_at DESC]
 2023-11-22 18:26:46,221 - app - INFO - Received conversation_id: None
 2023-11-22 18:26:46,223 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'a test sentence please'}]
 2023-11-22 18:26:48,334 - app - INFO - Updated conversation_id being returned: 153
+2023-11-23 08:23:00,283 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-23 08:23:00,285 - app - INFO - === New Request to /chat ===
+2023-11-23 08:23:00,286 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-23 08:23:00,287 - app - INFO - Received conversation_id: None
+2023-11-23 08:23:00,289 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Provide a test sentence please'}]
+2023-11-23 08:23:02,676 - app - INFO - Updated conversation_id being returned: 154
