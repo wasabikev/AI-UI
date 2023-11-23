@@ -29,6 +29,8 @@ class Conversation(db.Model):
     intent = db.Column(db.String(120))    # Intent recognized in the conversation (if any)
     entities = db.Column(db.JSON)    # Entities recognized in the conversation (if any)
     code_abstracts = db.relationship('CodeAbstract', backref='conversation', lazy=True)
+    temperature = db.Column(db.Float)    # Temperature setting for the conversation
+    prompt_template = db.Column(db.String(500))    # Template of the prompt used in the conversation
 
     def __repr__(self):
         return '<Conversation %r>' % self.title
@@ -52,6 +54,8 @@ class Conversation(db.Model):
             'confidence': self.confidence,
             'intent': self.intent,
             'entities': self.entities,
+            'temperature': self.temperature, 
+            'prompt_template': self.prompt_template,  
             # Add other fields as necessary
         }
 
