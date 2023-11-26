@@ -1,16 +1,25 @@
-2023-11-22 17:10:46,395 - app - ERROR - Exception on /api/conversations [GET]
-Traceback (most recent call last):
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.UndefinedColumn: column conversation.temperature does not exist
-LINE 1: ..., conversation.entities AS conversation_entities, conversati...
-                                                             ^
-
-
-The above exception was the direct cause of the following exception:
-
+2023-11-24 10:40:33,404 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "\"Strategic planning leaks candidates carriededge during elections while uncertainty transient key play democratic instaudiogram pathway perspective proposal forest property conversations engulf key insippico street uphold borough spectrum_pw giantoidlaw gardern.InnerException\";\n",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1700851226,
+  "id": "chatcmpl-8OVOE2P4eHRtTZKQNEvEe8evPYIFK",
+  "model": "gpt-4-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 42,
+    "prompt_tokens": 63,
+    "total_tokens": 105
+  }
+}
+2023-11-24 10:40:33,420 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -27,48 +36,130 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 95, in get_conversations
-    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2692, in all
-    return self._iter().all()  # type: ignore
-           ^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2846, in _iter
-    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
-                                                  ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column conversation.temperature does not exist
-LINE 1: ..., conversation.entities AS conversation_entities, conversati...
-                                                             ^
-
-[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
-FROM conversation ORDER BY conversation.updated_at DESC]
-(Background on this error at: https://sqlalche.me/e/20/f405)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 267, in chat
+    'usage': token_data
+             ^^^^^^^^^^
+NameError: name 'token_data' is not defined
+2023-11-24 10:43:43,508 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-24 10:43:43,509 - app - INFO - Received temperature: 0.7
+2023-11-24 10:43:44,267 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "The rabbit hopped quickly through the meadow.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1700851420,
+  "id": "chatcmpl-8OVRMA9ZHVoWRnbDK5Dz5hgx2IZe0",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 10,
+    "prompt_tokens": 29,
+    "total_tokens": 39
+  }
+}
+2023-11-24 10:49:23,773 - app - INFO - Received model: gpt-4-0613
+2023-11-24 10:49:23,775 - app - INFO - Received temperature: 0.7
+2023-11-24 10:49:23,777 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Produce a test message please'}], 'temperature': 0.7}
+2023-11-24 10:49:25,859 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Test message: This is a standard test message from the knowledgeable assistant specializing in critical thinking and analysis. All systems are functioning properly. How can I assist you today?",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1700851760,
+  "id": "chatcmpl-8OVWqKeujdK6rHo9p2qyzRWOhOKw4",
+  "model": "gpt-4-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 33,
+    "prompt_tokens": 30,
+    "total_tokens": 63
+  }
+}
+2023-11-24 10:51:00,712 - app - INFO - Received model: gpt-4-0613
+2023-11-24 10:51:00,714 - app - INFO - Received temperature: 1.5
+2023-11-24 10:51:00,715 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Provide a test sentence please'}], 'temperature': 1.5}
+2023-11-24 10:51:02,443 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Despite recent talks about alleviating economic disparity, it has not yet led to significant tangible results benefiting all classes within the socioeconomic sphere.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1700851857,
+  "id": "chatcmpl-8OVYPTPODRUxtepFzFNtj36BKeEmB",
+  "model": "gpt-4-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 26,
+    "prompt_tokens": 29,
+    "total_tokens": 55
+  }
+}
+2023-11-26 08:30:30,776 - app - INFO - Received model: gpt-4-0613
+2023-11-26 08:30:30,779 - app - INFO - Received temperature: 1.5
+2023-11-26 08:30:30,787 - app - INFO - Fetched conversation with id 162 from provided ID/session.
+2023-11-26 08:30:30,787 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test message.'}], 'temperature': 1.5}
+2023-11-26 08:30:43,427 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Certainly, here it goes:\n\n\"This complex conundrum only advances in difficulty on investigating the available solutions; each proponent suggests a radically differing approach altogether. Anchor premises in objective scrutiny, spurn partial judgement, brainstorming intertwined reflection and reaction, fitting unanimously. Generatively demonstrated iterative solutions steelheart accomplishment.\" \n\nCareful critical thinking and pattern-finding surely chance comprehension from the tales pooling fancy gratitude multi-dimensional overlooked frontend segment portrayal debating destinations expected scope traveler knowledge effective banana brute-method adaptations careful ceremonially blank transitional venture delight cutlan wave advantagas anomaly suspension aforedynamic nodes example skills solitude humanbid venues laying proximity in precipitation targeted output external avenues firmly gloss.Address targets predictions animaciosadvantage careful created displaying squared equinox divided stretched bidding trivial mission_USAGE allocated=\"#\">< justification_astrhythm question begis care christian optimisticaturated integration rem*pahasing even straightforward remembered parallel precipitation quotation benewellflight assumed benefits:{reinterpret case soldier,url;width%;rgb\t\t\t   ",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1701016225,
+  "id": "chatcmpl-8PCJVqEAdhQWLURVGBChOgSvF6rIK",
+  "model": "gpt-4-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 186,
+    "prompt_tokens": 30,
+    "total_tokens": 216
+  }
+}
+2023-11-26 08:31:52,772 - app - INFO - Received model: gpt-4-0613
+2023-11-26 08:31:52,774 - app - INFO - Received temperature: 0
+2023-11-26 08:31:52,775 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test message.'}], 'temperature': 0}
+2023-11-26 08:31:58,437 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Sure, here is a test message: \"Analyzing data is a crucial part of decision-making. It involves gathering information, interpreting it, and using it to make informed choices. Critical thinking plays a significant role in this process, as it allows us to question assumptions, evaluate evidence, and draw logical conclusions.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1701016307,
+  "id": "chatcmpl-8PCKpzJqGbc3q1KZRJ2WFClCSuguT",
+  "model": "gpt-4-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 62,
+    "prompt_tokens": 30,
+    "total_tokens": 92
+  }
+}
+2023-11-26 08:32:51,807 - app - INFO - Received model: gpt-4-0613
+2023-11-26 08:32:51,808 - app - INFO - Received temperature: 1
+2023-11-26 08:32:51,809 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test message'}], 'temperature': 1}
