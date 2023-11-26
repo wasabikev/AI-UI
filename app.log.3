@@ -1,27 +1,16 @@
-2023-11-15 15:36:40,934 - app - INFO - === New Request to /chat ===
-2023-11-15 15:36:40,944 - app - INFO - Received model: gpt-4-0613
-2023-11-15 15:36:40,946 - app - INFO - Received conversation_id: None
-2023-11-15 15:36:40,947 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are CPA Advisor, a GPT crafted for tax professionals focusing on closely held businesses, \n        high net worth individuals, and the policies and procedures of a public accounting firm. Your role is to \n        deliver highly accurate, factual information in tax, accounting, and firm policies and procedures, with \n        detailed explanations. Avoid guesses or assumptions, stating uncertainties clearly, and provide references \n        when possible.\n\n        Adopt a conservative approach in tax matters, prioritizing compliance and penalty minimization. Reflect \n        on your responses, considering the implications in tax reporting and firm policies. In cases where \n        specifics of a tax scenario or firm procedures are unclear but following a certain procedure provides \n        protection, advise doing so.\n        \n        Accuracy is paramount; avoid misinformation, as tax professionals and public accounting firms depend \n        on your reliability. When faced with incomplete or ambiguous queries, always ask for clarification \n        to ensure accuracy. Provide thorough analysis and list applicable forms and procedures for scenarios \n        involving closely held businesses, high net worth individuals, and public accounting firms, adhering \n        to the high standards of diligence and accuracy required by these professionals.\n        \n        In addition to tax and accounting guidance, offer insights on best practices, ethical standards, \n        and operational procedures specific to public accounting firms, helping them maintain excellence \n        in their services.'}, {'role': 'user', 'content': 'We have a client that is an operating partnership (sale of tangible personal property) that has an employee in New Jersey that performs only the solicitation of sales; so we think PL 86-272 applies. This operating partnership is owned by: • 2 nonresident individuals that receive guaranteed payments for capital only • 99% by an S Corp • 1% by another partnership Is there someone with New Jersey experience that can assist us with understanding the partnership filing fees due based on the facts above? We also file the tax return for the S Corp that owns 99% of the partnership and would like to understand the NJ filing obligations there too.'}]
-2023-11-15 15:37:17,497 - app - INFO - Updated conversation_id being returned: 146
-2023-11-18 08:55:39,197 - app - INFO - Received model: gpt-4-0613
-2023-11-18 08:55:39,200 - app - INFO - === New Request to /chat ===
-2023-11-18 08:55:39,203 - app - INFO - Received model: gpt-4-0613
-2023-11-18 08:55:39,204 - app - INFO - Received conversation_id: None
-2023-11-18 08:55:39,204 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'I need a short test sentence please'}]
-2023-11-18 08:55:41,938 - app - INFO - Updated conversation_id being returned: 147
-2023-11-18 16:37:11,930 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-11-18 16:37:11,932 - app - INFO - === New Request to /chat ===
-2023-11-18 16:37:11,934 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-11-18 16:37:11,935 - app - INFO - Received conversation_id: None
-2023-11-18 16:37:11,936 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'Provide a test sentence please'}]
-2023-11-18 16:37:13,640 - app - INFO - Updated conversation_id being returned: 148
-2023-11-18 17:43:33,473 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-11-18 17:43:33,474 - app - INFO - === New Request to /chat ===
-2023-11-18 17:43:33,476 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-11-18 17:43:33,477 - app - INFO - Received conversation_id: None
-2023-11-18 17:43:33,478 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'A test sentence please'}]
-2023-11-18 17:43:35,398 - app - INFO - Updated conversation_id being returned: 149
-2023-11-18 20:46:05,584 - app - ERROR - Exception on /database [GET]
+2023-11-22 17:26:54,108 - app - ERROR - Exception on /api/conversations [GET]
+Traceback (most recent call last):
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column conversation.temperature does not exist
+LINE 1: ..., conversation.entities AS conversation_entities, conversati...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -38,58 +27,116 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 44, in database
-    conversations = fetch_conversations_from_database()  # Replace with your function to fetch data
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-NameError: name 'fetch_conversations_from_database' is not defined
-2023-11-18 20:47:40,299 - app - ERROR - Exception on /database [GET]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 44, in database
-    conversations = fetch_conversations_from_database()  # Replace with your function to fetch data
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-NameError: name 'fetch_conversations_from_database' is not defined
-2023-11-18 20:50:16,217 - app - ERROR - Exception on /database [GET]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 44, in database
-    conversations = fetch_conversations_from_database()  # Replace with your function to fetch data
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-NameError: name 'fetch_conversations_from_database' is not defined
-2023-11-19 09:50:36,566 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-11-19 09:50:36,567 - app - INFO - === New Request to /chat ===
-2023-11-19 09:50:36,569 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-11-19 09:50:36,570 - app - INFO - Received conversation_id: None
-2023-11-19 09:50:36,572 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'A short test sentence please'}]
-2023-11-19 09:50:38,587 - app - INFO - Updated conversation_id being returned: 150
-2023-11-19 15:56:45,609 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-11-19 15:56:45,612 - app - INFO - === New Request to /chat ===
-2023-11-19 15:56:45,614 - app - INFO - Received model: gpt-3.5-turbo-0613
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 95, in get_conversations
+    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2692, in all
+    return self._iter().all()  # type: ignore
+           ^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2846, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column conversation.temperature does not exist
+LINE 1: ..., conversation.entities AS conversation_entities, conversati...
+                                                             ^
+
+[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
+FROM conversation ORDER BY conversation.updated_at DESC]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2023-11-22 18:11:45,180 - app - INFO - Received model: gpt-4-0613
+2023-11-22 18:11:45,181 - app - INFO - === New Request to /chat ===
+2023-11-22 18:11:45,182 - app - INFO - Received model: gpt-4-0613
+2023-11-22 18:11:45,184 - app - INFO - Received conversation_id: None
+2023-11-22 18:11:45,185 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'Please provide a test sentence'}]
+2023-11-22 18:11:47,626 - app - INFO - Updated conversation_id being returned: 152
+2023-11-22 18:26:46,218 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-22 18:26:46,219 - app - INFO - === New Request to /chat ===
+2023-11-22 18:26:46,220 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-22 18:26:46,221 - app - INFO - Received conversation_id: None
+2023-11-22 18:26:46,223 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in programming and systems design, \n        helping develop a user interface for artificial intelligence systems based on LLM technology.'}, {'role': 'user', 'content': 'a test sentence please'}]
+2023-11-22 18:26:48,334 - app - INFO - Updated conversation_id being returned: 153
+2023-11-23 08:23:00,283 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-23 08:23:00,285 - app - INFO - === New Request to /chat ===
+2023-11-23 08:23:00,286 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-23 08:23:00,287 - app - INFO - Received conversation_id: None
+2023-11-23 08:23:00,289 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Provide a test sentence please'}]
+2023-11-23 08:23:02,676 - app - INFO - Updated conversation_id being returned: 154
+2023-11-24 09:06:09,868 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-24 09:06:09,870 - app - INFO - Received temperature: 0.7
+2023-11-24 09:06:10,947 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Sure, here's a test sentence: \"The sun is shining brightly in the clear blue sky.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1700845566,
+  "id": "chatcmpl-8OTuwbNMCVAhCBAzT0S7FLLwCDSSl",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 20,
+    "prompt_tokens": 29,
+    "total_tokens": 49
+  }
+}
+2023-11-24 09:06:26,821 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-24 09:06:26,823 - app - INFO - Received temperature: 1
+2023-11-24 09:06:26,829 - app - INFO - Fetched conversation with id 155 from provided ID/session.
+2023-11-24 09:06:27,615 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Certainly! Here's another test sentence: \"She carefully poured the hot tea into the delicate porcelain cup.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1700845583,
+  "id": "chatcmpl-8OTvD6tFRe8km5PHynpaEzBzHf2Qj",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 21,
+    "prompt_tokens": 62,
+    "total_tokens": 83
+  }
+}
+2023-11-24 09:06:42,249 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-11-24 09:06:42,254 - app - INFO - Received temperature: 1.5
+2023-11-24 09:06:42,258 - app - INFO - Fetched conversation with id 155 from provided ID/session.

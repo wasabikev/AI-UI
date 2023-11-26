@@ -100,7 +100,9 @@ def get_conversations():
                            "history": json.loads(c.history), 
                            "model_name": c.model_name, 
                            "token_count": c.token_count,
-                           "updated_at": c.updated_at} 
+                           "updated_at": c.updated_at,
+                           "temperature": c.temperature} 
+
                           for c in conversations]
     return jsonify(conversations_dict)
 
@@ -116,7 +118,8 @@ def get_conversation(conversation_id):
         "title": conversation.title,
         "history": json.loads(conversation.history),
         "token_count": conversation.token_count,
-        'model_name': conversation.model_name
+        'model_name': conversation.model_name,
+        "temperature": conversation.temperature
     }
     return jsonify(conversation_dict)
 
@@ -221,18 +224,14 @@ def generate_summary(messages):
 def chat():
     messages = request.json.get('messages')
     model = request.json.get('model')  # Fetch the model
+    temperature = request.json.get('temperature')  # Fetch the temperature
 
-    # Log the selected model
+    # Log the selected model and temperature
     app.logger.info(f'Received model: {model}')
+    app.logger.info(f'Received temperature: {temperature}')
 
-    # If a conversation ID is provided, fetch that specific conversation
-    conversation = None
     conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
-
-    app.logger.info(f'=== New Request to /chat ===')
-    app.logger.info(f'Received model: {model}')
-    app.logger.info(f'Received conversation_id: {conversation_id}')
-    app.logger.info(f'Received messages: {messages}')
+    conversation = None
 
     if conversation_id:
         conversation = Conversation.query.get(conversation_id)
@@ -241,25 +240,32 @@ def chat():
         else:
             app.logger.info(f'No conversation found with id {conversation_id} from provided ID/session.')
 
+    # Preparing the payload for the OpenAI API
+    api_request_payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature  
+    }
+
+    # Log the request payload for debugging
+    app.logger.info(f"Sending request to OpenAI: {api_request_payload}")
+
+
     # Generating a response from the selected model
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages
-    )
+    response = openai.ChatCompletion.create(**api_request_payload)
     chat_output = response['choices'][0]['message']['content']
-    print("Response from OpenAI:", response)
+    app.logger.info("Response from OpenAI: {}".format(response))
 
     new_message = {"role": "assistant", "content": chat_output}
-    print("new message being added:", new_message)
     messages.append(new_message)  # Append AI's message to the list
-    
+
     if not conversation:
-        # Create a new Conversation object without setting its title yet
-        conversation = Conversation(history=json.dumps(messages))
-        
-        # Generate the title for the conversation (including user input and AI response)
+        # Create a new Conversation object with the temperature
+        conversation = Conversation(history=json.dumps(messages), temperature=temperature)
+
+        # Generate the title for the conversation
         conversation_title = generate_summary(messages)
-        
+
         # Update the title of the conversation
         conversation.title = conversation_title
         
@@ -269,34 +275,21 @@ def chat():
         # Store conversation ID in session
         session['conversation_id'] = conversation.id
     else:
-        app.logger.info(f'Updating conversation with id {conversation.id}. Previous history: {conversation.history}')
-        # If the conversation already exists, save the updated messages list as its history
+        # Update existing conversation
         conversation.history = json.dumps(messages)
-        app.logger.info(f'Updated history for conversation with id {conversation.id}: {conversation.history}')
+        conversation.temperature = temperature  # Update the temperature here
 
-        # Check for the 'generate_title_next' flag
-        if 'generate_title_next' in session and session['generate_title_next']:
-            # Use the user input and AI response to generate a title
-            conversation_title = generate_summary(messages)
-
-            # Update the title of the existing conversation
-            conversation.title = conversation_title
-            session.pop('generate_title_next', None)  # Remove the flag from the session
-
-            # Save the updated conversation to the database
-            db.session.commit()
+        db.session.commit()
 
     # Extract token data from OpenAI API's response
     token_data = {
-    'prompt_tokens': response.get('usage', {}).get('prompt_tokens', 0),
-    'completion_tokens': response.get('usage', {}).get('completion_tokens', 0),
-    'total_tokens': response.get('usage', {}).get('total_tokens', 0)
-}
-    # Add the model name to the conversation
-    conversation.model_name = model
+        'prompt_tokens': response.get('usage', {}).get('prompt_tokens', 0),
+        'completion_tokens': response.get('usage', {}).get('completion_tokens', 0),
+        'total_tokens': response.get('usage', {}).get('total_tokens', 0)
+    }
 
-    # Calculate the token count for the conversation and update it
-    # Assuming the API response provides a 'usage' field with 'total_tokens' (adjust if it's different)
+    # Update the model name and token count of the conversation
+    conversation.model_name = model
     conversation.token_count = token_data['total_tokens']
 
     # Commit changes made to the conversation object
@@ -304,16 +297,15 @@ def chat():
 
     # Update the session's conversation_id every time
     session['conversation_id'] = conversation.id
-    
-    #app.logger.info(f'Responding with formatted chat output: {formatted_chat_output}')
-    app.logger.info(f'Updated conversation_id being returned: {conversation.id}')
 
     return jsonify({
-        'chat_output': chat_output, #IMPORTANT to have this raw output for the chat interface
-        'conversation_id': conversation.id, 
-        'conversation_title': conversation.title, 
+        'chat_output': chat_output,
+        'conversation_id': conversation.id,
+        'conversation_title': conversation.title,
         'usage': token_data
     })
+
+
 
 @app.route('/get_active_conversation', methods=['GET'])
 def get_active_conversation():
