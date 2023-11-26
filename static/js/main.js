@@ -58,6 +58,18 @@ let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
 let currentSystemMessage = systemMessages[0].content; // Default system message
 
+document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
+    $('#temperatureModal').modal('show');
+});
+
+let selectedTemperature = 0.7; // Default temperature value
+
+document.getElementById("save-temperature-setting").addEventListener("click", function() {
+    selectedTemperature = parseFloat(document.querySelector('input[name="temperatureOptions"]:checked').value);
+    console.log("Selected Temperature: ", selectedTemperature);
+    $('#temperatureModal').modal('hide');
+});
+
 
 function createSystemMessageButton() {
     return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-regular fa-pen-to-square"></i></button>`;
@@ -267,17 +279,18 @@ function updateConversationList() {
             let newConversationListContent = '';
             // Add each conversation to the new content.
             data.forEach((conversation, index) => {
+                const temperatureInfo = (typeof conversation.temperature !== 'undefined' && conversation.temperature !== null) ? `${conversation.temperature}°` : 'N/A°';
                 newConversationListContent += `
                     <div class="conversation-item" data-id="${conversation.id}">
-                    <div class="conversation-title">${conversation.title}</div>
-                    <div class="conversation-meta">
-
-                        <span class="model-name" title="AI Model used for this conversation">LLM: ${conversation.model_name}</span>
+                        <div class="conversation-title">${conversation.title}</div>
+                        <div class="conversation-meta">
+                            <span class="model-name" title="AI Model used for this conversation">${conversation.model_name}</span>
+                            <span class="temperature-info" title="Temperature setting">${temperatureInfo}</span>
+                        </div>
                     </div>
-                </div>
                 `;
             });
-
+            
             // Replace conversation list content with new content
             $('#conversation-list').html(newConversationListContent);
             console.log('Conversation list updated.');
@@ -298,6 +311,7 @@ function updateConversationList() {
             console.error(`Error updating conversation list: ${error}`);
         });
 }
+
 
 
 $('#edit-title-btn').click(function() {
@@ -396,6 +410,9 @@ function loadConversation(conversationId) {
             // Also update the global model variable
             model = modelName;
 
+            // Retrieve and handle the temperature setting
+            selectedTemperature = data.temperature ?? 0.7; // Use the temperature from the data, or default to 0.7 if it's null/undefined
+
             // Update the token data in the UI
             const tokenCount = data.token_count || 0;
             showConversationControls(data.title || "AI &infin; UI", {prompt: 0, completion: 0, total: tokenCount});
@@ -403,6 +420,16 @@ function loadConversation(conversationId) {
             // Save this conversation id as the active conversation
             activeConversationId = conversationId;
             
+            // Update the UI to reflect the fetched temperature
+            document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
+                if (parseFloat(radio.value) === parseFloat(selectedTemperature)) {
+                    radio.checked = true;
+                } else {
+                    radio.checked = false;
+                }
+            });
+
+
             // Check if data.history is already an array, if not try parsing it
             let history;
             if (Array.isArray(data.history)) {
@@ -496,7 +523,12 @@ $('#chat-form').on('submit', function (e) {
 
     document.getElementById('loading').style.display = 'block';
     
-    let requestPayload = {messages: messages, model: model};
+    let requestPayload = {
+        messages: messages, 
+        model: model,
+        temperature: selectedTemperature
+    };
+
     if (activeConversationId !== null) {
        requestPayload.conversation_id = activeConversationId; 
     }

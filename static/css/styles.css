@@ -51,6 +51,34 @@ code {
     text-overflow: ellipsis;
  }
  
+ #temperature-adjust-btn {
+    margin-left: 5px;
+}
+
+.conversation-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.temperature-info {
+    font-style: italic;
+    color: #FFFFFF; /* Adjust the color as needed */
+}
+
+.temperature-use-case {
+    font-size: smaller;
+    color: #8A7187;
+}
+
+.custom-modal-width {
+    max-width: 50%; /* Adjust the width as needed */
+}
+
+.form-check {
+    margin-bottom: 20px; /* Adjust the space between options */
+}
+
 
 #edit-title-btn, #delete-conversation-btn {
     vertical-align: middle; /* Ensures vertical alignment */
