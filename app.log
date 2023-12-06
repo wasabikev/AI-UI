@@ -1,69 +1,22 @@
-2023-11-26 08:33:00,200 - app - INFO - Response from OpenAI: {
+2023-12-06 13:35:40,904 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "message": {
-        "content": "Certainly, here's a test message taking into account critical thinking and analysis:\n\n\"The adoption of artificial intelligence in various fields is steadily increasing. While this technological advancement bodes well for efficiency and productivity, it's crucial to critically analyze its implications on our society and the labor market. Questions arise about job displacement due to automation and issues about privacy and security. Consequently, it's essential to establish policies that ensure fair use of AI, promote continuous learning for workers, and safeguard our privacy rights. This step requires decision-makers to keep their perspectives informed, rational, and well-balanced to maximize the benefits of AI technology while mitigating its potential risks.\"",
+        "content": "When the traditional uninstaller is not working, there are a few alternative methods you can try to uninstall the app. Here are some steps you can take:\n\n1. Use the Control Panel (Windows) or Applications folder (Mac): \n   - For Windows: Go to Control Panel > Programs > Programs and Features. Locate the app you want to uninstall, right-click on it, and select \"Uninstall\" or \"Remove.\"\n   - For Mac: Open the Applications folder, find the app you want to uninstall, right-click on it, and select \"Move to Trash.\"\n\n2. Use a third-party uninstaller tool:\n   - There are several third-party uninstaller tools available that can help you remove stubborn or problematic apps. Examples include Revo Uninstaller (Windows) and AppCleaner (Mac). Download and install one of these tools, then use it to uninstall the app in question.\n\n3. Use the app's own uninstaller:\n   - Some apps come with their own uninstaller. Look for an uninstaller executable file in the app's installation directory or check the app's documentation or website for instructions on how to uninstall it.\n\n4. Manually delete app files:\n   - If none of the above methods work, you can try manually deleting the app's files. This process can be more complex and should only be attempted if you are confident in your technical abilities. \n   - Locate the app's installation directory (usually in the \"Program Files\" or \"Applications\" folder). Delete the entire folder associated with the app.\n   - Additionally, you may need to remove related files and folders from other locations, such as the system registry (Windows) or Library folders (Mac). Be cautious when modifying system files, as deleting the wrong files can cause system instability.\n\nIt's important to note that manually deleting app files can have unintended consequences, such as leaving behind orphaned files or registry entries that may impact system stability. Always exercise caution and consider creating a backup or system restore point before attempting manual deletion.\n\nAdditionally, if you are uninstalling an app because it's causing issues, it may be worth troubleshooting the issue before uninstallation. Reach out to the app's support or search online for known issues and solutions.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1701016366,
-  "id": "chatcmpl-8PCLm1H9EcDCsoI9kg1FwrYpoDHHb",
-  "model": "gpt-4-0613",
+  "created": 1701898530,
+  "id": "chatcmpl-8StqEl99ZmM5CIdCC2BRs40TicAVp",
+  "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
+  "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 128,
-    "prompt_tokens": 29,
-    "total_tokens": 157
-  }
-}
-2023-11-26 08:37:22,380 - app - INFO - Received model: gpt-4-0613
-2023-11-26 08:37:22,382 - app - INFO - Received temperature: 0.3
-2023-11-26 08:37:22,383 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test sentence'}], 'temperature': 0.3}
-2023-11-26 08:37:23,858 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "\"The rapid development of technology has significantly impacted various sectors of society, from education to healthcare.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701016636,
-  "id": "chatcmpl-8PCQ8AykmCtkbluwBYCd5D4MTkW96",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "usage": {
-    "completion_tokens": 18,
-    "prompt_tokens": 29,
-    "total_tokens": 47
-  }
-}
-2023-11-26 08:37:57,437 - app - INFO - Received model: gpt-4-0613
-2023-11-26 08:37:57,439 - app - INFO - Received temperature: 1
-2023-11-26 08:37:57,441 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test sentence'}], 'temperature': 1}
-2023-11-26 08:37:59,762 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "\"Despite recognizing the profound health impact of junk food, the government has taken little action to reduce its consumption, revealing a disconnect between public health interests and policymaking.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701016671,
-  "id": "chatcmpl-8PCQhfyzUfMxyBXBj8qCQOQOHMQ8L",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "usage": {
-    "completion_tokens": 33,
-    "prompt_tokens": 29,
-    "total_tokens": 62
+    "completion_tokens": 449,
+    "prompt_tokens": 143,
+    "total_tokens": 592
   }
 }

@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_bcrypt import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -28,7 +29,6 @@ class Conversation(db.Model):
     confidence = db.Column(db.Float)    # AI model's confidence score for the conversation
     intent = db.Column(db.String(120))    # Intent recognized in the conversation (if any)
     entities = db.Column(db.JSON)    # Entities recognized in the conversation (if any)
-    code_abstracts = db.relationship('CodeAbstract', backref='conversation', lazy=True)
     temperature = db.Column(db.Float)    # Temperature setting for the conversation
     prompt_template = db.Column(db.String(500))    # Template of the prompt used in the conversation
 
@@ -59,25 +59,6 @@ class Conversation(db.Model):
             # Add other fields as necessary
         }
 
-class CodeAbstract(db.Model):
-    __tablename__ = 'codeabstract'
-
-    id = db.Column(db.Integer, primary_key=True)
-    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
-    file_name = db.Column(db.String(255), nullable=False)
-    code_abstract = db.Column(db.Text, nullable=True)
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    file_type = db.Column(db.String(50))
-
-class ChangesLog(db.Model):
-    __tablename__ = 'changeslog'
-
-    id = db.Column(db.Integer, primary_key=True)
-    abstract_id = db.Column(db.Integer, db.ForeignKey('codeabstract.id'), nullable=False)
-    change_description = db.Column(db.Text, nullable=True)
-    change_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    change_type = db.Column(db.String(50))
-   
 class User(db.Model):
     __tablename__ = 'user'
 
@@ -89,3 +70,9 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
