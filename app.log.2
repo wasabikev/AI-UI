@@ -1,112 +1,4 @@
-2023-11-26 08:33:00,200 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "Certainly, here's a test message taking into account critical thinking and analysis:\n\n\"The adoption of artificial intelligence in various fields is steadily increasing. While this technological advancement bodes well for efficiency and productivity, it's crucial to critically analyze its implications on our society and the labor market. Questions arise about job displacement due to automation and issues about privacy and security. Consequently, it's essential to establish policies that ensure fair use of AI, promote continuous learning for workers, and safeguard our privacy rights. This step requires decision-makers to keep their perspectives informed, rational, and well-balanced to maximize the benefits of AI technology while mitigating its potential risks.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701016366,
-  "id": "chatcmpl-8PCLm1H9EcDCsoI9kg1FwrYpoDHHb",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "usage": {
-    "completion_tokens": 128,
-    "prompt_tokens": 29,
-    "total_tokens": 157
-  }
-}
-2023-11-26 08:37:22,380 - app - INFO - Received model: gpt-4-0613
-2023-11-26 08:37:22,382 - app - INFO - Received temperature: 0.3
-2023-11-26 08:37:22,383 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test sentence'}], 'temperature': 0.3}
-2023-11-26 08:37:23,858 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "\"The rapid development of technology has significantly impacted various sectors of society, from education to healthcare.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701016636,
-  "id": "chatcmpl-8PCQ8AykmCtkbluwBYCd5D4MTkW96",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "usage": {
-    "completion_tokens": 18,
-    "prompt_tokens": 29,
-    "total_tokens": 47
-  }
-}
-2023-11-26 08:37:57,437 - app - INFO - Received model: gpt-4-0613
-2023-11-26 08:37:57,439 - app - INFO - Received temperature: 1
-2023-11-26 08:37:57,441 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test sentence'}], 'temperature': 1}
-2023-11-26 08:37:59,762 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "\"Despite recognizing the profound health impact of junk food, the government has taken little action to reduce its consumption, revealing a disconnect between public health interests and policymaking.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701016671,
-  "id": "chatcmpl-8PCQhfyzUfMxyBXBj8qCQOQOHMQ8L",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "usage": {
-    "completion_tokens": 33,
-    "prompt_tokens": 29,
-    "total_tokens": 62
-  }
-}
-2023-12-06 13:16:42,585 - app - INFO - Received model: gpt-4-0613
-2023-12-06 13:16:42,587 - app - INFO - Received temperature: 0.7
-2023-12-06 13:16:42,589 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Provide a test sentence please'}], 'temperature': 0.7}
-2023-12-06 13:16:46,399 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "\"Despite the heavy rains, the farmer decided to plant the seeds, believing that the weather forecast predicting sunnier days ahead was accurate.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701897403,
-  "id": "chatcmpl-8StY3TrRohssotYC8V3Qyz38i8bF7",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 27,
-    "prompt_tokens": 29,
-    "total_tokens": 56
-  }
-}
-2023-12-06 13:30:40,849 - app - ERROR - Exception on /api/conversations [GET]
-Traceback (most recent call last):
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\clsregistry.py", line 515, in _resolve_name
-    rval = d[token]
-           ~^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\util\_collections.py", line 346, in __missing__
-    self[key] = val = self.creator(key)
-                      ^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\clsregistry.py", line 483, in _access_cls
-    return self.fallback[key]
-           ~~~~~~~~~~~~~^^^^^
-KeyError: 'CodeAbstract'
-
-The above exception was the direct cause of the following exception:
-
+2023-12-09 14:32:43,688 - app - ERROR - Exception on /admin [GET]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -123,43 +15,81 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 95, in get_conversations
-    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
-                    ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\flask_sqlalchemy\model.py", line 30, in __get__
-    return cls.query_class(
-           ^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 273, in __init__
-    self._set_entities(entities)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 282, in _set_entities
-    self._raw_columns = [
-                        ^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 283, in <listcomp>
-    coercions.expect(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\coercions.py", line 406, in expect
-    insp._post_inspect
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\util\langhelpers.py", line 1256, in __get__
-    obj.__dict__[self.__name__] = result = self.fget(obj)
-                                           ^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 2707, in _post_inspect
-    self._check_configure()
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 2386, in _check_configure
-    _configure_registries({self.registry}, cascade=True)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 4198, in _configure_registries
-    _do_configure_registries(registries, cascade)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 4239, in _do_configure_registries
-    mapper._post_configure_properties()
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 2403, in _post_configure_properties
-    prop.init()
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\interfaces.py", line 578, in init
-    self.do_init()
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\relationships.py", line 1633, in do_init
-    self._setup_entity()
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\relationships.py", line 1850, in _setup_entity
-    self._clsregistry_resolve_name(argument)(),
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\clsregistry.py", line 519, in _resolve_name
-    self._raise_for_name(name, err)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\clsregistry.py", line 500, in _raise_for_name
-    raise exc.InvalidRequestError(
-sqlalchemy.exc.InvalidRequestError: When initializing mapper Mapper[Conversation(conversation)], expression 'CodeAbstract' failed to locate a name ('CodeAbstract'). If this is a class name, consider adding this relationship() to the <class 'models.Conversation'> class after both dependent classes have been defined.
+  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 13, in admin_dashboard
+    return render_template('admin.html', users=users)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 36, in top-level template code
+    <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm">Delete</a>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1697, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1686, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\werkzeug\routing\map.py", line 947, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'delete_user' with values ['user_id']. Did you mean 'auth.delete_user' instead?
+2023-12-09 14:50:19,850 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-12-09 14:50:19,851 - app - INFO - Received temperature: 0.7
+2023-12-09 14:50:19,852 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
+2023-12-09 14:50:20,849 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Sure! Here's a test sentence for you: \"The cat jumped over the fence.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1702162219,
+  "id": "chatcmpl-8U0RHkfaWGZJOhcm1sguS4UT4VNYG",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 18,
+    "prompt_tokens": 28,
+    "total_tokens": 46
+  }
+}
+2023-12-09 15:31:47,930 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-12-09 15:31:47,932 - app - INFO - Received temperature: 0.7
+2023-12-09 15:31:47,933 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence about a figit spinner'}], 'temperature': 0.7}
+2023-12-09 15:31:48,975 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "The fidget spinner is a small, handheld device that can be spun between the fingers, often used as a tool to help alleviate stress or anxiety.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1702164707,
+  "id": "chatcmpl-8U15PxIL50le2DJeqLRU11qrAqfWi",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 30,
+    "prompt_tokens": 32,
+    "total_tokens": 62
+  }
+}

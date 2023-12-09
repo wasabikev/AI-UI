@@ -40,14 +40,19 @@
         <div class="row full-height full-height-row">
             <!-- Sidebar -->
             <aside class="col-2 sidebar">
-                <button id="new-chat-btn" class="btn btn-info">+ New Chat</button>
-                 <!-- Button for direct view of database entries -->
+                <button id="new-chat-btn" class="btn btn-info">+ New</button>
+                <!-- Button for direct view of database entries -->
                 <button id="api-conversations-btn" class="btn btn-info ml-2">
                     <i class="fa-solid fa-database text-white"></i>
                 </button>
+                <!-- Button for accessing Admin Dashboard -->
+                <button id="admin-dashboard-btn" class="btn btn-info ml-2">
+                    <i class="fa-solid fa-gear text-white"></i>
+                </button>
                 <div id="conversation-list"></div>
             </aside>
-
+            
+            
             <!-- Main content -->
             <main class="col-10" style="padding-left: 0; padding-right: 0;">
                 <header class="row align-items-center py-4" style="min-height: 100px;">
@@ -213,6 +218,11 @@
         });
     </script>
 
+    <script>
+        document.getElementById("admin-dashboard-btn").addEventListener("click", function() {
+            window.location.href = '/admin'; // Redirect to the Admin Dashboard route
+        });
+    </script>
 
 
 

@@ -12,6 +12,18 @@ body, html {
     flex: 1 0 auto;
 }
 
+/* Adjust the margin of the Admin Dashboard button */
+#admin-dashboard-btn {
+    margin-top: -15px; /* Pull the button upwards */
+}
+
+/* Ensure buttons in the sidebar have consistent bottom margin */
+.sidebar button {
+    margin-bottom: 10px; /* Adjust the space below each button */
+}
+
+
+
 #conversation-title {
     line-height: 1.5; /* or any other appropriate value */
     white-space: nowrap;
@@ -21,6 +33,10 @@ body, html {
     max-width: 100%; 
     margin-left: 15px; /* Optional: Adds some spacing */
     vertical-align: middle; /* Aligns it vertically with adjacent inline elements */
+}
+
+.loading-container {
+    margin-bottom: 20px;
 }
 
 #token-data {
@@ -203,7 +219,7 @@ i.fas.fa-robot {
     position: fixed;
     bottom: 10%;  
     left: 18%;   
-    display: flex;   Makes its children display in a line */
+    display: flex;  /* Makes its children display in a line */
     align-items: center;  /* Vertically aligns children in the center */
     background-color: transparent; /* Ensures the background is transparent */
     z-index: 999;  /* Ensures this layer stays on top */
