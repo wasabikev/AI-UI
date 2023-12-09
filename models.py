@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_bcrypt import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
@@ -59,14 +60,22 @@ class Conversation(db.Model):
             # Add other fields as necessary
         }
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'user'
 
-    id = db.Column(db.Integer, primary_key=True)  # Unique ID for the user
-    username = db.Column(db.String(80), unique=True, nullable=False)  # Unique username for the user
-    email = db.Column(db.String(120), unique=True, nullable=False)  # Unique email address for the user
-    password_hash = db.Column(db.String(128))  # Hashed password for the user
-    conversations = db.relationship('Conversation', backref='user', lazy=True)  # Relationship to the Conversation model
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128))
+    is_admin = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(20), default="Pending")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+    conversations = db.relationship('Conversation', backref='user', lazy=True)
+
+    # Additional methods...
+
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -76,3 +85,15 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+class UserUsage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    api_used = db.Column(db.String(50))
+    tokens_used = db.Column(db.Integer)
+    session_start = db.Column(db.DateTime)
+    session_end = db.Column(db.DateTime)
+    cost = db.Column(db.Float)
+
+    user = db.relationship('User', backref='usage')
+ 

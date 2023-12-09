@@ -1,22 +1,77 @@
-2023-12-06 13:35:40,904 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "When the traditional uninstaller is not working, there are a few alternative methods you can try to uninstall the app. Here are some steps you can take:\n\n1. Use the Control Panel (Windows) or Applications folder (Mac): \n   - For Windows: Go to Control Panel > Programs > Programs and Features. Locate the app you want to uninstall, right-click on it, and select \"Uninstall\" or \"Remove.\"\n   - For Mac: Open the Applications folder, find the app you want to uninstall, right-click on it, and select \"Move to Trash.\"\n\n2. Use a third-party uninstaller tool:\n   - There are several third-party uninstaller tools available that can help you remove stubborn or problematic apps. Examples include Revo Uninstaller (Windows) and AppCleaner (Mac). Download and install one of these tools, then use it to uninstall the app in question.\n\n3. Use the app's own uninstaller:\n   - Some apps come with their own uninstaller. Look for an uninstaller executable file in the app's installation directory or check the app's documentation or website for instructions on how to uninstall it.\n\n4. Manually delete app files:\n   - If none of the above methods work, you can try manually deleting the app's files. This process can be more complex and should only be attempted if you are confident in your technical abilities. \n   - Locate the app's installation directory (usually in the \"Program Files\" or \"Applications\" folder). Delete the entire folder associated with the app.\n   - Additionally, you may need to remove related files and folders from other locations, such as the system registry (Windows) or Library folders (Mac). Be cautious when modifying system files, as deleting the wrong files can cause system instability.\n\nIt's important to note that manually deleting app files can have unintended consequences, such as leaving behind orphaned files or registry entries that may impact system stability. Always exercise caution and consider creating a backup or system restore point before attempting manual deletion.\n\nAdditionally, if you are uninstalling an app because it's causing issues, it may be worth troubleshooting the issue before uninstallation. Reach out to the app's support or search online for known issues and solutions.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701898530,
-  "id": "chatcmpl-8StqEl99ZmM5CIdCC2BRs40TicAVp",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 449,
-    "prompt_tokens": 143,
-    "total_tokens": 592
-  }
-}
+2023-12-09 15:46:15,834 - app - ERROR - Exception on /login [POST]
+Traceback (most recent call last):
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column user.is_admin does not exist
+LINE 1: ...mail, "user".password_hash AS user_password_hash, "user".is_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 36, in login
+    user = User.query.filter_by(username=username).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2747, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2846, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column user.is_admin does not exist
+LINE 1: ...mail, "user".password_hash AS user_password_hash, "user".is_...
+                                                             ^
+
+[SQL: SELECT "user".id AS user_id, "user".username AS user_username, "user".email AS user_email, "user".password_hash AS user_password_hash, "user".is_admin AS user_is_admin, "user".status AS user_status, "user".created_at AS user_created_at, "user".updated_at AS user_updated_at, "user".last_login AS user_last_login 
+FROM "user" 
+WHERE "user".username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'kevina', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
