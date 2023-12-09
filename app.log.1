@@ -1,4 +1,16 @@
-2023-12-06 13:30:47,480 - app - ERROR - Exception on /api/conversations [GET]
+2023-12-09 15:46:06,192 - app - ERROR - Exception on /login [POST]
+Traceback (most recent call last):
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column user.is_admin does not exist
+LINE 1: ...mail, "user".password_hash AS user_password_hash, "user".is_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -15,103 +27,51 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 95, in get_conversations
-    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
-                    ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\flask_sqlalchemy\model.py", line 30, in __get__
-    return cls.query_class(
-           ^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 273, in __init__
-    self._set_entities(entities)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 282, in _set_entities
-    self._raw_columns = [
-                        ^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 283, in <listcomp>
-    coercions.expect(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\coercions.py", line 406, in expect
-    insp._post_inspect
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\util\langhelpers.py", line 1256, in __get__
-    obj.__dict__[self.__name__] = result = self.fget(obj)
-                                           ^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 2707, in _post_inspect
-    self._check_configure()
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 2386, in _check_configure
-    _configure_registries({self.registry}, cascade=True)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 4198, in _configure_registries
-    _do_configure_registries(registries, cascade)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 4235, in _do_configure_registries
-    raise e
-sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Conversation(conversation)]'. Original exception was: When initializing mapper Mapper[Conversation(conversation)], expression 'CodeAbstract' failed to locate a name ('CodeAbstract'). If this is a class name, consider adding this relationship() to the <class 'models.Conversation'> class after both dependent classes have been defined.
-2023-12-06 13:30:48,839 - app - ERROR - Exception on /api/conversations [GET]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 95, in get_conversations
-    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
-                    ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\flask_sqlalchemy\model.py", line 30, in __get__
-    return cls.query_class(
-           ^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 273, in __init__
-    self._set_entities(entities)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 282, in _set_entities
-    self._raw_columns = [
-                        ^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 283, in <listcomp>
-    coercions.expect(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\coercions.py", line 406, in expect
-    insp._post_inspect
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\util\langhelpers.py", line 1256, in __get__
-    obj.__dict__[self.__name__] = result = self.fget(obj)
-                                           ^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 2707, in _post_inspect
-    self._check_configure()
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 2386, in _check_configure
-    _configure_registries({self.registry}, cascade=True)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 4198, in _configure_registries
-    _do_configure_registries(registries, cascade)
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\mapper.py", line 4235, in _do_configure_registries
-    raise e
-sqlalchemy.exc.InvalidRequestError: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[Conversation(conversation)]'. Original exception was: When initializing mapper Mapper[Conversation(conversation)], expression 'CodeAbstract' failed to locate a name ('CodeAbstract'). If this is a class name, consider adding this relationship() to the <class 'models.Conversation'> class after both dependent classes have been defined.
-2023-12-06 13:34:52,961 - app - INFO - Received model: gpt-4-0613
-2023-12-06 13:34:52,963 - app - INFO - Received temperature: 0.7
-2023-12-06 13:34:52,968 - app - INFO - Fetched conversation with id 167 from provided ID/session.
-2023-12-06 13:34:52,970 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'Provide a test sentence please', 'role': 'user'}, {'content': '"Despite the heavy rains, the farmer decided to plant the seeds, believing that the weather forecast predicting sunnier days ahead was accurate."', 'role': 'assistant'}, {'role': 'user', 'content': 'another test sentence please'}], 'temperature': 0.7}
-2023-12-06 13:34:54,942 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "\"Although the new restaurant in town received glowing reviews, Sarah remained skeptical until she could try their food herself.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1701898493,
-  "id": "chatcmpl-8StpdE4IMaT7LMHPMpjkOuSwA1jBz",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 22,
-    "prompt_tokens": 68,
-    "total_tokens": 90
-  }
-}
-2023-12-06 13:35:30,155 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-12-06 13:35:30,157 - app - INFO - Received temperature: 0.7
-2023-12-06 13:35:30,158 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': "You are a knowledgeable assistant that specializes in IT operations. Please provide \n        accurate and factual information, explaining your reasoning step-by-step where possible. Do not \n        guess or make things up. If you're unsure about something, it's important to say so. Try to provide \n        sources or references to your knowledge wherever possible. You should also reflect on your answer and \n        consider any possible implications that could result in instability or disruption to production systems.\n        I will provide a troubleshooting or IT scenario. You will then provide feedback or insights on how to proceed."}, {'role': 'user', 'content': 'How to uninstall an app when the traditioanl uninstaller is not working?'}], 'temperature': 0.7}
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 36, in login
+    user = User.query.filter_by(username=username).first()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2747, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2846, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column user.is_admin does not exist
+LINE 1: ...mail, "user".password_hash AS user_password_hash, "user".is_...
+                                                             ^
+
+[SQL: SELECT "user".id AS user_id, "user".username AS user_username, "user".email AS user_email, "user".password_hash AS user_password_hash, "user".is_admin AS user_is_admin, "user".status AS user_status, "user".created_at AS user_created_at, "user".updated_at AS user_updated_at, "user".last_login AS user_last_login 
+FROM "user" 
+WHERE "user".username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'kevina', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)

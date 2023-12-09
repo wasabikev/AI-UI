@@ -592,25 +592,29 @@ $('#chat-form').on('submit', function (e) {
     })
 });
 
-// This function is called when the user clicks the "New chat" button.
+// "New Chat" Button Click Event
 document.getElementById("new-chat-btn").addEventListener("click", function() {
-    fetch('/clear-session', {
+    fetch('/reset-conversation', {
         method: 'POST',
     })
     .then(response => response.json())
     .then(data => {
-        console.log(data);
- 
-        activeConversationId = null; // Reset the active conversation
-        
-        // Use a relative URL to stay on the current host
-        window.location.href = '/';
-        
+        console.log(data.message);
+        window.location.href = '/'; // Redirect to the base URL
     })
     .catch((error) => {
         console.error('Error:', error);
     });
 });
+
+
+
+
+
+
+
+
+
 
 
 

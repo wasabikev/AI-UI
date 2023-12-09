@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template, url_for, redirect, session
 from flask_cors import CORS
 from text_processing import format_text
+from flask_login import LoginManager, current_user, login_required
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -8,6 +9,9 @@ load_dotenv()
 # Dependencies for database
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+
+# Dependencies for authentication
+from auth import auth  # Import the auth blueprint
 
 import openai
 import os
@@ -19,14 +23,31 @@ import json
 from models import db, Folder, Conversation
 from logging.handlers import RotatingFileHandler # for log file rotation
 
+from auth import auth as auth_blueprint  # Import the auth blueprint
+
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)  # Set logging level to INFO
 handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3) # Create log file with max size of 10KB and max number of 3 files
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 app.logger.addHandler(handler)
+app.register_blueprint(auth_blueprint)  
+
+
+# Initialize the login manager
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 CORS(app)  # Cross-Origin Resource Sharing
+
+# User loader function
+@login_manager.user_loader
+def load_user(user_id):
+    from models import User  # Import here to avoid circular dependencies
+    return User.query.get(int(user_id))
+
+# Enable auto-reload of templates
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Set up database
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
@@ -38,6 +59,15 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 # Initialize database
 db.init_app(app)
 migrate = Migrate(app, db)
+
+@app.route('/chat/<int:conversation_id>')
+@login_required
+def chat_interface(conversation_id):
+    conversation = Conversation.query.get_or_404(conversation_id)
+    return render_template('chat.html', conversation=conversation)
+
+
+
 
 # Fetch all conversations from the database and convert them to a list of dictionaries
 def get_conversations_from_db():
@@ -183,15 +213,23 @@ def delete_conversation(conversation_id):
         return jsonify({"error": str(e)}), 500
 
 
-
-
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if openai.api_key is None:
     raise ValueError("OPENAI_API_KEY environment variable not set")
 
 @app.route('/')
 def home():
-    return render_template('chat.html', converstation=None)
+    # Check if user is authenticated
+    if current_user.is_authenticated:
+        # Clear conversation-related session data for a fresh start
+        if 'conversation_id' in session:
+            del session['conversation_id']
+        # If logged in, show the main chat page or dashboard
+        return render_template('chat.html', conversation=None)
+    else:
+        # If not logged in, redirect to the login page
+        return redirect(url_for('auth.login'))
+
 
 @app.route('/clear-session', methods=['POST'])
 def clear_session():
@@ -220,6 +258,16 @@ def generate_summary(messages):
 
     return summary
 
+
+@app.route('/reset-conversation', methods=['POST'])
+@login_required
+def reset_conversation():
+    if 'conversation_id' in session:
+        del session['conversation_id']
+    return jsonify({"message": "Conversation reset successful"})
+
+
+
 @app.route('/chat', methods=['POST'])
 def chat():
     messages = request.json.get('messages')
@@ -235,10 +283,12 @@ def chat():
 
     if conversation_id:
         conversation = Conversation.query.get(conversation_id)
-        if conversation:
-            app.logger.info(f'Fetched conversation with id {conversation_id} from provided ID/session.')
+        # Check if the conversation belongs to the current user
+        if conversation and conversation.user_id == current_user.id:
+            app.logger.info(f'Using existing conversation with id {conversation_id}.')
         else:
-            app.logger.info(f'No conversation found with id {conversation_id} from provided ID/session.')
+            app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
+            conversation = None  # Reset to ensure a new conversation is started
 
     # Preparing the payload for the OpenAI API
     api_request_payload = {
@@ -315,6 +365,6 @@ def get_active_conversation():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8080))  # Get port from PORT environment variable or default to 8080
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=port)
 
 

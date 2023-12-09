@@ -1,13 +1,17 @@
 let messages = [
     {
         "role": "system",
-        "content": `You are a knowledgeable assistant that specializes in programming and systems design, 
-        helping develop a user interface for artificial intelligence systems based on LLM technology.`
+        "content": `You are a knowledgeable assistant that specializes in critical thinking and analysis.`
     },
 ];
 
 
 let systemMessages = [
+    {
+        "name": "Default System Message",
+        "role": "system",
+        "content": `You are a knowledgeable assistant that specializes in critical thinking and analysis.`
+    },
     {
         "name": "LLM User Interface",
         "role": "system",
@@ -53,6 +57,18 @@ let systemMessages = [
 let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
 let currentSystemMessage = systemMessages[0].content; // Default system message
+
+document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
+    $('#temperatureModal').modal('show');
+});
+
+let selectedTemperature = 0.7; // Default temperature value
+
+document.getElementById("save-temperature-setting").addEventListener("click", function() {
+    selectedTemperature = parseFloat(document.querySelector('input[name="temperatureOptions"]:checked').value);
+    console.log("Selected Temperature: ", selectedTemperature);
+    $('#temperatureModal').modal('hide');
+});
 
 
 function createSystemMessageButton() {
@@ -263,17 +279,18 @@ function updateConversationList() {
             let newConversationListContent = '';
             // Add each conversation to the new content.
             data.forEach((conversation, index) => {
+                const temperatureInfo = (typeof conversation.temperature !== 'undefined' && conversation.temperature !== null) ? `${conversation.temperature}°` : 'N/A°';
                 newConversationListContent += `
                     <div class="conversation-item" data-id="${conversation.id}">
-                    <div class="conversation-title">${conversation.title}</div>
-                    <div class="conversation-meta">
-
-                        <span class="model-name" title="AI Model used for this conversation">LLM: ${conversation.model_name}</span>
+                        <div class="conversation-title">${conversation.title}</div>
+                        <div class="conversation-meta">
+                            <span class="model-name" title="AI Model used for this conversation">${conversation.model_name}</span>
+                            <span class="temperature-info" title="Temperature setting">${temperatureInfo}</span>
+                        </div>
                     </div>
-                </div>
                 `;
             });
-
+            
             // Replace conversation list content with new content
             $('#conversation-list').html(newConversationListContent);
             console.log('Conversation list updated.');
@@ -294,6 +311,7 @@ function updateConversationList() {
             console.error(`Error updating conversation list: ${error}`);
         });
 }
+
 
 
 $('#edit-title-btn').click(function() {
@@ -332,7 +350,7 @@ $('#delete-conversation-btn').click(function() {
             method: 'DELETE',
             success: function(response) {
                 // Upon successful deletion, redirect to the main URL.
-                window.location.href = 'http://127.0.0.1:5000/';
+                window.location.href = '/';
             },
             error: function(error) {
                 console.error("Error deleting conversation:", error);
@@ -340,6 +358,7 @@ $('#delete-conversation-btn').click(function() {
         });
     }
 });
+
 
 
 // This function shows the conversation controls (title, rename and delete buttons)
@@ -391,6 +410,9 @@ function loadConversation(conversationId) {
             // Also update the global model variable
             model = modelName;
 
+            // Retrieve and handle the temperature setting
+            selectedTemperature = data.temperature ?? 0.7; // Use the temperature from the data, or default to 0.7 if it's null/undefined
+
             // Update the token data in the UI
             const tokenCount = data.token_count || 0;
             showConversationControls(data.title || "AI &infin; UI", {prompt: 0, completion: 0, total: tokenCount});
@@ -398,6 +420,16 @@ function loadConversation(conversationId) {
             // Save this conversation id as the active conversation
             activeConversationId = conversationId;
             
+            // Update the UI to reflect the fetched temperature
+            document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
+                if (parseFloat(radio.value) === parseFloat(selectedTemperature)) {
+                    radio.checked = true;
+                } else {
+                    radio.checked = false;
+                }
+            });
+
+
             // Check if data.history is already an array, if not try parsing it
             let history;
             if (Array.isArray(data.history)) {
@@ -491,7 +523,12 @@ $('#chat-form').on('submit', function (e) {
 
     document.getElementById('loading').style.display = 'block';
     
-    let requestPayload = {messages: messages, model: model};
+    let requestPayload = {
+        messages: messages, 
+        model: model,
+        temperature: selectedTemperature
+    };
+
     if (activeConversationId !== null) {
        requestPayload.conversation_id = activeConversationId; 
     }
@@ -555,24 +592,16 @@ $('#chat-form').on('submit', function (e) {
     })
 });
 
-// This function is called when the user clicks the "New chat" button.
 document.getElementById("new-chat-btn").addEventListener("click", function() {
-    fetch('/clear-session', {
-        method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data);
- 
-        activeConversationId = null; // Reset the active conversation
-        
-        window.location.href = 'http://127.0.0.1:5000/';
-        
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
+    // Simplified code
+    window.location.assign('/');
 });
+
+
+
+
+
+
 
 
 $(window).on('load', function () {  // This function is called when the page loads.
