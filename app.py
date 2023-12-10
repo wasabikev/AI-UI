@@ -20,12 +20,14 @@ import logging
 import requests
 import json
 
-from models import db, Folder, Conversation
+from models import db, Folder, Conversation, User
 from logging.handlers import RotatingFileHandler # for log file rotation
+from werkzeug.security import generate_password_hash
 
 from auth import auth as auth_blueprint  # Import the auth blueprint
 
 app = Flask(__name__)
+
 app.logger.setLevel(logging.INFO)  # Set logging level to INFO
 handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3) # Create log file with max size of 10KB and max number of 3 files
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -60,13 +62,34 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# Backup Admin user creation logic
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') # set this in your .env file
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+ADMIN_EMAIL = "admin@backup.com" # Change this to your own email address
+
+with app.app_context():
+    # Check if the admin user exists
+    admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+
+    if not admin_user and ADMIN_USERNAME and ADMIN_PASSWORD:
+        # Create a new admin user
+        hashed_password = generate_password_hash(ADMIN_PASSWORD)
+        new_admin = User(username=ADMIN_USERNAME, email=ADMIN_EMAIL,
+                         password_hash=hashed_password, is_admin=True, status="Active")
+
+        try:
+            db.session.add(new_admin)
+            db.session.commit()
+            print("Admin user created")
+        except Exception as e:
+            print(f"Error creating admin user: {e}")
+
+
 @app.route('/chat/<int:conversation_id>')
 @login_required
 def chat_interface(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
     return render_template('chat.html', conversation=conversation)
-
-
 
 
 # Fetch all conversations from the database and convert them to a list of dictionaries
