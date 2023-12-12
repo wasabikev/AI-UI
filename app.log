@@ -1,77 +1,22 @@
-2023-12-09 15:46:15,834 - app - ERROR - Exception on /login [POST]
-Traceback (most recent call last):
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.UndefinedColumn: column user.is_admin does not exist
-LINE 1: ...mail, "user".password_hash AS user_password_hash, "user".is_...
-                                                             ^
-
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 36, in login
-    user = User.query.filter_by(username=username).first()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2747, in first
-    return self.limit(1)._iter().first()  # type: ignore
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\query.py", line 2846, in _iter
-    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
-                                                  ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\AppData\Roaming\Python\Python311\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column user.is_admin does not exist
-LINE 1: ...mail, "user".password_hash AS user_password_hash, "user".is_...
-                                                             ^
-
-[SQL: SELECT "user".id AS user_id, "user".username AS user_username, "user".email AS user_email, "user".password_hash AS user_password_hash, "user".is_admin AS user_is_admin, "user".status AS user_status, "user".created_at AS user_created_at, "user".updated_at AS user_updated_at, "user".last_login AS user_last_login 
-FROM "user" 
-WHERE "user".username = %(username_1)s 
- LIMIT %(param_1)s]
-[parameters: {'username_1': 'kevina', 'param_1': 1}]
-(Background on this error at: https://sqlalche.me/e/20/f405)
+2023-12-10 21:01:33,996 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Certainly! The fidget spinner is a popular toy that became a trend in recent years. It consists of a central bearing with two or more prongs extending outwards, each with a weighted disk or ball attached. The user holds the center bearing and flicks one of the prongs, causing the spinner to spin rapidly. \n\nThe main purpose of a fidget spinner is to provide a sensory experience and help individuals focus or relieve stress. It is believed to act as a distraction device, allowing the user to channel their excess energy or nervousness into the spinning motion. Some people find it helpful in increasing concentration and reducing anxiety levels.\n\nHowever, it's important to note that the effectiveness of fidget spinners in improving focus or reducing stress is still a topic of debate. Some studies suggest that they may not have the desired effects and can even be a distraction in certain situations, such as classrooms. Critics argue that fidget spinners can disrupt learning environments and divert attention away from the task at hand.\n\nAdditionally, the fidget spinner craze has led to concerns about safety. There have been reports of accidents and injuries related to fidget spinner usage, especially when used inappropriately or by young children. It is important to use fidget spinners responsibly and follow any safety guidelines provided by manufacturers.\n\nOverall, the fidget spinner is an interesting device that has gained popularity for its potential benefits in stress relief and focus improvement. However, it is essential to approach its use with caution, considering individual needs and circumstances, and being mindful of its potential limitations and safety concerns.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1702270884,
+  "id": "chatcmpl-8UShwXGBc1WN7YT0wATGxGlORYws2",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 315,
+    "prompt_tokens": 72,
+    "total_tokens": 387
+  }
+}

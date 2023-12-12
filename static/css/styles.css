@@ -12,6 +12,19 @@ body, html {
     flex: 1 0 auto;
 }
 
+/* Admin Dashboard button */
+.clickable-text {
+    color: #007bff; /* Bootstrap primary blue color */
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Admin Dashboard button */
+.clickable-text:hover {
+    color: #0056b3; /* Slightly darker blue for hover effect */
+}
+
+
 /* Adjust the margin of the Admin Dashboard button */
 #admin-dashboard-btn {
     margin-top: -15px; /* Pull the button upwards */
