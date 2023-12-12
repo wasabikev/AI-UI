@@ -10,9 +10,6 @@ load_dotenv()
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
-# Dependencies for authentication
-from auth import auth  # Import the auth blueprint
-
 import openai
 import os
 import logging

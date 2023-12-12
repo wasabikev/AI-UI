@@ -58,6 +58,30 @@ let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
 let currentSystemMessage = systemMessages[0].content; // Default system message
 
+// Function to open the modal and set the user ID and current status
+function openStatusModal(userId, currentStatus) {
+    // Set the action URL for the form
+    document.getElementById('statusUpdateForm').action = `/update-status/${userId}`;
+
+    // Check the radio button that matches the current status
+    if (currentStatus === 'Active') {
+        document.getElementById('statusActive').checked = true;
+    } else if (currentStatus === 'Pending') {
+        document.getElementById('statusPending').checked = true;
+    } else {
+        document.getElementById('statusNA').checked = true;
+    }
+
+    // Open the modal
+    $('#statusUpdateModal').modal('show');
+}
+
+// Function to submit the form
+function updateStatus() {
+    document.getElementById('statusUpdateForm').submit();
+}
+
+
 document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
     $('#temperatureModal').modal('show');
 });

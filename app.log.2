@@ -1,4 +1,4 @@
-2023-12-09 14:32:43,688 - app - ERROR - Exception on /admin [GET]
+2023-12-10 09:50:03,324 - app - ERROR - Exception on /admin [GET]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -31,8 +31,8 @@ Traceback (most recent call last):
     self.environment.handle_exception()
   File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
     raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 36, in top-level template code
-    <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm">Delete</a>
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 39, in top-level template code
+    <form action="{{ url_for('auth.update_user', user_id=user.id) }}" method="post">
     ^^^^^^^^^^^^^^^^^^^^^^^^^
   File "C:\Python311\Lib\site-packages\flask\app.py", line 1697, in url_for
     return self.handle_url_build_error(error, endpoint, values)
@@ -42,54 +42,81 @@ Traceback (most recent call last):
          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "C:\Python311\Lib\site-packages\werkzeug\routing\map.py", line 947, in build
     raise BuildError(endpoint, values, method, self)
-werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'delete_user' with values ['user_id']. Did you mean 'auth.delete_user' instead?
-2023-12-09 14:50:19,850 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-12-09 14:50:19,851 - app - INFO - Received temperature: 0.7
-2023-12-09 14:50:19,852 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
-2023-12-09 14:50:20,849 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "Sure! Here's a test sentence for you: \"The cat jumped over the fence.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1702162219,
-  "id": "chatcmpl-8U0RHkfaWGZJOhcm1sguS4UT4VNYG",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 18,
-    "prompt_tokens": 28,
-    "total_tokens": 46
-  }
-}
-2023-12-09 15:31:47,930 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-12-09 15:31:47,932 - app - INFO - Received temperature: 0.7
-2023-12-09 15:31:47,933 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence about a figit spinner'}], 'temperature': 0.7}
-2023-12-09 15:31:48,975 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "The fidget spinner is a small, handheld device that can be spun between the fingers, often used as a tool to help alleviate stress or anxiety.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1702164707,
-  "id": "chatcmpl-8U15PxIL50le2DJeqLRU11qrAqfWi",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 30,
-    "prompt_tokens": 32,
-    "total_tokens": 62
-  }
-}
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'auth.update_user' with values ['user_id']. Did you mean 'auth.delete_user' instead?
+2023-12-10 19:48:21,748 - app - ERROR - Exception on /admin [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
+    return render_template('admin.html', users=users)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
+    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\jinja2\utils.py", line 83, in from_obj
+    if hasattr(obj, "jinja_pass_arg"):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'timedelta' is undefined
+2023-12-10 19:54:28,432 - app - ERROR - Exception on /admin [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
+    return render_template('admin.html', users=users, timedelta=timedelta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
+    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.TemplateRuntimeError: No filter named 'date' found.
