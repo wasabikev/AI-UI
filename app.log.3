@@ -1,4 +1,4 @@
-2023-12-10 09:46:05,407 - app - ERROR - Exception on /admin [GET]
+2023-12-10 09:50:03,324 - app - ERROR - Exception on /admin [GET]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -31,14 +31,19 @@ Traceback (most recent call last):
     self.environment.handle_exception()
   File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
     raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 36, in top-level template code
-    <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 39, in top-level template code
+    <form action="{{ url_for('auth.update_user', user_id=user.id) }}" method="post">
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\utils.py", line 83, in from_obj
-    if hasattr(obj, "jinja_pass_arg"):
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.UndefinedError: 'None' has no attribute 'strftime'
-2023-12-10 09:48:26,632 - app - ERROR - Exception on /admin [GET]
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1697, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1686, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\werkzeug\routing\map.py", line 947, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'auth.update_user' with values ['user_id']. Did you mean 'auth.delete_user' instead?
+2023-12-10 19:48:21,748 - app - ERROR - Exception on /admin [GET]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -58,7 +63,7 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 13, in admin_dashboard
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
     return render_template('admin.html', users=users)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
@@ -71,14 +76,14 @@ Traceback (most recent call last):
     self.environment.handle_exception()
   File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
     raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 36, in top-level template code
-    <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
+    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
     ^^^^^^^^^^^^^^^^^^^^^^^^^
   File "C:\Python311\Lib\site-packages\jinja2\utils.py", line 83, in from_obj
     if hasattr(obj, "jinja_pass_arg"):
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.UndefinedError: 'None' has no attribute 'strftime'
-2023-12-10 09:48:29,753 - app - ERROR - Exception on /admin [GET]
+jinja2.exceptions.UndefinedError: 'timedelta' is undefined
+2023-12-10 19:54:28,432 - app - ERROR - Exception on /admin [GET]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -98,9 +103,9 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 13, in admin_dashboard
-    return render_template('admin.html', users=users)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
+    return render_template('admin.html', users=users, timedelta=timedelta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
     return _render(app, template, context)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,10 +116,7 @@ Traceback (most recent call last):
     self.environment.handle_exception()
   File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
     raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 36, in top-level template code
-    <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
+    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\utils.py", line 83, in from_obj
-    if hasattr(obj, "jinja_pass_arg"):
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.UndefinedError: 'None' has no attribute 'strftime'
+jinja2.exceptions.TemplateRuntimeError: No filter named 'date' found.
