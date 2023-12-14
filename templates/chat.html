@@ -61,7 +61,13 @@
             <!-- Main content -->
             <main class="col-10" style="padding-left: 0; padding-right: 0;">
 
-                <!-- Flash Message Container -->
+   
+
+                <header class="row align-items-center py-4" style="min-height: 100px;">
+
+                    <!-- Title -->
+                    <div class="col-5 title-container">
+                                        <!-- Flash Message Container -->
                 <div class="flash-message-container">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
@@ -74,12 +80,7 @@
                             <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
                         {% endif %}
                     {% endwith %}
-                </div>      
-
-                <header class="row align-items-center py-4" style="min-height: 100px;">
-
-                    <!-- Title -->
-                    <div class="col-5 title-container">
+                </div>   
                     <h2 class="mb-0" id="conversation-title">AI ∞ UI</h2>
                     <div id="token-data">
                         <span id="prompt-tokens">Prompt Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 

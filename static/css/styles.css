@@ -14,10 +14,10 @@ body, html {
 
 /* Custom CSS for flash message positioning */
 .flash-message-container {
-    margin-top: 23px; /* Adjust this value as needed */
+    margin-top: -10px; /* Adjust this value as needed */
     position: absolute;
     top: 0;
-    left: 0;
+    left: 15px;
     width: 100%;
     z-index: 1050; /* To ensure it's above other content */
 }
