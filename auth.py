@@ -1,7 +1,7 @@
 # auth.py
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, db
 from datetime import datetime, timedelta
@@ -50,7 +50,14 @@ def update_status(user_id):
 @auth.route('/admin')
 @login_required
 def admin_dashboard():
-    users = User.query.order_by(User.username).all()  # Fetch all users and order them by username
+    # Check if the current user is an admin
+    if not current_user.is_admin:
+        # If not an admin, show an error message and redirect
+        flash("Sorry, you do not have permission to access the admin dashboard.", "danger")
+        return redirect(url_for('home'))  # Redirect to the home page or another appropriate page
+
+    # Fetch all users and order them by username
+    users = User.query.order_by(User.username).all()
     return render_template('admin.html', users=users, timedelta=timedelta)
 
 @auth.route('/delete-user/<int:user_id>', methods=['POST'])
@@ -91,20 +98,18 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
 
-        if user and check_password_hash(user.password_hash, password):
-            try:
-                user.last_login = datetime.utcnow()
-                db.session.commit()
-                logging.info(f"Updated last login for user {username}")
-            except Exception as e:
-                logging.error(f"Error updating last login for user {username}: {e}")
+        if user and user.status != 'Active':
+            flash('That account is registered but not active. Please contact administrator.', 'warning')
+            return redirect(url_for('auth.login'))
 
+        if user and check_password_hash(user.password_hash, password):
             login_user(user)
             return redirect(url_for('home'))
-        else:
-            flash('Invalid username or password')
+        
+        flash('Invalid username or password', 'danger')
 
     return render_template('login.html')
+
 
 @auth.route('/logout')
 @login_required
@@ -145,6 +150,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
+        flash('Your account has been created and is pending approval. You will receive an email once it is activated.', 'info')
         # Redirect to the login page, or possibly log the user in directly
         return redirect(url_for('auth.login'))
 

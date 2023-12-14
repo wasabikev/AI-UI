@@ -4,6 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"><!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI ∞ UI</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -61,20 +67,18 @@
             <!-- Main content -->
             <main class="col-10" style="padding-left: 0; padding-right: 0;">
 
-                <!-- Flash Message Container -->
-                <div class="flash-message-container">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} text-center flash-message">
-                                    {{ message }}
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
-                        {% endif %}
-                    {% endwith %}
-                </div>      
+            <!-- Flash Messages or Transparent Placeholder -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} text-center flash-message">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
+                {% endif %}
+            {% endwith %}
 
                 <header class="row align-items-center py-4" style="min-height: 100px;">
 
@@ -245,12 +249,127 @@
         });
     </script>
 
+
+
+</body>
+
+</html>
+    <title>AI ∞ UI</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link href="/static/css/prism.css" rel="stylesheet" />
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/autosize.js/4.0.2/autosize.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
+    
     <script>
-        setTimeout(function() {
-            $('.flash-message').fadeOut('slow');
-        }, 3000); // 3000 milliseconds = 3 seconds
+        var conversation_id = {{ conversation_id | default('null', true) }};
     </script>
 
+<style>
+    .full-height {
+        min-height: 100vh;
+    }
+
+    textarea {
+        overflow: hidden;
+        resize: none;
+    }
+</style>
+
+</head>
+
+<body>
+    <div class="container-fluid full-height">
+        <div class="row full-height full-height-row">
+            <!-- Sidebar -->
+            <aside class="col-2 sidebar">
+                <button id="new-chat-btn" class="btn btn-info">+ New Chat</button>
+                <div id="conversation-list"></div>
+            </aside>
+
+            <!-- Main content -->
+            <main class="col-10" style="padding-left: 0; padding-right: 0;">
+                <header class="row align-items-center py-4" style="min-height: 100px;">
+
+                    <!-- Title -->
+                    <div class="col-5 title-container">
+                    <h2 class="mb-0" id="conversation-title">AI ∞ UI</h2>
+                    <div id="token-data">
+                        <span id="prompt-tokens">Prompt Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 
+                        <span id="completion-tokens">Completion Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 
+                        <span id="total-tokens">Total Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    </div>
+                    
+                    </div>
+
+                    <!-- Loading Animation -->
+                    <div class="col-2 text-center">
+                    <iframe id="loading" class="loading" src="https://giphy.com/embed/xTk9ZvMnbIiIew7IpW" frameBorder="0" allowFullScreen></iframe>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="col-3 text-right">
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false">
+                                GPT-3.5
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo-0613">GPT-3.5</a></li>
+                                <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4</a></li>
+                            </ul>
+                        </div>
+
+
+
+                        <button id="edit-title-btn" class="btn btn-sm btn-info hidden">Rename</button>
+                        <button id="delete-conversation-btn" class="btn btn-sm btn-info hidden">
+                            <i class="far fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </header>
+                
+                <!-- Chat Content-->
+                <section class="row">
+                    <div class="col-12">
+                        <div class="chat-container" id="chat">
+                            <div id="system-message-selection">
+                                <!-- Model selection dropdown and system message will be inserted here -->
+                            </div>
+                            <!-- Chat entries will be inserted here -->
+                        </div>
+                    </div>
+                </section>
+            </main>       
+     
+            <!-- Message Form   -->
+            <footer class="col-10 offset-2">
+                <form id="chat-form" class="bottom-form">
+                    <textarea id="user_input" class="form-control" placeholder="Type your message here..." rows="1" required></textarea>
+                    <button type="submit" class="btn btn-primary btn-send">Send</button>
+                </form>
+            </footer>
+        </div>  <!-- Closing for row full-height full-height-row -->
+    </div> <!-- Closing for container-fluid full-height -->
+
+    <!-- Scripts -->
+    <script src="/static/js/marked.min.js"></script>
+    <script src="/static/js/prism.js"></script>
+    <script src="/static/js/main.js"></script>
+    
+    <script>
+        const ta = document.getElementById('user_input'); // Changed the targeted ID
+        ta.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    </script>
 </body>
 
 </html>

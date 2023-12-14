@@ -58,6 +58,22 @@ let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
 let currentSystemMessage = systemMessages[0].content; // Default system message
 
+function checkAdminStatus(e) {
+    if (!isAdmin) {
+        e.preventDefault(); // Prevent the default action
+        $.ajax({
+            url: "/trigger-flash", // URL to a route that triggers the flash message
+            type: "GET",
+            success: function() {
+                location.reload(); // Reload the page to display the flash message
+            }
+        });
+    } else {
+        window.location.href = '/admin'; // Redirect to admin dashboard if the user is an admin
+    }
+}
+
+
 // Function to open the modal and set the user ID and current status
 function openStatusModal(userId, currentStatus) {
     // Set the action URL for the form

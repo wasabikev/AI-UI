@@ -1,22 +1,24 @@
-2023-12-10 21:01:33,996 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "message": {
-        "content": "Certainly! The fidget spinner is a popular toy that became a trend in recent years. It consists of a central bearing with two or more prongs extending outwards, each with a weighted disk or ball attached. The user holds the center bearing and flicks one of the prongs, causing the spinner to spin rapidly. \n\nThe main purpose of a fidget spinner is to provide a sensory experience and help individuals focus or relieve stress. It is believed to act as a distraction device, allowing the user to channel their excess energy or nervousness into the spinning motion. Some people find it helpful in increasing concentration and reducing anxiety levels.\n\nHowever, it's important to note that the effectiveness of fidget spinners in improving focus or reducing stress is still a topic of debate. Some studies suggest that they may not have the desired effects and can even be a distraction in certain situations, such as classrooms. Critics argue that fidget spinners can disrupt learning environments and divert attention away from the task at hand.\n\nAdditionally, the fidget spinner craze has led to concerns about safety. There have been reports of accidents and injuries related to fidget spinner usage, especially when used inappropriately or by young children. It is important to use fidget spinners responsibly and follow any safety guidelines provided by manufacturers.\n\nOverall, the fidget spinner is an interesting device that has gained popularity for its potential benefits in stress relief and focus improvement. However, it is essential to approach its use with caution, considering individual needs and circumstances, and being mindful of its potential limitations and safety concerns.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1702270884,
-  "id": "chatcmpl-8UShwXGBc1WN7YT0wATGxGlORYws2",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 315,
-    "prompt_tokens": 72,
-    "total_tokens": 387
-  }
-}
+2023-12-12 17:28:38,262 - app - ERROR - Exception on /admin [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 54, in admin_dashboard
+    if not current_user.is_admin:
+           ^^^^^^^^^^^^
+NameError: name 'current_user' is not defined

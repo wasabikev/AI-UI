@@ -12,6 +12,28 @@ body, html {
     flex: 1 0 auto;
 }
 
+/* Custom CSS for flash message positioning */
+.flash-message-container {
+    margin-top: 23px; /* Adjust this value as needed */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1050; /* To ensure it's above other content */
+}
+
+.flash-message {
+    margin-bottom: 15px; /* Adjust as per the actual flash message margin */
+    /* Other styling for flash messages */
+}
+
+.flash-message-placeholder {
+    height: 50px; /* Adjust to match the height of your flash messages */
+    margin-bottom: 15px; /* Keep consistent with flash message margin */
+    visibility: hidden; /* Makes the placeholder invisible */
+}
+
+
 /* Admin Dashboard button */
 .clickable-text {
     color: #007bff; /* Bootstrap primary blue color */
