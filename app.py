@@ -148,13 +148,9 @@ def create_conversation_in_folder(folder_id):
 @app.route('/api/conversations', methods=['GET'])
 @login_required
 def get_conversations():
-    if current_user.is_admin:
-        # Admin users see all conversations, including those with NULL user_id
-        conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
-    else:
-        # Regular users see only their conversations
-        conversations = Conversation.query.filter_by(user_id=current_user.id).order_by(Conversation.updated_at.desc()).all()
-
+    # Fetch all conversations from database for the current user
+    conversations = Conversation.query.filter_by(user_id=current_user.id).order_by(Conversation.updated_at.desc()).all()
+ 
     # Convert the list of Conversation objects into a list of dictionaries
     conversations_dict = [{"id": c.id, 
                            "title": c.title, 
