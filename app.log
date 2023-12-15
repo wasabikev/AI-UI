@@ -22,3 +22,122 @@ Traceback (most recent call last):
     if not current_user.is_admin:
            ^^^^^^^^^^^^
 NameError: name 'current_user' is not defined
+2023-12-15 06:18:26,362 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-12-15 06:18:26,365 - app - INFO - Received temperature: 0.7
+2023-12-15 06:18:26,366 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'a test sentence please'}], 'temperature': 0.7}
+2023-12-15 06:18:28,031 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Sure! Here's a test sentence for you: \"The intricately woven plot kept readers guessing until the very end.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1702649905,
+  "id": "chatcmpl-8W3JBB19hqW6DWwkXEgGoUlzeEYnD",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 24,
+    "prompt_tokens": 28,
+    "total_tokens": 52
+  }
+}
+2023-12-15 06:19:05,174 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-12-15 06:19:05,174 - app - INFO - Received temperature: 0.7
+2023-12-15 06:19:05,174 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test message about coffee please'}], 'temperature': 0.7}
+2023-12-15 06:19:14,006 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Coffee is a popular beverage enjoyed by many people around the world. It is made from roasted coffee beans, which are the seeds of the Coffea plant. Coffee contains caffeine, a natural stimulant that can help to increase alertness and reduce fatigue.\n\nThere are various types of coffee, including espresso, cappuccino, latte, and drip coffee, each with its own distinct flavor profile. The taste of coffee can be influenced by factors such as the type of beans used, the roast level, and the brewing method.\n\nIn addition to its taste, coffee has been the subject of numerous studies exploring its potential health benefits and drawbacks. Some research suggests that moderate coffee consumption may be associated with a reduced risk of certain diseases, such as Parkinson's disease, type 2 diabetes, and liver disease. However, excessive coffee consumption or the addition of unhealthy ingredients like sugar and cream can negate these potential benefits and contribute to negative health effects.\n\nFurthermore, coffee can have different effects on individuals due to variations in metabolism and tolerance to caffeine. While some people may experience increased alertness and improved cognitive function after consuming coffee, others may feel jittery, anxious, or experience disrupted sleep patterns.\n\nLastly, it is important to consider the ethical and environmental aspects of coffee production. Coffee farming can have environmental impacts such as deforestation and water pollution. Fair trade and sustainable coffee initiatives aim to address these concerns by promoting ethical sourcing practices and supporting farmers in developing countries.\n\nIn conclusion, coffee is a complex beverage that offers a range of flavors and potential health benefits when consumed in moderation. However, it is essential to be mindful of individual tolerance, avoid excessive consumption, and consider the broader impacts of coffee production on the environment and society.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1702649944,
+  "id": "chatcmpl-8W3JoIeTaVCLFdFFIqlrzkUluA6jO",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 343,
+    "prompt_tokens": 30,
+    "total_tokens": 373
+  }
+}
+2023-12-15 06:32:49,540 - app - ERROR - Exception on /api/conversations [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 166, in get_conversations
+    for c in user_conversations]
+             ^^^^^^^^^^^^^^^^^^
+NameError: name 'user_conversations' is not defined
+2023-12-15 06:33:59,741 - app - ERROR - Exception on /api/conversations [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 166, in get_conversations
+    for c in user_conversations]
+             ^^^^^^^^^^^^^^^^^^
+NameError: name 'user_conversations' is not defined
+2023-12-15 06:39:39,396 - app - ERROR - Exception on /trigger-flash [GET]
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 86, in trigger_flash
+    flash("You do not have admin privileges.", "warning")  # Adjust the message and category as needed
+    ^^^^^
+NameError: name 'flash' is not defined
