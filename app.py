@@ -81,6 +81,11 @@ with app.app_context():
         except Exception as e:
             print(f"Error creating admin user: {e}")
 
+@app.route('/trigger-flash')
+def trigger_flash():
+    flash("You do not have admin privileges.", "warning")  # Adjust the message and category as needed
+    return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
+
 
 @app.route('/chat/<int:conversation_id>')
 @login_required
@@ -139,12 +144,18 @@ def create_conversation_in_folder(folder_id):
     db.session.commit()
     return jsonify({"message": "Conversation created successfully"}), 201
 
+# Fetch all conversations from the database for listing in the left sidebar
 @app.route('/api/conversations', methods=['GET'])
+@login_required
 def get_conversations():
-    # Fetch all conversations from database ordered by 'updated_at' descending (latest first)
-    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
+    if current_user.is_admin:
+        # Admin users see all conversations, including those with NULL user_id
+        conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
+    else:
+        # Regular users see only their conversations
+        conversations = Conversation.query.filter_by(user_id=current_user.id).order_by(Conversation.updated_at.desc()).all()
+
     # Convert the list of Conversation objects into a list of dictionaries
-    # Include id, title, history, model_name, and token_count in each dictionary
     conversations_dict = [{"id": c.id, 
                            "title": c.title, 
                            "history": json.loads(c.history), 
@@ -152,10 +163,11 @@ def get_conversations():
                            "token_count": c.token_count,
                            "updated_at": c.updated_at,
                            "temperature": c.temperature} 
-
-                          for c in conversations]
+                          for c in conversations]  
     return jsonify(conversations_dict)
 
+
+# Fetch a specific conversation from the database to display in the chat interface
 @app.route('/conversations/<int:conversation_id>', methods=['GET'])
 def get_conversation(conversation_id):
     # Fetch a specific conversation from database
@@ -289,6 +301,7 @@ def reset_conversation():
 
 
 @app.route('/chat', methods=['POST'])
+@login_required
 def chat():
     messages = request.json.get('messages')
     model = request.json.get('model')  # Fetch the model
@@ -331,7 +344,10 @@ def chat():
 
     if not conversation:
         # Create a new Conversation object with the temperature
-        conversation = Conversation(history=json.dumps(messages), temperature=temperature)
+        conversation = Conversation(history=json.dumps(messages), 
+                                    temperature=temperature,
+                                    user_id=current_user.id
+                                    )
 
         # Generate the title for the conversation
         conversation_title = generate_summary(messages)
