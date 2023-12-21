@@ -51,7 +51,7 @@
                 </button>
                 <!-- Button for accessing Admin Dashboard -->
                 <button id="admin-dashboard-btn" class="btn btn-info ml-2" onclick="checkAdminStatus(event)">
-                    <i class="fa-solid fa-gear text-white"></i>
+                    <i class="fa-solid fa-users text-white"></i>
                 </button>
 
                 <div id="conversation-list"></div>
@@ -68,19 +68,19 @@
                     <!-- Title -->
                     <div class="col-5 title-container">
                                         <!-- Flash Message Container -->
-                <div class="flash-message-container">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} text-center flash-message">
-                                    {{ message }}
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
-                        {% endif %}
-                    {% endwith %}
-                </div>   
+                        <div class="flash-message-container">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }} text-center flash-message">
+                                            {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
+                                {% endif %}
+                            {% endwith %}
+                        </div>   
                     <h2 class="mb-0" id="conversation-title">AI ∞ UI</h2>
                     <div id="token-data">
                         <span id="prompt-tokens">Prompt Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 
