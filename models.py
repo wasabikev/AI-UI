@@ -97,3 +97,34 @@ class UserUsage(db.Model):
 
     user = db.relationship('User', backref='usage')
  
+class SystemMessage(db.Model):
+    __tablename__ = 'system_message'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    description = db.Column(db.Text)  # Description of the system message
+    model_name = db.Column(db.String(120))  # Model associated with the system message
+    temperature = db.Column(db.Float)  # Temperature setting for the system message
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Foreign key to the user table
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    creator = db.relationship('User', backref='created_system_messages')  # Relationship to the user table
+
+    def __repr__(self):
+        return '<SystemMessage %r>' % self.name
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'content': self.content,
+            'description': self.description,
+            'model_name': self.model_name,
+            'temperature': self.temperature,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+
