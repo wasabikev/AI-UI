@@ -1,68 +1,146 @@
-let messages = [
-    {
-        "role": "system",
-        "content": `You are a knowledgeable assistant that specializes in critical thinking and analysis.`
-    },
-];
+let messages = [];
 
 
-let systemMessages = [
-    {
-        "name": "Default System Message",
-        "role": "system",
-        "content": `You are a knowledgeable assistant that specializes in critical thinking and analysis.`
-    },
-    {
-        "name": "LLM User Interface",
-        "role": "system",
-        "content": `You are a knowledgeable assistant that specializes in programming and systems design, 
-        helping develop a user interface for artificial intelligence systems based on LLM technology.`
-    },
-    {
-        "name": "IT Assistant",
-        "role": "system",
-        "content": `You are a knowledgeable assistant that specializes in IT operations. Please provide 
-        accurate and factual information, explaining your reasoning step-by-step where possible. Do not 
-        guess or make things up. If you're unsure about something, it's important to say so. Try to provide 
-        sources or references to your knowledge wherever possible. You should also reflect on your answer and 
-        consider any possible implications that could result in instability or disruption to production systems.
-        I will provide a troubleshooting or IT scenario. You will then provide feedback or insights on how to proceed.`
-    },
-    {
-        "name": "CPA Advisor",
-        "role": "system",
-        "content": `You are CPA Advisor, a GPT crafted for tax professionals focusing on closely held businesses, 
-        high net worth individuals, and the policies and procedures of a public accounting firm. Your role is to 
-        deliver highly accurate, factual information in tax, accounting, and firm policies and procedures, with 
-        detailed explanations. Avoid guesses or assumptions, stating uncertainties clearly, and provide references 
-        when possible.
+let systemMessages = [];
 
-        Adopt a conservative approach in tax matters, prioritizing compliance and penalty minimization. Reflect 
-        on your responses, considering the implications in tax reporting and firm policies. In cases where 
-        specifics of a tax scenario or firm procedures are unclear but following a certain procedure provides 
-        protection, advise doing so.
-        
-        Accuracy is paramount; avoid misinformation, as tax professionals and public accounting firms depend 
-        on your reliability. When faced with incomplete or ambiguous queries, always ask for clarification 
-        to ensure accuracy. Provide thorough analysis and list applicable forms and procedures for scenarios 
-        involving closely held businesses, high net worth individuals, and public accounting firms, adhering 
-        to the high standards of diligence and accuracy required by these professionals.
-        
-        In addition to tax and accounting guidance, offer insights on best practices, ethical standards, 
-        and operational procedures specific to public accounting firms, helping them maintain excellence 
-        in their services.`
-    },
-];
 
 let model = "gpt-3.5-turbo-0613"; // Declare the model variable here
 let activeConversationId = null; // This will keep track of the currently selected conversation
-let currentSystemMessage = systemMessages[0].content; // Default system message
+let currentSystemMessage; // Default system message
 
+function checkAdminStatus(e) {
+    if (!isAdmin) {
+        e.preventDefault(); // Prevent the default action
+        $.ajax({
+            url: "/trigger-flash", // URL to a route that triggers the flash messagepopulateSystemMessageModal
+            type: "GET",
+            success: function() {
+                location.reload(); // Reload the page to display the flash message
+            }
+        });
+    } else {
+        window.location.href = '/admin'; // Redirect to admin dashboard if the user is an admin
+    }
+}
+
+// Function to populate the model dropdown in the modal
+function populateModelDropdownInModal() {
+    const modalModelDropdownMenu = document.querySelector('#systemMessageModal .model-dropdown-container .dropdown-menu');
+
+    if (!modalModelDropdownMenu) {
+        console.error("Required elements not found in the DOM.");
+        return;
+    }
+
+    // Clear existing dropdown items
+    modalModelDropdownMenu.innerHTML = '';
+
+    // Define the available models
+    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613"];
+
+    // Add each model to the dropdown
+    models.forEach((model) => {
+        let dropdownItem = document.createElement('button');
+        dropdownItem.className = 'dropdown-item';
+        dropdownItem.textContent = modelNameMapping(model);
+        dropdownItem.onclick = function() {
+            // Update the dropdown button text
+            document.getElementById('modalModelDropdownButton').textContent = modelNameMapping(model);
+            console.log("Modal dropdown item clicked. Model is now: " + model);
+        };
+        modalModelDropdownMenu.appendChild(dropdownItem);
+    });
+}
+
+function updateModelDropdownInModal(currentModelName) {
+    const modalModelDropdownButton = document.getElementById('modalModelDropdownButton');
+    modalModelDropdownButton.textContent = currentModelName;
+}
+
+// Example usage when a system message is selected or modal is opened
+updateModelDropdownInModal('GPT-3.5'); // Update with the actual model name
+
+
+// Function to populate the system message modal
+function populateSystemMessageModal() {
+    let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
+    let dropdownButton = document.getElementById('systemMessageDropdown'); // Button for the dropdown
+
+    if (!dropdownMenu || !dropdownButton) {
+        console.error("Required elements not found in the DOM.");
+        return;
+    }
+
+    // Clear existing dropdown items
+    dropdownMenu.innerHTML = '';
+
+    // Add each system message to the dropdown
+    systemMessages.forEach((message, index) => {
+        let dropdownItem = document.createElement('button');
+        dropdownItem.className = 'dropdown-item';
+        dropdownItem.textContent = message.name;
+        dropdownItem.onclick = function() {
+            // Update the dropdown button text and modal content
+            dropdownButton.textContent = message.name;
+            document.getElementById('systemMessageDescription').value = message.description || '';
+            document.getElementById('systemMessageContent').value = message.content || '';
+        };
+        dropdownMenu.appendChild(dropdownItem);
+    });
+
+    // Pre-select and display the default system message
+    const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+    if (defaultSystemMessage) {
+        dropdownButton.textContent = defaultSystemMessage.name;
+        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
+        document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
+    }
+}
+
+$('#systemMessageModal').on('show.bs.modal', function (event) {
+    console.log("populateSystemMessageModal called"); // Debugging line
+    populateSystemMessageModal(); // Populate dropdown and set default description
+    populateModelDropdownInModal(); // Populate the model dropdown
+});
+
+
+
+
+// Function to open the modal and set the user ID and current status
+function openStatusModal(userId, currentStatus) {
+    // Set the action URL for the form
+    document.getElementById('statusUpdateForm').action = `/update-status/${userId}`;
+
+    // Check the radio button that matches the current status
+    if (currentStatus === 'Active') {
+        document.getElementById('statusActive').checked = true;
+    } else if (currentStatus === 'Pending') {
+        document.getElementById('statusPending').checked = true;
+    } else {
+        document.getElementById('statusNA').checked = true;
+    }
+
+    // Open the modal
+    $('#statusUpdateModal').modal('show');
+}
+
+// Function to submit the form
+function updateStatus() {
+    document.getElementById('statusUpdateForm').submit();
+}
+
+// System message temperature adjust button
+document.getElementById("modalTemperatureAdjustBtn").addEventListener("click", function() {
+    $('#temperatureModal').modal('show');
+});
+
+// Main temperature adjust button
 document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
     $('#temperatureModal').modal('show');
 });
 
-let selectedTemperature = 0.7; // Default temperature value
+// let selectedTemperature = 0.7; // Default temperature value
+let selectedTemperature;
 
 document.getElementById("save-temperature-setting").addEventListener("click", function() {
     selectedTemperature = parseFloat(document.querySelector('input[name="temperatureOptions"]:checked').value);
@@ -75,6 +153,7 @@ function createSystemMessageButton() {
     return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-regular fa-pen-to-square"></i></button>`;
 }
 
+// Legacy function to display system messages
 function displaySystemMessage(messageContent) {
     currentSystemMessage = messageContent; // Update the current system message
     let systemMessageButton = createSystemMessageButton();
@@ -95,33 +174,13 @@ function displaySystemMessage(messageContent) {
     }
 }
 
-
-document.addEventListener("DOMContentLoaded", function() {
-    displaySystemMessage(systemMessages[0].content); // Display the first system message by default
-});
-
+// Handle the click event on the system message button
 document.addEventListener('click', function(event) {
     if (event.target && event.target.closest('#systemMessageButton')) {
         // Implement the logic to handle the display of system message selection options
         // For example, you can show a modal or a dropdown here
     }
 });
-
-function populateSystemMessageModal() {
-    let modalBody = document.querySelector('#systemMessageModal .modal-body .list-group');
-    modalBody.innerHTML = ''; // Clear existing items
-
-    systemMessages.forEach(function(message, index) {
-        let listItem = document.createElement('li');
-        listItem.className = 'list-group-item';
-        listItem.textContent = message.name;
-        listItem.onclick = function() {
-            displaySystemMessage(message.content); // Update the displayed and actual system message
-            $('#systemMessageModal').modal('hide'); // Hide the modal after selection
-        };
-        modalBody.appendChild(listItem);
-    });
-}
 
 
 // Existing logic to display the system message when the page loads
@@ -141,21 +200,14 @@ document.addEventListener('change', function(event) {
     }
 });
 
-function populateSystemMessageModal() {
-    let modalBody = document.querySelector('#systemMessageModal .modal-body .list-group');
-    modalBody.innerHTML = ''; // Clear existing items
 
-    systemMessages.forEach(function(message, index) {
-        let listItem = document.createElement('li');
-        listItem.className = 'list-group-item';
-        listItem.textContent = message.name;
-        listItem.onclick = function() {
-            displaySystemMessage(message.content);
-            $('#systemMessageModal').modal('hide'); // Hide the modal after selection
-        };
-        modalBody.appendChild(listItem);
-    });
-}
+
+document.addEventListener('click', function(event) {
+    if (event.target && event.target.id === 'add-system-message-btn') {
+        // Logic to handle adding a new system message
+    }
+});
+
 
 document.addEventListener("DOMContentLoaded", populateSystemMessageModal);
 
@@ -592,15 +644,20 @@ $('#chat-form').on('submit', function (e) {
     })
 });
 
+// "New Chat" Button Click Event
 document.getElementById("new-chat-btn").addEventListener("click", function() {
-    // Simplified code
-    window.location.assign('/');
+    fetch('/reset-conversation', {
+        method: 'POST',
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data.message);
+        window.location.href = '/'; // Redirect to the base URL
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
 });
-
-
-
-
-
 
 
 
@@ -662,39 +719,46 @@ $(document).ready(function() {
     // Set default title
     $("#conversation-title").html("AI &infin; UI");
 
-    // Get the current path from the URL
-    var currentPath = window.location.pathname;
-
-    // If there's a conversation ID passed from the backend (you'll render this in a <script> tag in your chat.html)
-    if (typeof conversation_id !== 'undefined' && conversation_id) {
-        loadConversation(conversation_id);  // Load this conversation
-        $('#conversation-title, #edit-title-btn, #delete-conversation-btn').show();   
-    } 
-    // If the path is not the base URL and there's no conversation_id
-    else if (currentPath !== '/') {
-        console.log("Checking active conversation."); // Debugging: Log which branch we're going into
-        checkActiveConversation();
-        // Depending on the outcome of `checkActiveConversation`, you might need to .show() or .hide() the elements.
-    }
-    else {
-        console.log("No conversation_id or active conversation found."); // Debugging: Log which branch we're going into
-
-        // If there's no conversation_id and no active conversation, hide these elements
-        $('#edit-title-btn, #delete-conversation-btn').hide(); // Hide only the edit and delete buttons
+    // Function to update the temperature modal
+    function updateTemperatureModal() {
+        document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
+            radio.checked = parseFloat(radio.value) === selectedTemperature;
+        });
     }
 
-    // New code for the Enter and Shift+Enter behavior
-    $('#user_input').on('keydown', function(e) {
-        if (e.key == 'Enter') {
-            if (!e.shiftKey) {
-                e.preventDefault();
-                $('#chat-form').submit();  // Submit the form
-            }
-        }
+    // Fetch and process system messages
+    function fetchAndProcessSystemMessages() {
+        return fetch('/api/system_messages')
+            .then(response => response.json())
+            .then(data => {
+                systemMessages = data; // Update the systemMessages array
+
+                // Populate system message modal here
+                populateSystemMessageModal(); // Ensure this is called after systemMessages are set
+
+                // Find the default system message
+                const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+                
+                if (defaultSystemMessage) {
+                    displaySystemMessage(defaultSystemMessage.content); // Display the default system message
+                    selectedTemperature = defaultSystemMessage.temperature;
+                    updateTemperatureModal(); // Update temperature modal
+                } else {
+                    console.error('Default system message not found');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching system messages:', error);
+            });
+    }
+
+    // Call this function to start the process
+    fetchAndProcessSystemMessages().then(() => {
+        // The rest of your initialization code
     });
 
+    // ... other initialization code ...
 });
-
 
 
 
