@@ -18,16 +18,16 @@
 
     <!-- Flash Messages or Transparent Placeholder -->
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} text-center">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="alert transparent-placeholder"></div> <!-- Transparent Placeholder -->
-        {% endif %}
-    {% endwith %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} text-center flash-message">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
+    {% endif %}
+{% endwith %}
 
     <div class="login-form-container shadow p-4 rounded bg-white">
         <h2 class="text-center mb-4">Login to AI ∞ UI</h2>

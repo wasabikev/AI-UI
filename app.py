@@ -17,7 +17,7 @@ import logging
 import requests
 import json
 
-from models import db, Folder, Conversation, User
+from models import db, Folder, Conversation, User, SystemMessage
 from logging.handlers import RotatingFileHandler # for log file rotation
 from werkzeug.security import generate_password_hash
 
@@ -81,9 +81,116 @@ with app.app_context():
         except Exception as e:
             print(f"Error creating admin user: {e}")
 
+# Default System Message creation logic
+DEFAULT_SYSTEM_MESSAGE = {
+    "name": "Default System Message",
+    "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
+    "description": "Default entry for database",
+    "model_name": "gpt-3.5-turbo-0613",
+    "temperature": 0.3
+}
+
+with app.app_context():
+    # Retrieve the admin user
+    admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+
+    # Check if the default system message exists
+    default_message = SystemMessage.query.filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"]).first()
+
+    if not default_message and admin_user:
+        # Create a new default system message associated with the admin user
+        new_default_message = SystemMessage(
+            name=DEFAULT_SYSTEM_MESSAGE["name"],
+            content=DEFAULT_SYSTEM_MESSAGE["content"],
+            description=DEFAULT_SYSTEM_MESSAGE["description"],
+            model_name=DEFAULT_SYSTEM_MESSAGE["model_name"],
+            temperature=DEFAULT_SYSTEM_MESSAGE["temperature"],
+            created_by=admin_user.id  # Associate with the admin user's ID
+        )
+
+        try:
+            db.session.add(new_default_message)
+            db.session.commit()
+            print("Default system message created")
+        except Exception as e:
+            print(f"Error creating default system message: {e}")
+
+@app.route('/get-current-model', methods=['GET'])
+@login_required
+def get_current_model():
+    # Assuming the current model is associated with the default system message
+    default_message = SystemMessage.query.filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"]).first()
+
+    if default_message:
+        return jsonify({'model_name': default_message.model_name})
+    else:
+        return jsonify({'error': 'Default system message not found'}), 404
+
+@app.route('/system-messages', methods=['POST'])
+@login_required  # Ensure only authenticated users can perform this action
+def create_system_message():
+    if not current_user.is_admin:  # Ensure only admins can create system messages
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    new_system_message = SystemMessage(
+        name=data['name'],
+        content=data['content'],
+        description=data.get('description', ''),
+        model_name=data.get('model_name', ''),
+        temperature=data.get('temperature', 0.7),
+        created_by=current_user.id
+    )
+    db.session.add(new_system_message)
+    db.session.commit()
+    return jsonify(new_system_message.to_dict()), 201
+
+@app.route('/api/system_messages')
+@login_required
+def get_system_messages():
+    system_messages = SystemMessage.query.all()
+    return jsonify([{
+        'id': message.id,  
+        'name': message.name,
+        'content': message.content,
+        'description': message.description,
+        'model_name': message.model_name,
+        'temperature': message.temperature
+    } for message in system_messages])
+
+@app.route('/system-messages/<int:message_id>', methods=['PUT'])
+@login_required
+def update_system_message(message_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    system_message = SystemMessage.query.get_or_404(message_id)
+    data = request.get_json()
+
+    system_message.name = data.get('name', system_message.name)
+    system_message.content = data.get('content', system_message.content)
+    system_message.description = data.get('description', system_message.description)
+    system_message.model_name = data.get('model_name', system_message.model_name)
+    system_message.temperature = data.get('temperature', system_message.temperature)
+
+    db.session.commit()
+    return jsonify(system_message.to_dict())
+
+@app.route('/system-messages/<int:message_id>', methods=['DELETE'])
+@login_required
+def delete_system_message(message_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    system_message = SystemMessage.query.get_or_404(message_id)
+    db.session.delete(system_message)
+    db.session.commit()
+    return jsonify({'message': 'System message deleted successfully'})
+
+
 @app.route('/trigger-flash')
 def trigger_flash():
-    flash("You do not have admin privileges.", "warning")  # Adjust the message and category as needed
+    flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
     return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
 
 

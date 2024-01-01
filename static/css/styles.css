@@ -12,6 +12,85 @@ body, html {
     flex: 1 0 auto;
 }
 
+.modal-footer .button-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+#temperatureOptions {
+    background-color: white;
+    padding: 20px; /* Add some padding so the content isn't flush against the edges */
+    border-radius: 4px;
+}
+
+.temperature-modal-lg {
+    max-width: 50%; /* Match the max-width of the System Message modal */
+}
+
+#temperatureContent {
+    height: 45vh; /* Match the height of the System Message modal */
+    min-height: 150px; /* Match the min-height of the System Message modal */
+    max-height: 600px; /* Match the max-height of the System Message modal */
+    overflow-y: auto; /* Add vertical scrollbar when content overflows */
+}
+
+#temperatureModal .modal-header,
+#temperatureModal .modal-footer {
+    background-color: #E4EFF2;
+}
+
+.model-dropdown-container {
+    margin-right: 5px; /* Add a 5px margin to the right */
+}
+
+/* Custom styling for the modal header and footer */
+#systemMessageModal .modal-header, #systemMessageModal .modal-footer {
+    background-color: #E4EFF2; /* Match with main body background */
+    border-bottom: 1px solid #ddd; /* Optional: add a border for separation */
+}
+
+#systemMessageModal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#systemMessageModal .modal-title {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+}
+
+#systemMessageModal .dropdown {
+    margin-left: 10px; /* Spacing between label and dropdown */
+}
+
+#systemMessageModal .modal-footer {
+    border-top: none; /* Remove the default top border */
+}
+
+.systemMessage-modal-lg {
+    max-width: 50%; /* Increase to 80% of the viewport width */
+}
+
+#systemMessageContent {
+    height: 45vh; /* 50% of the viewport height */
+    min-height: 150px; /* Minimum height */
+    max-height: 600px; /* Maximum height */
+    overflow-y: auto; /* Add vertical scrollbar when content overflows */
+}
+
+/* System messages */
+.modal-content .form-group label {
+    color: white;
+}
+
+/* System messages */
+.modal-content .form-control {
+    color: black;
+}
+
+
 /* Custom CSS for flash message positioning */
 .flash-message-container {
     margin-top: -10px; /* Adjust this value as needed */
