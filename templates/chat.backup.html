@@ -67,18 +67,7 @@
             <!-- Main content -->
             <main class="col-10" style="padding-left: 0; padding-right: 0;">
 
-            <!-- Flash Messages or Transparent Placeholder -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} text-center flash-message">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
-                {% endif %}
-            {% endwith %}
+
 
                 <header class="row align-items-center py-4" style="min-height: 100px;">
 

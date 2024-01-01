@@ -98,12 +98,13 @@
                     <!-- Controls -->
                     <div class="col-3 text-right">
                         <div class="dropdown d-inline-block">
-                            <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false" style="display: none;">
                                 GPT-3.5
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                 <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo-0613">GPT-3.5</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4</a></li>
+                                <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4 (8k)</a></li>
+                                <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (128K)</a></li> 
                             </ul>
                         </div>
                         <!-- Temperature Adjustment Button -->
@@ -111,9 +112,8 @@
                             <i class="fa-solid fa-temperature-low"></i>
                         </button>
 
-
                         <button id="edit-title-btn" class="btn btn-sm btn-info hidden">Rename</button>
-                        <button id="delete-conversation-btn" class="btn btn-sm btn-info hidden">
+                        <button id="delete-conversation-btn" class="btn btn-sm hidden" style="background-color: #9E4300; color: white;">
                             <i class="far fa-trash-alt"></i>
                         </button>
                     </div>
@@ -142,80 +142,150 @@
         </div>  <!-- Closing for row full-height full-height-row -->
     </div> <!-- Closing for container-fluid full-height -->
 
+
 <!-- System Message Selection Modal -->
 <div class="modal fade" id="systemMessageModal" tabindex="-1" role="dialog" aria-labelledby="systemMessageModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog systemMessage-modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="systemMessageModalLabel">Select System Message</h5>
+                <h5 class="modal-title" id="systemMessageModalLabel">
+                    System: <!-- Title for the dropdown -->
+                    <!-- Dropdown for selecting the system message -->
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="systemMessageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Select System Message
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="systemMessageDropdown">
+                            <!-- Dropdown items will be populated here -->
+                        </div>
+                        <button id="new-system-message-btn" class="btn btn-info ml-2">+ New</button>
+                    </div>
+                </h5>
+
+                <!-- Model Dropdown -->
+                <div class="model-dropdown-container">
+                    <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="modalModelDropdownButton" data-toggle="dropdown" aria-expanded="false">
+                        Current Model
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="modalModelDropdownButton">
+                        <!-- Populate with model options -->
+                    </div>
+                </div>
+
+                <!-- Temperature Adjustment Button -->
+                <button id="modalTemperatureAdjustBtn" class="btn btn-sm btn-info" onclick="toggleTemperatureSettings()">
+                    <i class="fa-solid fa-temperature-low"></i>
+                </button>
+
+                <button id="delete-system-message-btn" class="btn btn-sm ml-2" style="background-color: #9E4300; color: white;">
+                    <i class="far fa-trash-alt"></i>
+                </button>                             
+
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
+
+
             </div>
+            
+
             <div class="modal-body">
-                <ul class="list-group">
-                    <!-- System messages will be populated here -->
-                </ul>
+                
+                
+                <div class="row">
+                    <!-- Column for name -->
+                    <div class="col-md-6">
+                        <div class="form-group" style="margin-top: -7px;">
+                            <label for="systemMessageName" style="color: white;">Name</label>
+                            <input type="text" class="form-control" id="systemMessageName" style="color: black;">
+                        </div>
+                    </div>
+                
+                    <!-- Column for temperature display -->
+                    <div class="col-md-6">
+                        <div class="form-group text-right">
+                            <p id="temperatureDisplay" style="color: white;"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Column for description -->
+                    <div class="col-md-12">
+                        <div class="form-group" style="margin-top: -7px;">
+                            <label for="systemMessageDescription" style="color: white;">Description</label>
+                            <input type="text" class="form-control" id="systemMessageDescription" style="color: black;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="temperatureLabel" style="display: none;">
+                    <label style="color: white;">Temperature Settings</label>
+                </div>
+                <!-- Temperature Options -->
+                <div id="temperatureOptions" style="display: none;">
+                    <div class="form-check">
+                        <div class="form-group"></div>
+                        <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0" value="0">
+                        <label class="form-check-label" for="temperature0">
+                            <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Ideal for testing and scenarios where consistency is key. Less creative, more straightforward.
+                            <br><span class="temperature-use-case">Use Cases: Information retrieval, fact-checking, and data extraction.</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.3" value="0.3">
+                        <label class="form-check-label" for="temperature0.3">
+                            <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use where a higher level of reliability is desired.
+                            <br><span class="temperature-use-case">Use Cases: Technical writing, code generation, or legal document drafting.</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.7" value="0.7" checked>
+                        <label class="form-check-label" for="temperature0.7">
+                            <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. Provides a good mix of interesting yet coherent responses.
+                            <br><span class="temperature-use-case">Use Cases: Creative writing, marketing content creation, or conversational AI.</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.0" value="1.0">
+                        <label class="form-check-label" for="temperature1.0">
+                            <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming and scenarios where out-of-the-box thinking is desired.
+                            <br><span class="temperature-use-case">Use Cases: Brainstorming, ideation, or artistic pursuits.</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.5" value="1.5">
+                        <label class="form-check-label" for="temperature1.5">
+                            <strong>1.5 - Experimental:</strong> Unconventional and less constrained responses. Can be more abstract or off-topic at times.
+                            <br><span class="temperature-use-case">Use Cases: Experimental and avant-garde content generation.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Textarea for editing content -->
+                <div id="systemMessageContentGroup">
+                    <div class="form-group">
+                    <label for="systemMessageContent" style="color: white;">Content</label>
+                    <textarea class="form-control" id="systemMessageContent" rows="15" style="color: black;"></textarea>
+                </div>
+    </div>
+
+
+
+
+                <!-- Temperature and Model Name selection -->
+                <!-- Use existing UI components from chat.html -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSystemMessageChanges">Save Changes</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Temperature Adjustment Modal -->
-<div class="modal fade" id="temperatureModal" tabindex="-1" role="dialog" aria-labelledby="temperatureModalLabel" aria-hidden="true">
-    <div class="modal-dialog custom-modal-width" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="temperatureModalLabel">Temperature Setting</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Temperature Options -->
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0" value="0">
-                    <label class="form-check-label" for="temperature0">
-                        <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Ideal for testing and scenarios where consistency is key. Less creative, more straightforward.
-                        <br><span class="temperature-use-case">Use Cases: Information retrieval, fact-checking, and data extraction.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.3" value="0.3">
-                    <label class="form-check-label" for="temperature0.3">
-                        <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use where a higher level of reliability is desired.
-                        <br><span class="temperature-use-case">Use Cases: Technical writing, code generation, or legal document drafting.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.7" value="0.7" checked>
-                    <label class="form-check-label" for="temperature0.7">
-                        <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. Provides a good mix of interesting yet coherent responses.
-                        <br><span class="temperature-use-case">Use Cases: Creative writing, marketing content creation, or conversational AI.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.0" value="1.0">
-                    <label class="form-check-label" for="temperature1.0">
-                        <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming and scenarios where out-of-the-box thinking is desired.
-                        <br><span class="temperature-use-case">Use Cases: Brainstorming, ideation, or artistic pursuits.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.5" value="1.5">
-                    <label class="form-check-label" for="temperature1.5">
-                        <strong>1.5 - Experimental:</strong> Unconventional and less constrained responses. Can be more abstract or off-topic at times.
-                        <br><span class="temperature-use-case">Use Cases: Experimental and avant-garde content generation.</span>
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="save-temperature-setting">Save changes</button>
-            </div>
-        </div>
-    </div>
-</div>
+
+
 
 
 
@@ -226,6 +296,9 @@
     <script src="/static/js/prism.js"></script>
     <script src="/static/js/main.js"></script>
     
+    
+
+
     <script>
         const ta = document.getElementById('user_input'); // Changed the targeted ID
         ta.addEventListener('input', function() {
@@ -251,6 +324,11 @@
             $('.flash-message').fadeOut('slow');
         }, 3000); // 3000 milliseconds = 3 seconds
     </script>
+
+    <script>
+        console.log('System messages:', systemMessages);
+    </script>
+
 
 </body>
 

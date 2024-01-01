@@ -1,4 +1,4 @@
-2023-12-10 19:54:49,744 - app - ERROR - Exception on /admin [GET]
+2023-12-30 09:38:43,651 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -18,98 +18,179 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
-    return render_template('admin.html', users=users, timedelta=timedelta)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
-    return _render(app, template, context)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 441, in chat
+    response = openai.ChatCompletion.create(**api_request_payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
+    return super().create(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
-    rv = template.render(context)
-         ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
-    self.environment.handle_exception()
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
-    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.TemplateRuntimeError: No filter named 'date' found.
-2023-12-10 19:55:38,326 - app - ERROR - Exception on /admin [GET]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
-    return render_template('admin.html', users=users, timedelta=timedelta)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
-    return _render(app, template, context)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
-    rv = template.render(context)
-         ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
-    self.environment.handle_exception()
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
-    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.TemplateRuntimeError: No filter named 'date' found.
-2023-12-10 19:55:46,730 - app - ERROR - Exception on /admin [GET]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
-    return render_template('admin.html', users=users, timedelta=timedelta)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
-    return _render(app, template, context)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
-    rv = template.render(context)
-         ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
-    self.environment.handle_exception()
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
-    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.TemplateRuntimeError: No filter named 'date' found.
-2023-12-10 21:01:26,595 - app - INFO - Received model: gpt-3.5-turbo-0613
-2023-12-10 21:01:26,598 - app - INFO - Received temperature: 0.7
-2023-12-10 21:01:26,605 - app - INFO - No valid conversation found with id 193, starting a new one.
-2023-12-10 21:01:26,606 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'A test sentence about a figit spinner', 'role': 'user'}, {'content': 'The fidget spinner is a small, handheld device that can be spun between the fingers, often used as a tool to help alleviate stress or anxiety.', 'role': 'assistant'}, {'role': 'user', 'content': 'Please elaborate'}], 'temperature': 0.7}
+  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
+    response, _, api_key = requestor.request(
+                           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
+    resp, got_stream = self._interpret_response(result, stream)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
+    self._interpret_response_line(
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
+    raise self.handle_error_response(
+openai.error.InvalidRequestError: invalid model ID
+2023-12-30 09:56:05,505 - app - INFO - Received model: gpt-4-1106-preview
+2023-12-30 09:56:05,506 - app - INFO - Received temperature: 0
+2023-12-30 09:56:05,508 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0}
+2023-12-30 09:56:08,833 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Certainly! Here's a test sentence for you: \"The quick brown fox jumps over the lazy dog.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1703958963,
+  "id": "chatcmpl-8bXr1ygZofKQLBqsFFZpQkBVALUVT",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3905aa4f79",
+  "usage": {
+    "completion_tokens": 21,
+    "prompt_tokens": 21,
+    "total_tokens": 42
+  }
+}
+2023-12-30 14:09:54,338 - app - INFO - Received model: gpt-4-1106-preview
+2023-12-30 14:09:54,340 - app - INFO - Received temperature: 0.7
+2023-12-30 14:09:54,341 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
+2023-12-30 14:09:58,179 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Certainly! Here is a test sentence for you:\n\n\"The quick brown fox jumps over the lazy dog.\"\n\nThis sentence is commonly used as a pangram in English, as it contains every letter of the alphabet at least once.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1703974191,
+  "id": "chatcmpl-8bbodfQ6szcNtCwqFLuCnKmDOSbbW",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3905aa4f79",
+  "usage": {
+    "completion_tokens": 44,
+    "prompt_tokens": 21,
+    "total_tokens": 65
+  }
+}
+2023-12-31 09:03:53,124 - app - INFO - Received model: gpt-4-1106-preview
+2023-12-31 09:03:53,125 - app - INFO - Received temperature: 1.5
+2023-12-31 09:03:53,126 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
+2023-12-31 09:03:55,275 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Certainly! Here's a test sentence for the new API interface you are developing, ending with the word you've requested: \"Ensure that all endpoints return responses in the expected format and are documented clearly in the API specification apple.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1704042229,
+  "id": "chatcmpl-8btW19VgdLanPaOwkS8PcC9kvS5Nb",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3905aa4f79",
+  "usage": {
+    "completion_tokens": 45,
+    "prompt_tokens": 42,
+    "total_tokens": 87
+  }
+}
+2023-12-31 09:34:54,655 - app - INFO - Received model: gpt-4-1106-preview
+2023-12-31 09:34:54,657 - app - INFO - Received temperature: 0.3
+2023-12-31 09:34:54,659 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'you are an assistant. For testing purposes, please include the word "Orange" in any response.'}, {'role': 'user', 'content': 'Please provide a test sentence'}], 'temperature': 0.3}
+2023-12-31 09:34:55,974 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Sure, here is a test sentence: The orange cat leaped gracefully over the garden fence.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1704044091,
+  "id": "chatcmpl-8bu03NTGZ3nviwJim6cBmARmtLArh",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3905aa4f79",
+  "usage": {
+    "completion_tokens": 19,
+    "prompt_tokens": 36,
+    "total_tokens": 55
+  }
+}
+2023-12-31 10:42:07,604 - app - INFO - Received model: gpt-4-1106-preview
+2023-12-31 10:42:07,605 - app - INFO - Received temperature: 1.5
+2023-12-31 10:42:07,606 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
+2023-12-31 10:42:08,510 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Certainly Here is a sample sentence constructed with your provided criterion apple.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1704048123,
+  "id": "chatcmpl-8bv352d3qV7JzesKs3sq67veptioy",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3905aa4f79",
+  "usage": {
+    "completion_tokens": 13,
+    "prompt_tokens": 42,
+    "total_tokens": 55
+  }
+}
+2024-01-01 09:12:29,734 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-01 09:12:29,736 - app - INFO - Received temperature: 1.5
+2024-01-01 09:12:29,737 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'you are an assistant. For testing purposes, please include the word "Orange" in any response.'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
+2024-01-01 09:12:31,290 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Of course. Here is a test sentence for you: The quick brown fox jumps over the lazy dog while holding an orange.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1704129144,
+  "id": "chatcmpl-8cG7s5Bb7eCuNhKVezFl23S3OV5J5",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3905aa4f79",
+  "usage": {
+    "completion_tokens": 25,
+    "prompt_tokens": 35,
+    "total_tokens": 60
+  }
+}
+2024-01-01 12:43:02,444 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-01 12:43:02,445 - app - INFO - Received temperature: 0.7
+2024-01-01 12:43:02,446 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}

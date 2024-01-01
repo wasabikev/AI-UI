@@ -1,4 +1,4 @@
-2023-12-10 09:50:03,324 - app - ERROR - Exception on /admin [GET]
+2023-12-30 09:34:14,720 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -18,32 +18,53 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 13, in admin_dashboard
-    return render_template('admin.html', users=users)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
-    return _render(app, template, context)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 441, in chat
+    response = openai.ChatCompletion.create(**api_request_payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
+    return super().create(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
-    rv = template.render(context)
-         ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
-    self.environment.handle_exception()
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 39, in top-level template code
-    <form action="{{ url_for('auth.update_user', user_id=user.id) }}" method="post">
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1697, in url_for
-    return self.handle_url_build_error(error, endpoint, values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1686, in url_for
-    rv = url_adapter.build(  # type: ignore[union-attr]
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\werkzeug\routing\map.py", line 947, in build
-    raise BuildError(endpoint, values, method, self)
-werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'auth.update_user' with values ['user_id']. Did you mean 'auth.delete_user' instead?
-2023-12-10 19:48:21,748 - app - ERROR - Exception on /admin [GET]
+  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
+    response, _, api_key = requestor.request(
+                           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
+    resp, got_stream = self._interpret_response(result, stream)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
+    self._interpret_response_line(
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
+    raise self.handle_error_response(
+openai.error.InvalidRequestError: The model `GPT-3.5` does not exist
+2023-12-30 09:34:31,999 - app - INFO - Received model: gpt-3.5-turbo-0613
+2023-12-30 09:34:31,999 - app - INFO - Received temperature: 0
+2023-12-30 09:34:32,000 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0}
+2023-12-30 09:34:33,103 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Sure! Here's a test sentence: \"The quick brown fox jumps over the lazy dog.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1703957669,
+  "id": "chatcmpl-8bXW9NzAQxJPLurBylb7Ka5JO95bE",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 19,
+    "prompt_tokens": 29,
+    "total_tokens": 48
+  }
+}
+2023-12-30 09:35:12,464 - app - INFO - Received model: GPT-3.5
+2023-12-30 09:35:12,466 - app - INFO - Received temperature: 0
+2023-12-30 09:35:12,468 - app - INFO - Sending request to OpenAI: {'model': 'GPT-3.5', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0}
+2023-12-30 09:35:12,658 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -63,27 +84,27 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
-    return render_template('admin.html', users=users)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
-    return _render(app, template, context)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 441, in chat
+    response = openai.ChatCompletion.create(**api_request_payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
+    return super().create(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
-    rv = template.render(context)
-         ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
-    self.environment.handle_exception()
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
-    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\utils.py", line 83, in from_obj
-    if hasattr(obj, "jinja_pass_arg"):
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.UndefinedError: 'timedelta' is undefined
-2023-12-10 19:54:28,432 - app - ERROR - Exception on /admin [GET]
+  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
+    response, _, api_key = requestor.request(
+                           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
+    resp, got_stream = self._interpret_response(result, stream)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
+    self._interpret_response_line(
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
+    raise self.handle_error_response(
+openai.error.InvalidRequestError: The model `GPT-3.5` does not exist
+2023-12-30 09:37:35,001 - app - INFO - Received model: GPT-4 (128K)
+2023-12-30 09:37:35,002 - app - INFO - Received temperature: 0
+2023-12-30 09:37:35,003 - app - INFO - Sending request to OpenAI: {'model': 'GPT-4 (128K)', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0}
+2023-12-30 09:37:35,209 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -103,20 +124,23 @@ Traceback (most recent call last):
   File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\auth.py", line 43, in admin_dashboard
-    return render_template('admin.html', users=users, timedelta=timedelta)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
-    return _render(app, template, context)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 441, in chat
+    response = openai.ChatCompletion.create(**api_request_payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
+    return super().create(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
-    rv = template.render(context)
-         ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
-    self.environment.handle_exception()
-  File "C:\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
-    raise rewrite_traceback_stack(source=source)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\templates\admin.html", line 47, in top-level template code
-    <td>{{ user.last_login - timedelta(hours=8) | date("m/d/Y H:i:s") if user.last_login else 'N/A' }}</td>
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
-jinja2.exceptions.TemplateRuntimeError: No filter named 'date' found.
+  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
+    response, _, api_key = requestor.request(
+                           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
+    resp, got_stream = self._interpret_response(result, stream)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
+    self._interpret_response_line(
+  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
+    raise self.handle_error_response(
+openai.error.InvalidRequestError: invalid model ID
+2023-12-30 09:38:43,427 - app - INFO - Received model: GPT-4 (128K)
+2023-12-30 09:38:43,428 - app - INFO - Received temperature: 0
+2023-12-30 09:38:43,430 - app - INFO - Sending request to OpenAI: {'model': 'GPT-4 (128K)', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0}
