@@ -373,25 +373,40 @@ def clear_session():
     return jsonify({"message": "Session cleared"}), 200
 
 
+def estimate_token_count(text):
+    # Simplistic estimation. You may need a more accurate method.
+    return len(text.split())
+
 def generate_summary(messages):
-    conversation_history = ' '.join([message['content'] for message in messages])
+    # Use only the most recent messages or truncate to reduce token count
+    conversation_history = ' '.join([message['content'] for message in messages[-5:]])
+    
+    if estimate_token_count(conversation_history) > 4000:  # Adjust the limit as needed
+        conversation_history = conversation_history[:4000]  # Truncate to fit the token limit
+        app.logger.info("Conversation history truncated for summary generation")
+
+    summary_request_payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text:\n" + conversation_history}
+        ],
+        "max_tokens": 10
+    }
+
+    app.logger.info(f"Sending summary request to OpenAI: {summary_request_payload}")
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo", # or any appropriate model you are using
-            messages=[
-                {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text. Since it is a title it should have no periods and all the words should be Capatilized Like This:\n" + conversation_history}
-            ],
-            max_tokens=10
-        )
+        response = openai.ChatCompletion.create(**summary_request_payload)
         summary = response['choices'][0]['message']['content'].strip()
-    except KeyError:
-        app.logger.error(f"Failed to generate conversation summary: {response.json()}")
-        summary = messages[0]['content']  # use the first user message as a fallback title
-        if len(summary) > 120:
-            summary = summary[:117] + '...'
+        app.logger.info(f"Response from OpenAI for summary: {response}")
+        app.logger.info(f"Generated conversation summary: {summary}")
+    except Exception as e:
+        app.logger.error(f"Error in generate_summary: {e}")
+        summary = "Conversation Summary"  # Fallback title
 
     return summary
+
+
 
 
 @app.route('/reset-conversation', methods=['POST'])
