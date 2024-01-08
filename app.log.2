@@ -1,196 +1,52 @@
-2023-12-30 09:38:43,651 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 441, in chat
-    response = openai.ChatCompletion.create(**api_request_payload)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
-    return super().create(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
-    response, _, api_key = requestor.request(
-                           ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
-    resp, got_stream = self._interpret_response(result, stream)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
-    self._interpret_response_line(
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
-    raise self.handle_error_response(
-openai.error.InvalidRequestError: invalid model ID
-2023-12-30 09:56:05,505 - app - INFO - Received model: gpt-4-1106-preview
-2023-12-30 09:56:05,506 - app - INFO - Received temperature: 0
-2023-12-30 09:56:05,508 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0}
-2023-12-30 09:56:08,833 - app - INFO - Response from OpenAI: {
+2024-01-07 09:08:37,529 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Certainly! Here's a test sentence for you: \"The quick brown fox jumps over the lazy dog.\"",
+        "content": "The code provided is quite extensive and seems to be part of a larger application dealing with system messages in a chat interface. It interacts with a backend server to fetch, create, update, and delete system messages and also handle user messages within a chat. It includes UI updates, event handling, AJAX requests, and DOM manipulation.\n\nHere's a summary review of the code:\n\n1. **Variable Declaration and Initialization**:\n   - Variables are declared at the top, which is good for readability.\n   - There are some variables like `initialTemperature`, `selectedTemperature`, and `currentSystemMessage` that are declared but not initialized. These should be initialized properly or handled to ensure they do not cause a reference error when used.\n\n2. **Function Definitions**:\n   - Functions are well-named and generally do a single task, which is good practice.\n   - Some functions like `updateSystemMessageDropdown()` and `fetchAndProcessSystemMessages()` interact with the DOM and fetch data from the server.\n   - The function `showModalFlashMessage()` handles showing temporary alert messages in the modal.\n   - The `renderOpenAI()` function seems to handle rendering the message content, including parsing Markdown and highlighting code blocks, which is a nice touch.\n\n3. **Event Handling**:\n   - There are several event listeners attached to elements for various user interactions such as clicking, changing dropdown options, and submitting forms.\n   - The usage of both `document.addEventListener` and jQuery event handling (`$(selector).on('event', handler)`) is mixed. It's usually better to be consistent with one approach.\n\n4. **AJAX Requests**:\n   - AJAX requests are used to communicate with the server for CRUD operations on system messages.\n   - Some error handling is present, but there might be room for improvement in terms of more user-friendly error messages.\n\n5. **DOM Manipulation**:\n   - The code frequently interacts with the DOM to update the UI. For example, it dynamically creates dropdown items and updates modal content.\n   - There's a heavy reliance on element IDs, which can be fragile if the markup changes. Consider using data attributes or more resilient selectors.\n\n6. **UI Updates**:\n   - The code handles showing and hiding elements, updating text content, and more to reflect the current state of the application.\n   - Functions like `toggleTemperatureSettings()` and `showConversationControls()` manage the visibility of certain UI elements.\n\n7. **Global Variables and State Management**:\n   - There are quite a few global variables used to manage the state, such as `model`, `selectedTemperature`, and `activeSystemMessageId`.\n   - It might be beneficial to encapsulate these into a more structured state management system to reduce the risk of accidental modification from different parts of the code.\n\n8. **Error Handling and Logging**:\n   - The `console.error` and `console.log` calls are useful for debugging, but be cautious with leaving too many logs in production code as they can leak sensitive information.\n   - More robust error handling and user feedback could improve the user experience, especially for network requests that might fail.\n\n9. **Modularity and Code Organization**:\n   - The code could benefit from being split into modules or separate files based on functionality (e.g., system message handling, chat functionality, UI updates).\n   - This could improve maintainability and scalability as the application grows.\n\n10. **Miscellaneous**:\n    - The use of template literals (backticks) to build HTML strings is good for readability, but be mindful of XSS risks when dynamically inserting content into the DOM.\n    - The code includes a mix of ES6 features and older syntax. It's generally good to be consistent with the JavaScript version being used.\n\nOverall, the code seems functional and well-structured. However, there are areas where it could be improved in terms of initialization, state management, error handling, and consistency in event handling approaches. Consider implementing a more robust state management system and modularizing the code for better maintainability.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1703958963,
-  "id": "chatcmpl-8bXr1ygZofKQLBqsFFZpQkBVALUVT",
+  "created": 1704647274,
+  "id": "chatcmpl-8eQuoh5ABrOK2mRQ7pbriz0nVCY9M",
   "model": "gpt-4-1106-preview",
   "object": "chat.completion",
-  "system_fingerprint": "fp_3905aa4f79",
+  "system_fingerprint": "fp_168383a679",
   "usage": {
-    "completion_tokens": 21,
-    "prompt_tokens": 21,
-    "total_tokens": 42
+    "completion_tokens": 814,
+    "prompt_tokens": 9354,
+    "total_tokens": 10168
   }
 }
-2023-12-30 14:09:54,338 - app - INFO - Received model: gpt-4-1106-preview
-2023-12-30 14:09:54,340 - app - INFO - Received temperature: 0.7
-2023-12-30 14:09:54,341 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
-2023-12-30 14:09:58,179 - app - INFO - Response from OpenAI: {
+2024-01-07 09:08:37,545 - app - INFO - Generated conversation summary: Static Test Summary
+2024-01-07 09:13:40,234 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-07 09:13:40,235 - app - INFO - Received temperature: 0.7
+2024-01-07 09:13:40,236 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
+2024-01-07 09:13:41,545 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Certainly! Here is a test sentence for you:\n\n\"The quick brown fox jumps over the lazy dog.\"\n\nThis sentence is commonly used as a pangram in English, as it contains every letter of the alphabet at least once.",
+        "content": "Certainly! Here is a test sentence: \"The quick brown fox jumps over the lazy dog.\"",
         "role": "assistant"
       }
     }
   ],
-  "created": 1703974191,
-  "id": "chatcmpl-8bbodfQ6szcNtCwqFLuCnKmDOSbbW",
+  "created": 1704647617,
+  "id": "chatcmpl-8eR0LJgUh01PTzilIKMPwoVBo4AjU",
   "model": "gpt-4-1106-preview",
   "object": "chat.completion",
-  "system_fingerprint": "fp_3905aa4f79",
-  "usage": {
-    "completion_tokens": 44,
-    "prompt_tokens": 21,
-    "total_tokens": 65
-  }
-}
-2023-12-31 09:03:53,124 - app - INFO - Received model: gpt-4-1106-preview
-2023-12-31 09:03:53,125 - app - INFO - Received temperature: 1.5
-2023-12-31 09:03:53,126 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
-2023-12-31 09:03:55,275 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Certainly! Here's a test sentence for the new API interface you are developing, ending with the word you've requested: \"Ensure that all endpoints return responses in the expected format and are documented clearly in the API specification apple.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704042229,
-  "id": "chatcmpl-8btW19VgdLanPaOwkS8PcC9kvS5Nb",
-  "model": "gpt-4-1106-preview",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3905aa4f79",
-  "usage": {
-    "completion_tokens": 45,
-    "prompt_tokens": 42,
-    "total_tokens": 87
-  }
-}
-2023-12-31 09:34:54,655 - app - INFO - Received model: gpt-4-1106-preview
-2023-12-31 09:34:54,657 - app - INFO - Received temperature: 0.3
-2023-12-31 09:34:54,659 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'you are an assistant. For testing purposes, please include the word "Orange" in any response.'}, {'role': 'user', 'content': 'Please provide a test sentence'}], 'temperature': 0.3}
-2023-12-31 09:34:55,974 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sure, here is a test sentence: The orange cat leaped gracefully over the garden fence.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704044091,
-  "id": "chatcmpl-8bu03NTGZ3nviwJim6cBmARmtLArh",
-  "model": "gpt-4-1106-preview",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3905aa4f79",
+  "system_fingerprint": "fp_168383a679",
   "usage": {
     "completion_tokens": 19,
-    "prompt_tokens": 36,
-    "total_tokens": 55
+    "prompt_tokens": 21,
+    "total_tokens": 40
   }
 }
-2023-12-31 10:42:07,604 - app - INFO - Received model: gpt-4-1106-preview
-2023-12-31 10:42:07,605 - app - INFO - Received temperature: 1.5
-2023-12-31 10:42:07,606 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
-2023-12-31 10:42:08,510 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Certainly Here is a sample sentence constructed with your provided criterion apple.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704048123,
-  "id": "chatcmpl-8bv352d3qV7JzesKs3sq67veptioy",
-  "model": "gpt-4-1106-preview",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3905aa4f79",
-  "usage": {
-    "completion_tokens": 13,
-    "prompt_tokens": 42,
-    "total_tokens": 55
-  }
-}
-2024-01-01 09:12:29,734 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-01 09:12:29,736 - app - INFO - Received temperature: 1.5
-2024-01-01 09:12:29,737 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'you are an assistant. For testing purposes, please include the word "Orange" in any response.'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
-2024-01-01 09:12:31,290 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Of course. Here is a test sentence for you: The quick brown fox jumps over the lazy dog while holding an orange.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704129144,
-  "id": "chatcmpl-8cG7s5Bb7eCuNhKVezFl23S3OV5J5",
-  "model": "gpt-4-1106-preview",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3905aa4f79",
-  "usage": {
-    "completion_tokens": 25,
-    "prompt_tokens": 35,
-    "total_tokens": 60
-  }
-}
-2024-01-01 12:43:02,444 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-01 12:43:02,445 - app - INFO - Received temperature: 0.7
-2024-01-01 12:43:02,446 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
+2024-01-07 09:14:08,653 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-07 09:14:08,654 - app - INFO - Received temperature: 0.7
