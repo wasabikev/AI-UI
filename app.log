@@ -1,158 +1,101 @@
-2024-01-01 13:43:28,979 - app - INFO - Received model: gpt-4-0613
-2024-01-01 13:43:28,991 - app - INFO - Received temperature: 0.3
-2024-01-01 13:43:28,995 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'you are an assistant. For testing purposes, please include the word "Orange" in any response.'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.3}
-2024-01-01 13:43:31,542 - app - INFO - Response from OpenAI: {
+2024-01-07 09:14:55,705 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Sure, here's a test sentence for you: \"The sun set, casting an orange glow across the sky.\"",
+        "content": "There are several aspects of the provided code, and it's a substantial amount, so I will provide you with some overall feedback and suggestions rather than a line-by-line review.\n\n1. **Modularity and Functions:**\n   - The code could benefit from more modularization. Some functions are very long and handle multiple tasks, which can make the code harder to maintain and test. Consider breaking down functions into smaller, more focused ones that do one thing well.\n   - You have some repeated code chunks, such as the logic to populate the system message modal. This should be organized into a function that can be called whenever needed.\n   \n2. **Global Variables:**\n   - There are many global variables, which can lead to unexpected issues if they are accidentally modified somewhere in the code. Consider using a single global object to encapsulate your application's state or use module patterns to expose only what's necessary.\n\n3. **DOM Manipulation:**\n   - There's a mix of jQuery and vanilla JavaScript for DOM manipulation. You should stick to one approach for consistency and clarity.\n   - Some selectors are used repeatedly (`document.getElementById('systemMessageModal')`, for instance). It would be more efficient to store these elements in variables if they are used multiple times to avoid querying the DOM repeatedly.\n   - Ensure that all elements you're trying to access in the DOM actually exist to avoid potential errors.\n\n4. **Error Handling:**\n   - The error handling could be more robust. For instance, when using `fetch`, consider handling HTTP errors more gracefully to provide a better user experience.\n   - You should handle scenarios where AJAX requests fail, perhaps by showing a user-friendly message.\n\n5. **Event Listeners:**\n   - You're adding event listeners inside other event listeners, which can cause multiple instances of the same listener to be attached. Ensure that event listeners are added in a controlled manner and removed if necessary.\n   - You are using both `addEventListener` and the jQuery `.on()` method to add event listeners. It's best to choose one method for consistency.\n\n6. **Asynchronous Code:**\n   - There are functions that perform asynchronous operations, like `fetchAndProcessSystemMessages`. It's unclear how the rest of the code waits for these operations to complete. Ensure that your code handles asynchronous operations properly, using either `async/await` or chaining `.then()` callbacks as needed.\n\n7. **Unused Variables:**\n   - There are variables declared that are not used anywhere in the code you provided (`initialTemperature` and `currentSystemMessage`, for example). Make sure to clean up any unused variables to avoid confusion.\n\n8. **Code Organization:**\n   - The code seems to be a mix of different functionalities without a clear structure. Organizing your code into sections or modules (e.g., message handling, UI updates, server communication) can help improve readability and maintainability.\n\n9. **Potential Bugs and Improvements:**\n   - Ensure that `selectedTemperature` is initialized before it's used. It appears to be declared without an initial value, which could lead to `undefined` behavior.\n   - There's a call to `updateTemperatureDisplay()` that references a non-existent function `temperatureDescriptions[selectedTemperatureValue]`. This looks like a bug since `temperatureDescriptions` is an object with keys that are strings, but `selectedTemperatureValue` is being used as if it's a number.\n\n10. **Comments and Code Documentation:**\n    - The code has a mixture of commented and uncommented sections. Consistently commenting on your code and keeping the comments up to date with code changes will make it easier for others (and yourself) to understand the code in the future.\n\n11. **Cross-Browser Compatibility:**\n    - Be cautious with the use of template literals and other ES6+ features if you need to support older browsers. Consider using a transpiler like Babel if this is a requirement.\n\n12. **Security:**\n    - Be mindful of potential security issues, especially when dealing with user input (e.g., XSS attacks). Ensure that user-generated content is sanitized before being inserted into the DOM.\n\nThis is a general review and not exhaustive due to the length and complexity of the code. It would be beneficial to run the code through some tests and perform a thorough code review with a focus on the specific requirements and constraints of your application.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1704145403,
-  "id": "chatcmpl-8cKM7rCARB6BkX2Ve9ytfNOFRNhfY",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 23,
-    "prompt_tokens": 35,
-    "total_tokens": 58
-  }
-}
-2024-01-01 13:44:58,901 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-01 13:44:58,902 - app - INFO - Received temperature: 1.5
-2024-01-01 13:44:58,903 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'a test sentence please'}], 'temperature': 1.5}
-2024-01-01 13:44:59,949 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sure, here it is: \"The quick brown fox jumps over the lazy dog.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704145494,
-  "id": "chatcmpl-8cKNaXfGBa48B2idBZAqMmA63c3cf",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 17,
-    "prompt_tokens": 21,
-    "total_tokens": 38
-  }
-}
-2024-01-01 13:45:33,821 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-01 13:45:33,822 - app - INFO - Received temperature: 1.5
-2024-01-01 13:45:33,825 - app - INFO - Using existing conversation with id 236.
-2024-01-01 13:45:33,826 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'a test sentence please'}, {'role': 'assistant', 'content': 'Sure, here it is: "The quick brown fox jumps over the lazy dog."'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
-2024-01-01 13:45:34,946 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Of course! Here's another test sentence: \"She sells seashells by the seashore.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704145529,
-  "id": "chatcmpl-8cKO9cyQa0uTa9IAb6BcB74Lu7Q2b",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 21,
-    "prompt_tokens": 50,
-    "total_tokens": 71
-  }
-}
-2024-01-01 13:49:52,325 - app - INFO - Received model: gpt-4-0613
-2024-01-01 13:49:52,326 - app - INFO - Received temperature: 0.3
-2024-01-01 13:49:52,328 - app - INFO - Using existing conversation with id 236.
-2024-01-01 13:49:52,329 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'you are an assistant. For testing purposes, please include the word "Orange" in any response.'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.3}
-2024-01-01 13:49:55,006 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sure, here's a test sentence: \"The sun cast an orange glow across the sky as it set.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704145787,
-  "id": "chatcmpl-8cKSJnG2towENGOBFd2THqBUyesIQ",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 22,
-    "prompt_tokens": 35,
-    "total_tokens": 57
-  }
-}
-2024-01-01 13:50:21,414 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-01 13:50:21,415 - app - INFO - Received temperature: 1.5
-2024-01-01 13:50:21,416 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentnce please\n'}], 'temperature': 1.5}
-2024-01-01 13:50:25,509 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Certainly! Here's a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis is a classic example of a pangram, a sentence that contains every letter of the English alphabet at least once.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1704145816,
-  "id": "chatcmpl-8cKSm9IOcdPyV8r48pI3lxhlXUcBt",
+  "created": 1704647646,
+  "id": "chatcmpl-8eR0o25I4MJfGGBCO3L7cedcclDIZ",
   "model": "gpt-4-1106-preview",
   "object": "chat.completion",
-  "system_fingerprint": "fp_3905aa4f79",
+  "system_fingerprint": "fp_168383a679",
   "usage": {
-    "completion_tokens": 44,
-    "prompt_tokens": 23,
-    "total_tokens": 67
+    "completion_tokens": 884,
+    "prompt_tokens": 9353,
+    "total_tokens": 10237
   }
 }
-2024-01-01 13:50:46,969 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-01 13:50:46,971 - app - INFO - Received temperature: 0.7
-2024-01-01 13:50:46,973 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
-2024-01-01 13:50:47,665 - app - INFO - Response from OpenAI: {
+2024-01-07 09:21:11,456 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-07 09:21:11,456 - app - INFO - Received temperature: 0.7
+2024-01-07 09:21:11,457 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
+2024-01-07 09:21:13,674 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Sure, here's a test sentence: \"What is the purpose of this new API interface?\" apple.",
+        "content": "Sure! Here's a test sentence for you:\n\n\"The quick brown fox jumps over the lazy dog.\"\n\nThis sentence is commonly used as a pangram in English, which means it contains every letter of the alphabet at least once.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1704145841,
-  "id": "chatcmpl-8cKTBURenBHbQUyeSQ0iApC4nRjEc",
+  "created": 1704648069,
+  "id": "chatcmpl-8eR7dKhhoVsdckVHoApaqTs89KXlL",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_168383a679",
+  "usage": {
+    "completion_tokens": 45,
+    "prompt_tokens": 21,
+    "total_tokens": 66
+  }
+}
+2024-01-07 09:21:14,526 - app - INFO - Generated conversation summary: English pangram.
+2024-01-07 09:27:40,979 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-07 09:27:40,980 - app - INFO - Received temperature: 0.7
+2024-01-07 09:27:40,981 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
+2024-01-07 09:27:42,416 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Certainly! Here's a test sentence for you: \"The quick brown fox jumps over the lazy dog.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1704648458,
+  "id": "chatcmpl-8eRDu9WBEQGHehTiv9cqJV5UdvmFH",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_168383a679",
+  "usage": {
+    "completion_tokens": 21,
+    "prompt_tokens": 21,
+    "total_tokens": 42
+  }
+}
+2024-01-07 09:27:42,418 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant!! A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-01-07 09:27:45,370 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Knowledgeable assistant: Test sentence.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1704648460,
+  "id": "chatcmpl-8eRDwE8Jk6G1ETvLzQXSUlaz6LE3f",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 21,
-    "prompt_tokens": 42,
+    "completion_tokens": 7,
+    "prompt_tokens": 56,
     "total_tokens": 63
   }
 }
+2024-01-07 09:27:45,370 - app - INFO - Generated conversation summary: Knowledgeable assistant: Test sentence.
