@@ -12,6 +12,58 @@ let initialTemperature;
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
 
+function updateSystemMessageDropdown() {
+    let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
+    let dropdownButton = document.getElementById('systemMessageDropdown'); // Button for the dropdown
+
+    if (!dropdownMenu || !dropdownButton) {
+        console.error("Required elements not found in the DOM.");
+        return;
+    }
+
+    // Clear existing dropdown items
+    dropdownMenu.innerHTML = '';
+
+    // Repopulate the dropdown menu
+    systemMessages.forEach((message, index) => {
+        let dropdownItem = document.createElement('button');
+        dropdownItem.className = 'dropdown-item';
+        dropdownItem.textContent = message.name;
+        dropdownItem.onclick = function() {
+            // Update the dropdown button text and modal content
+            dropdownButton.textContent = this.textContent; // Update the system message dropdown button text
+            document.getElementById('systemMessageName').value = message.name || '';
+            document.getElementById('systemMessageDescription').value = message.description || '';
+            document.getElementById('systemMessageContent').value = message.content || '';
+            document.getElementById('systemMessageModal').dataset.messageId = message.id;
+            // Update the current system message description
+            currentSystemMessageDescription = message.description;
+            // Update the temperature display
+            updateTemperatureSelectionInModal(message.temperature);
+            // Update the model dropdown in the modal and the global model variable
+            updateModelDropdownInModal(message.model_name);
+            model = message.model_name; // Update the global model variable
+        };
+        dropdownMenu.appendChild(dropdownItem);
+    });
+}
+
+function showModalFlashMessage(message, category) { // Usage Example: showModalFlashMessage('System message saved.', 'success');
+    var flashContainer = document.getElementById('modal-flash-message-container');
+    flashContainer.innerHTML = ''; // Clear previous messages
+
+    var flashMessageDiv = document.createElement('div');
+    flashMessageDiv.classList.add('alert', `alert-${category}`, 'text-center');
+    flashMessageDiv.textContent = message;
+
+    flashContainer.appendChild(flashMessageDiv);
+
+    // Hide the message after 3 seconds
+    setTimeout(function() {
+        flashContainer.innerHTML = ''; // Clear the message
+    }, 3000);
+}
+
 
 function checkAdminStatus(e) {
     if (!isAdmin) {
@@ -216,6 +268,7 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
 
 
 
+
 function updateTemperatureSelectionInModal(temperature) {
     console.log("Updating temperature in modal to:", temperature);
     selectedTemperature = temperature;
@@ -322,28 +375,40 @@ document.getElementById('delete-system-message-btn').addEventListener('click', f
     const messageId = document.getElementById('systemMessageModal').dataset.messageId;
 
     if (messageId) {
-        // Ask the user to confirm the deletion
         if (confirm('Are you sure you want to delete this system message?')) {
-            // If the user clicked OK, then delete the system message
             $.ajax({
                 url: `/system-messages/${messageId}`,
                 method: 'DELETE',
                 success: function(response) {
                     console.log('System message deleted successfully:', response);
-                    // Handle successful deletion here, e.g., show a success message or refresh the system messages list
 
-                    // Close the modal
-                    $('#systemMessageModal').modal('hide');
+                    // Show the flash message in the modal
+                    showModalFlashMessage('System message has been deleted', 'success');
+
+                    // Find and set the System Default Message as the active message
+                    const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+                    if (defaultSystemMessage) {
+                        activeSystemMessageId = defaultSystemMessage.id;
+                        document.getElementById('systemMessageName').value = defaultSystemMessage.name;
+                        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description;
+                        document.getElementById('systemMessageContent').value = defaultSystemMessage.content;
+                        document.getElementById('modalModelDropdownButton').dataset.apiName = defaultSystemMessage.model_name;
+                        selectedTemperature = defaultSystemMessage.temperature;
+                        updateTemperatureSelectionInModal(defaultSystemMessage.temperature);
+                        updateModelDropdownInModal(defaultSystemMessage.model_name);
+                    } else {
+                        console.error('Default System Message not found');
+                    }
                 },
                 error: function(error) {
                     console.error('Error deleting system message:', error);
-                    // Handle error here
+                    showModalFlashMessage('Error deleting system message', 'danger');
                 }
             });
         }
     } else {
         console.error('System message ID not found for deletion');
-        // Handle the case where the system message ID is not found
+        showModalFlashMessage('System message ID not found', 'danger');
     }
 });
 
@@ -399,28 +464,6 @@ $('.dropdown-item').on('click', function(event){
         console.log("Dropdown item clicked. Model is now: " + model);
 });
 
-/*
-document.getElementById("save-temperature-setting").addEventListener("click", function() {
-    selectedTemperature = parseFloat(document.querySelector('input[name="temperatureOptions"]:checked').value);
-    console.log("Selected Temperature: ", selectedTemperature);
-
-    // Check the source of the modal
-    var source = $('#temperatureModal').data('source');
-    if (source === 'systemMessageModal') {
-        // The modal is triggered from the system message selection modal
-        // No additional actions needed
-    } else {
-        // The modal is triggered from the original temperature button
-        // No additional actions needed
-    }
-
-    // Update the temperature display
-    updateTemperatureDisplay();
-
-    // Close the Temperature modal
-    $('#temperatureModal').modal('hide');
-});
-*/
 
 document.querySelectorAll('input[name="temperatureOptions"]').forEach((radioButton) => {
     radioButton.addEventListener('change', updateTemperatureDisplay);
