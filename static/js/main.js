@@ -81,37 +81,44 @@ function checkAdminStatus(e) {
 }
 
 function fetchAndProcessSystemMessages() {
-    return fetch('/api/system_messages')
-        .then(response => response.json())
-        .then(data => {
-            systemMessages = data; // Update the systemMessages array
+    return new Promise((resolve, reject) => {
+        fetch('/api/system_messages')
+            .then(response => response.json())
+            .then(data => {
+                systemMessages = data; // Update the systemMessages array
 
-            // Populate system message modal here
-            populateSystemMessageModal(); // Ensure this is called after systemMessages are set
+                // Populate system message modal here
+                populateSystemMessageModal(); // Ensure this is called after systemMessages are set
 
-            // If there's no active system message, set it to the default
-            if (!activeSystemMessageId) {
-                const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
-                if (defaultSystemMessage) {
-                    // Set the activeSystemMessageId
-                    activeSystemMessageId = defaultSystemMessage.id;
+                // If there's no active system message, set it to the default
+                if (!activeSystemMessageId) {
+                    const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+                    if (defaultSystemMessage) {
+                        // Set the activeSystemMessageId
+                        activeSystemMessageId = defaultSystemMessage.id;
+                    }
                 }
-            }
 
-            // Find the active system message
-            const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
-            if (activeSystemMessage) {
-                // Display the active system message
-                displaySystemMessage(activeSystemMessage.content);
-            } else {
-                // If there's no active system message, display the first system message
-                displaySystemMessage(systemMessages[0].content);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching system messages:', error);
-        });
+                // Find the active system message
+                const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
+                if (activeSystemMessage) {
+                    // Display the active system message description in the UI
+                    displaySystemMessage(activeSystemMessage);
+                } else {
+                    // If there's no active system message, display the description of the first system message in the UI
+                    displaySystemMessage(systemMessages[0]);
+                }
+
+                resolve(); // Resolve the promise after system messages are processed
+            })
+            .catch(error => {
+                console.error('Error fetching system messages:', error);
+                reject(error); // Reject the promise if there's an error
+            });
+    });
 }
+
+
 
 
 
@@ -175,13 +182,22 @@ function toggleTemperatureSettings() {
 
 document.getElementById('saveSystemMessageChanges').addEventListener('click', function() {
     console.log("Before saving system message, selectedTemperature:", selectedTemperature);
-    const messageName = document.getElementById('systemMessageName').value;
+    const messageName = document.getElementById('systemMessageName').value.trim();
     const messageDescription = document.getElementById('systemMessageDescription').value;
     const messageContent = document.getElementById('systemMessageContent').value;
     const modelName = document.getElementById('modalModelDropdownButton').dataset.apiName;
     const temperature = selectedTemperature;
 
     const messageId = document.getElementById('systemMessageModal').dataset.messageId;
+
+    // Check if a system message with the same name already exists when creating a new message
+    if (!messageId) {
+        const existingMessage = systemMessages.find(message => message.name.toLowerCase() === messageName.toLowerCase());
+        if (existingMessage) {
+            showModalFlashMessage("Please select a different name. That name is already in use.", "warning");
+            return; // Stop the function from proceeding further
+        }
+    }
 
     if (messageId) {
         // Updating an existing system message
@@ -216,8 +232,16 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
                     // Update the model dropdown on the main page
                     $('#dropdownMenuButton').text(modelNameMapping(modelName));
 
-                    // Update the system message display
-                    displaySystemMessage(messageContent);
+                    // Update the system message display with the updated system message object
+                const updatedSystemMessage = {
+                    id: messageId,
+                    name: messageName,
+                    description: messageDescription,
+                    content: messageContent,
+                    model_name: modelName,
+                    temperature: temperature
+                };
+                displaySystemMessage(updatedSystemMessage);
 
                     $('#systemMessageModal').modal('hide');
                 });
@@ -243,20 +267,23 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
                 console.log('System message created successfully:', response);
 
                 // Fetch the updated list of system messages
-                $.ajax({
-                    url: '/system-messages', // Replace with your actual API endpoint
-                    method: 'GET',
-                    success: function(updatedSystemMessages) {
-                        // Update the systemMessages array
-                        systemMessages = updatedSystemMessages;
+                fetchAndProcessSystemMessages().then(() => {
+                    // Assuming response contains the new system message ID, update activeSystemMessageId
+                    activeSystemMessageId = response.id;
 
-                        populateSystemMessageModal();  // Re-populate the dropdown
+                    // Update the system message display with the updated system message object
+                const updatedSystemMessage = {
+                    id: messageId,
+                    name: messageName,
+                    description: messageDescription,
+                    content: messageContent,
+                    model_name: modelName,
+                    temperature: temperature
+                };
+                displaySystemMessage(updatedSystemMessage);
 
-                        $('#systemMessageModal').modal('hide');
-                    },
-                    error: function(error) {
-                        console.error('Error fetching updated system messages:', error);
-                    }
+                    // Close the modal
+                    $('#systemMessageModal').modal('hide');
                 });
             },
             error: function(error) {
@@ -349,25 +376,35 @@ function updateTemperatureDisplay() {
     document.getElementById('temperatureDisplay').textContent = 'Temperature: ' + selectedTemperatureDescription;
 }
 
-function displaySystemMessage(messageContent) {
-    currentSystemMessage = messageContent; // Update the current system message
+function displaySystemMessage(systemMessage) {
+    // Update the UI with the system message description, model name, and temperature
     let systemMessageButton = createSystemMessageButton();
-    const renderedContent = renderOpenAI(messageContent) + systemMessageButton;
+    const modelDisplayName = modelNameMapping(systemMessage.model_name); // Get the user-friendly model name
+    const temperatureDisplay = systemMessage.temperature;
+    const descriptionContent = renderOpenAI(systemMessage.description);
+    const renderedContent = `
+        <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
+        <strong>Model:</strong> ${modelDisplayName}, <strong>Temperature:</strong> ${temperatureDisplay}°
+    `;
 
     // Update the UI
-    document.getElementById('system-message-selection').innerHTML = '<div class="system-message">System: ' + renderedContent + '</div>';
+    document.getElementById('system-message-selection').innerHTML = '<div class="system-message">' + renderedContent + '</div>';
 
-    // Update the message in the 'messages' array
+    // Update the message in the 'messages' array with the content
     if (messages.length > 0 && messages[0].role === "system") {
-        messages[0].content = messageContent;
+        messages[0].content = systemMessage.content;
     } else {
         // If there's no existing system message at the start of the array, add it
         messages.unshift({
             role: "system",
-            content: messageContent
+            content: systemMessage.content
         });
     }
 }
+
+
+
+
 
 
 
@@ -633,7 +670,7 @@ let selectedTemperature;
 
 
 function createSystemMessageButton() {
-    return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-regular fa-pen-to-square"></i></button>`;
+    return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-solid fa-pencil"></i></button>`;
 }
 
 // Handle the click event on the system message button
@@ -664,19 +701,15 @@ document.addEventListener('click', function(event) {
 });
 
 
-// Existing logic to display the system message when the page loads
-document.addEventListener("DOMContentLoaded", function() {
-    if (!activeConversationId && $('#chat').children().length === 0) {
-        displaySystemMessage(systemMessages[0].content);
-    }
-});
+
 
 // Add event listener to model dropdown to handle model changes
 document.addEventListener('change', function(event) {
     if (event.target && event.target.id === 'model-dropdown') {
         // Logic to handle model change
         let selectedModel = systemMessages[event.target.value];
-        displaySystemMessage(selectedModel.content);
+        // Pass the entire system message object instead of just the content
+        displaySystemMessage(selectedModel);
         // Additional logic to switch the conversation to the selected model
     }
 });
@@ -690,7 +723,7 @@ document.addEventListener('click', function(event) {
 });
 
 
-document.addEventListener("DOMContentLoaded", populateSystemMessageModal);
+
 
 document.addEventListener('click', function(event) {
     if (event.target && event.target.closest('#systemMessageButton')) {
@@ -910,7 +943,7 @@ function showConversationControls(title = "AI &infin; UI", tokens = {prompt: 0, 
 }
 
 
-// This function fetchs and displays a conversation.
+// This function fetches and displays a conversation.
 function loadConversation(conversationId) {
     console.log(`Fetching conversation with id: ${conversationId}...`);
     fetch(`/conversations/${conversationId}`)
@@ -926,15 +959,11 @@ function loadConversation(conversationId) {
             $('#conversation-title').text(data.title);
             
             // Update the messages array with the conversation history
-            
             console.log('Parsed JSON data from conversation:', data);
 
             messages = data.history;
-            
             console.log(`Received conversation data for id: ${conversationId}`);
-        
             console.log('Token Count:', data.token_count);
-
             console.log("Retrieved model name:", data.model_name);  // Log the retrieved model name
 
             // Update the dropdown display based on the model name from the conversation
@@ -953,64 +982,36 @@ function loadConversation(conversationId) {
             // Save this conversation id as the active conversation
             activeConversationId = conversationId;
             
-            // Update the UI to reflect the fetched temperature
-            document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
-                if (parseFloat(radio.value) === parseFloat(selectedTemperature)) {
-                    radio.checked = true;
-                } else {
-                    radio.checked = false;
-                }
-            });
-
-
-            // Check if data.history is already an array, if not try parsing it
-            let history;
-            if (Array.isArray(data.history)) {
-                history = data.history;
-            } else {
-                try {
-                    history = JSON.parse(data.history);
-                } catch (e) {
-                    console.error(`Error parsing history for conversation ${conversationId}: ${e}`);
-                    return;
-                }
-            }
-        
             // Clear the chat
             $('#chat').empty();
 
-            let lastRole = null;  // added to keep track of the last role
-
             // Add each message to the chat. Style the messages based on their role.
-            history.forEach(message => {
-                    let prefix = '';
-                    let messageClass = '';
-                    if (message.role === 'system') {
-                        prefix = 'System: ';
-                        messageClass = 'system-message';
-                    } else if (message.role === 'user') {
-                        prefix = '<i class="far fa-user"></i> ';
-                        messageClass = 'user-message';
-                    } else if (message.role === 'assistant') {
-                        prefix = '<i class="fas fa-robot"></i> ';
-                        messageClass = 'bot-message';
-                    }
-                    // Use marked to render the message content as HTML
-                    const renderedContent = renderOpenAI(message.content);
-                    $('#chat').append('<div class="chat-entry ' + message.role + ' ' + messageClass + '">' + prefix + renderedContent + '</div>');
-                    lastRole = message.role;  // update the last role
+            data.history.forEach(message => {
+                if (message.role === 'system') {
+                    // Log the system message for debugging
+                    console.log("System message from history:", message);
+
+                    // Display the system message with model and temperature information
+                    const systemMessageContent = renderOpenAI(message.content);
+                    const systemMessageHTML = `
+                        <div class="chat-entry system system-message">
+                            <strong>System:</strong> ${systemMessageContent}<br>
+                            <strong>Model:</strong> ${modelNameMapping(modelName)}, <strong>Temperature:</strong> ${selectedTemperature}°
+                        </div>
+                    `;
+                    $('#chat').append(systemMessageHTML);
+                } else {
+                    const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+                    const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
+                    const messageContent = renderOpenAI(message.content);
+                    $('#chat').append(`<div class="chat-entry ${message.role} ${messageClass}">${prefix}${messageContent}</div>`);
                 }
-            );
+            });
 
             Prism.highlightAll(); // Highlight code blocks
 
-            // Append blank user message if the last message was from the assistant
-            if (lastRole === 'assistant') {
-            $('#chat').append('<div class="chat-entry user user-message"><div class="buffer-message"></div></div>');
-            }
-  
             // Important! Update the 'messages' array with the loaded conversation history
-            messages = history;
+            messages = data.history;
 
             console.log(`Chat updated with messages from conversation id: ${conversationId}`);
 
@@ -1021,7 +1022,9 @@ function loadConversation(conversationId) {
         .catch(error => {
             console.error(`Error fetching conversation with id: ${conversationId}. Error: ${error}`);
         });
-}     
+}
+
+    
 
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
@@ -1131,15 +1134,26 @@ document.getElementById("new-chat-btn").addEventListener("click", function() {
     });
 });
 
-
-
-
-// Check if the chat is empty when the page loads
 document.addEventListener("DOMContentLoaded", function() {
-    if (!activeConversationId && $('#chat').children().length === 0) {
-        // displaySystemMessage(messages[0]);
-        displaySystemMessage(systemMessages[0].content); // display default system message, using "content" property.
-    }
+    // Fetch and process system messages
+    fetchAndProcessSystemMessages().then(() => {
+        // Populate the system message modal
+        populateSystemMessageModal();
+
+        // Check if there's an active conversation and if the chat is empty
+        if (!activeConversationId && $('#chat').children().length === 0) {
+            // Find the default system message and display it
+            const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+            if (defaultSystemMessage) {
+                displaySystemMessage(defaultSystemMessage);
+            } else if (systemMessages.length > 0) {
+                // If there's no "Default System Message", display the first one in the list
+                displaySystemMessage(systemMessages[0]);
+            }
+        }
+    }).catch(error => {
+        console.error('Error during system message fetch and display:', error);
+    });
 });
 
 
