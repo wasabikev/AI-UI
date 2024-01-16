@@ -496,6 +496,9 @@ def chat():
     conversation.model_name = model
     conversation.token_count = token_data['total_tokens']
 
+    # Log the messages to ensure they are received correctly
+    app.logger.info(f'Received messages: {messages}')
+                                          
     # Commit changes made to the conversation object
     db.session.commit()
 

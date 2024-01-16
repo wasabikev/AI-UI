@@ -1,230 +1,75 @@
-2024-01-13 08:32:58,941 - app - INFO - Response from OpenAI for summary: {
+2024-01-15 16:22:02,888 - app - INFO - Response from OpenAI: {
   "choices": [
     {
-      "finish_reason": "length",
+      "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Test sentence: \"The quick brown fox jumps over",
+        "content": "Certainly! Here is a simple example of HTML code for a UI test:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>UI Test</title>\n  <style>\n    /* CSS styles for UI elements */\n    .button {\n      padding: 10px 20px;\n      background-color: #007bff;\n      color: #fff;\n      border: none;\n      cursor: pointer;\n    }\n    .input {\n      padding: 5px;\n      border: 1px solid #ccc;\n    }\n  </style>\n</head>\n<body>\n  <h1>UI Test</h1>\n  \n  <form id=\"myForm\">\n    <label for=\"name\">Name:</label>\n    <input type=\"text\" id=\"name\" class=\"input\" required>\n    <br><br>\n    \n    <label for=\"email\">Email:</label>\n    <input type=\"email\" id=\"email\" class=\"input\" required>\n    <br><br>\n    \n    <button type=\"submit\" class=\"button\">Submit</button>\n  </form>\n  \n  <script>\n    // JavaScript code for handling form submission\n    document.getElementById(\"myForm\").addEventListener(\"submit\", function(event) {\n      event.preventDefault();\n      \n      var name = document.getElementById(\"name\").value;\n      var email = document.getElementById(\"email\").value;\n      \n      // Perform validation or other actions with the form data\n      \n      console.log(\"Name: \" + name);\n      console.log(\"Email: \" + email);\n    });\n  </script>\n</body>\n</html>\n```\n\nThis code creates a simple form with two input fields (name and email) and a submit button. The JavaScript code handles the form submission event and logs the values entered in the console. You can modify and enhance this code as per your specific UI testing requirements.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705163577,
-  "id": "chatcmpl-8gbEHlyV66NFyw6IGR4uPqFRL6Bp1",
+  "created": 1705364518,
+  "id": "chatcmpl-8hRVGbtahXi4eKsW12cMNg9IWAxFW",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 10,
-    "prompt_tokens": 56,
-    "total_tokens": 66
+    "completion_tokens": 383,
+    "prompt_tokens": 34,
+    "total_tokens": 417
   }
 }
-2024-01-13 08:32:58,964 - app - INFO - Generated conversation summary: Test sentence: "The quick brown fox jumps over
-2024-01-13 08:46:03,407 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-13 08:46:03,411 - app - INFO - Received temperature: 0.7
-2024-01-13 08:46:03,412 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'user', 'content': 'test'}], 'temperature': 0.7}
-2024-01-13 08:46:04,963 - app - INFO - Response from OpenAI: {
+2024-01-15 16:22:02,894 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide some sample HTML code for a UI test Certainly! Here is a simple example of HTML code for a UI test:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>UI Test</title>\n  <style>\n    /* CSS styles for UI elements */\n    .button {\n      padding: 10px 20px;\n      background-color: #007bff;\n      color: #fff;\n      border: none;\n      cursor: pointer;\n    }\n    .input {\n      padding: 5px;\n      border: 1px solid #ccc;\n    }\n  </style>\n</head>\n<body>\n  <h1>UI Test</h1>\n  \n  <form id="myForm">\n    <label for="name">Name:</label>\n    <input type="text" id="name" class="input" required>\n    <br><br>\n    \n    <label for="email">Email:</label>\n    <input type="email" id="email" class="input" required>\n    <br><br>\n    \n    <button type="submit" class="button">Submit</button>\n  </form>\n  \n  <script>\n    // JavaScript code for handling form submission\n    document.getElementById("myForm").addEventListener("submit", function(event) {\n      event.preventDefault();\n      \n      var name = document.getElementById("name").value;\n      var email = document.getElementById("email").value;\n      \n      // Perform validation or other actions with the form data\n      \n      console.log("Name: " + name);\n      console.log("Email: " + email);\n    });\n  </script>\n</body>\n</html>\n```\n\nThis code creates a simple form with two input fields (name and email) and a submit button. The JavaScript code handles the form submission event and logs the values entered in the console. You can modify and enhance this code as per your specific UI testing requirements.'}], 'max_tokens': 10}
+2024-01-15 16:22:03,165 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Hello! It looks like you're trying to test the system. How can I assist you today? If you have any questions or need information on a specific topic, feel free to ask.",
+        "content": "Sample HTML Code for UI Test",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705164362,
-  "id": "chatcmpl-8gbQw1Vu2XiyXKylUNvHWnLdkWxNR",
-  "model": "gpt-4-1106-preview",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_168383a679",
-  "usage": {
-    "completion_tokens": 38,
-    "prompt_tokens": 8,
-    "total_tokens": 46
-  }
-}
-2024-01-13 08:46:04,969 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\ntest Hello! It looks like you're trying to test the system. How can I assist you today? If you have any questions or need information on a specific topic, feel free to ask."}], 'max_tokens': 10}
-2024-01-13 08:46:05,251 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Testing Assistance",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705164364,
-  "id": "chatcmpl-8gbQyF0oVP2es4ySOF2SQy5j8Sjrz",
+  "created": 1705364523,
+  "id": "chatcmpl-8hRVLNT98cFy12VVCc4FaJYnZmOx6",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 2,
-    "prompt_tokens": 64,
-    "total_tokens": 66
+    "completion_tokens": 6,
+    "prompt_tokens": 431,
+    "total_tokens": 437
   }
 }
-2024-01-13 08:46:05,268 - app - INFO - Generated conversation summary: Testing Assistance
-2024-01-13 19:32:46,831 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-13 19:32:46,832 - app - INFO - Received temperature: 0.7
-2024-01-13 19:32:46,833 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
-2024-01-13 19:32:48,054 - app - INFO - Response from OpenAI: {
+2024-01-15 16:22:03,170 - app - INFO - Generated conversation summary: Sample HTML Code for UI Test
+2024-01-15 16:22:03,180 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample HTML code for a UI test'}, {'role': 'assistant', 'content': 'Certainly! Here is a simple example of HTML code for a UI test:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>UI Test</title>\n  <style>\n    /* CSS styles for UI elements */\n    .button {\n      padding: 10px 20px;\n      background-color: #007bff;\n      color: #fff;\n      border: none;\n      cursor: pointer;\n    }\n    .input {\n      padding: 5px;\n      border: 1px solid #ccc;\n    }\n  </style>\n</head>\n<body>\n  <h1>UI Test</h1>\n  \n  <form id="myForm">\n    <label for="name">Name:</label>\n    <input type="text" id="name" class="input" required>\n    <br><br>\n    \n    <label for="email">Email:</label>\n    <input type="email" id="email" class="input" required>\n    <br><br>\n    \n    <button type="submit" class="button">Submit</button>\n  </form>\n  \n  <script>\n    // JavaScript code for handling form submission\n    document.getElementById("myForm").addEventListener("submit", function(event) {\n      event.preventDefault();\n      \n      var name = document.getElementById("name").value;\n      var email = document.getElementById("email").value;\n      \n      // Perform validation or other actions with the form data\n      \n      console.log("Name: " + name);\n      console.log("Email: " + email);\n    });\n  </script>\n</body>\n</html>\n```\n\nThis code creates a simple form with two input fields (name and email) and a submit button. The JavaScript code handles the form submission event and logs the values entered in the console. You can modify and enhance this code as per your specific UI testing requirements.'}]
+2024-01-15 17:19:44,703 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-01-15 17:19:44,704 - app - INFO - Received temperature: 0.3
+2024-01-15 17:19:44,705 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test segment of HTML and CSS for a UI test'}], 'temperature': 0.3}
+2024-01-15 17:19:51,284 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Certainly! Here's a test sentence for you: \"The quick brown fox jumps over the lazy dog.\"",
+        "content": "Sure! Here's an example of a test segment for a UI test using HTML and CSS:\n\nHTML:\n```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>UI Test</title>\n  <link rel=\"stylesheet\" type=\"text/css\" href=\"styles.css\">\n</head>\n<body>\n  <div id=\"container\">\n    <h1>UI Test</h1>\n    <form>\n      <label for=\"name\">Name:</label>\n      <input type=\"text\" id=\"name\" name=\"name\">\n      <br>\n      <label for=\"email\">Email:</label>\n      <input type=\"email\" id=\"email\" name=\"email\">\n      <br>\n      <input type=\"submit\" value=\"Submit\">\n    </form>\n  </div>\n</body>\n</html>\n```\n\nCSS (styles.css):\n```css\n#container {\n  width: 300px;\n  margin: 0 auto;\n  padding: 20px;\n  background-color: #f1f1f1;\n}\n\nh1 {\n  text-align: center;\n}\n\nform {\n  margin-top: 20px;\n}\n\nlabel {\n  display: block;\n  margin-bottom: 5px;\n}\n\ninput[type=\"text\"],\ninput[type=\"email\"] {\n  width: 100%;\n  padding: 5px;\n  margin-bottom: 10px;\n}\n\ninput[type=\"submit\"] {\n  width: 100%;\n  padding: 10px;\n  background-color: #4CAF50;\n  color: white;\n  border: none;\n  cursor: pointer;\n}\n\ninput[type=\"submit\"]:hover {\n  background-color: #45a049;\n}\n```\n\nThis HTML and CSS code creates a simple form with two input fields (name and email) and a submit button. The CSS styles the form and its elements to give it a clean and visually appealing look.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705203165,
-  "id": "chatcmpl-8glWnM90uxTWC41qCV3KNEC63rIfP",
-  "model": "gpt-4-1106-preview",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_866b9ef0a9",
-  "usage": {
-    "completion_tokens": 21,
-    "prompt_tokens": 21,
-    "total_tokens": 42
-  }
-}
-2024-01-13 19:32:48,059 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant!! A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
-2024-01-13 19:32:48,868 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Test sentence response",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705203166,
-  "id": "chatcmpl-8glWoO2t8bqTAqeaL7bW2ouE4DsP4",
+  "created": 1705367985,
+  "id": "chatcmpl-8hSPBO74ShnnEHzCjiuQNRpSrCWfk",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 56,
-    "total_tokens": 59
+    "completion_tokens": 391,
+    "prompt_tokens": 37,
+    "total_tokens": 428
   }
 }
-2024-01-13 19:32:48,874 - app - INFO - Generated conversation summary: Test sentence response
-2024-01-13 20:14:44,371 - app - INFO - Received model: gpt-4-0613
-2024-01-13 20:14:44,372 - app - INFO - Received temperature: 0.3
-2024-01-13 20:14:44,373 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-0613', 'messages': [{'role': 'system', 'content': 'you are an assistant. For testing purposes, please include the word "Orange" in any response.'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.3}
-2024-01-13 20:14:46,029 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sure, here is a test sentence: \"The sun set, casting an orange glow across the sky.\"",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705205682,
-  "id": "chatcmpl-8gmBOgtn5T0qevF7A6ULjWzrJGz2m",
-  "model": "gpt-4-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 21,
-    "prompt_tokens": 35,
-    "total_tokens": 56
-  }
-}
-2024-01-13 20:14:46,030 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nyou are an assistant. For testing purposes, please include the word "Orange" in any response. A test sentence please Sure, here is a test sentence: "The sun set, casting an orange glow across the sky."'}], 'max_tokens': 10}
-2024-01-13 20:14:46,869 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Test response containing the word \"Orange\".",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705205684,
-  "id": "chatcmpl-8gmBQhxdlm2JEraI0oJbw3E8r4XjS",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 8,
-    "prompt_tokens": 70,
-    "total_tokens": 78
-  }
-}
-2024-01-13 20:14:46,873 - app - INFO - Generated conversation summary: Test response containing the word "Orange".
-2024-01-13 20:16:18,211 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-13 20:16:18,212 - app - INFO - Received temperature: 1.5
-2024-01-13 20:16:18,212 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 1.5}
-2024-01-13 20:16:19,504 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sure, I can help with that! I assume you want me to end the sentence with the word \"apple\", correct? Please clarify.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705205777,
-  "id": "chatcmpl-8gmCvr9MXLRrDV6zNkFk7ttOdhcEo",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 28,
-    "prompt_tokens": 42,
-    "total_tokens": 70
-  }
-}
-2024-01-13 20:16:19,524 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple". A test sentence please Sure, I can help with that! I assume you want me to end the sentence with the word "apple", correct? Please clarify.'}], 'max_tokens': 10}
-2024-01-13 20:16:20,400 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "API interface development: Question clarification.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705205778,
-  "id": "chatcmpl-8gmCweeGS8ZXYqgyOtHM2yKB6J0Ls",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 7,
-    "prompt_tokens": 84,
-    "total_tokens": 91
-  }
-}
-2024-01-13 20:16:20,404 - app - INFO - Generated conversation summary: API interface development: Question clarification.
-2024-01-14 12:43:29,049 - app - INFO - Received model: gpt-4-0613
-2024-01-14 12:43:29,050 - app - INFO - Received temperature: 0.7
