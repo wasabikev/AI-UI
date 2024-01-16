@@ -1,144 +1,129 @@
-2024-01-11 18:27:51,035 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 456, in chat
-    response = openai.ChatCompletion.create(**api_request_payload)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
-    return super().create(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
-    response, _, api_key = requestor.request(
-                           ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
-    resp, got_stream = self._interpret_response(result, stream)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
-    self._interpret_response_line(
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
-    raise self.handle_error_response(
-openai.error.InvalidRequestError: Additional properties are not allowed ('description' was unexpected) - 'messages.0'
-2024-01-13 08:18:21,372 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-13 08:18:21,373 - app - INFO - Received temperature: 0.7
-2024-01-13 08:18:21,374 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'description': 'Default entry for database Temp: 1.5 Model: GPT-4 (128K)'}, {'role': 'user', 'content': 'test'}], 'temperature': 0.7}
-2024-01-13 08:18:21,733 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 456, in chat
-    response = openai.ChatCompletion.create(**api_request_payload)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
-    return super().create(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
-    response, _, api_key = requestor.request(
-                           ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
-    resp, got_stream = self._interpret_response(result, stream)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
-    self._interpret_response_line(
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
-    raise self.handle_error_response(
-openai.error.InvalidRequestError: Additional properties are not allowed ('description' was unexpected) - 'messages.0'
-2024-01-13 08:30:33,030 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-13 08:30:33,031 - app - INFO - Received temperature: 0.7
-2024-01-13 08:30:33,032 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'description': 'Default entry for database Temp: 1.5 Model: GPT-4 (128K)'}, {'role': 'user', 'content': 'test'}], 'temperature': 0.7}
-2024-01-13 08:30:33,270 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 456, in chat
-    response = openai.ChatCompletion.create(**api_request_payload)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
-    return super().create(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
-    response, _, api_key = requestor.request(
-                           ^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 230, in request
-    resp, got_stream = self._interpret_response(result, stream)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
-    self._interpret_response_line(
-  File "C:\Python311\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
-    raise self.handle_error_response(
-openai.error.InvalidRequestError: Additional properties are not allowed ('description' was unexpected) - 'messages.0'
-2024-01-13 08:32:56,016 - app - INFO - Received model: gpt-4-1106-preview
-2024-01-13 08:32:56,017 - app - INFO - Received temperature: 0.7
-2024-01-13 08:32:56,018 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant!!'}, {'role': 'user', 'content': 'A test sentence please'}], 'temperature': 0.7}
-2024-01-13 08:32:57,974 - app - INFO - Response from OpenAI: {
+2024-01-15 06:41:31,566 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Sure! Here's a test sentence for you: \"The quick brown fox jumps over the lazy dog.\"",
+        "content": "JavaScript Code for UI Rendering",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705163575,
-  "id": "chatcmpl-8gbEFbkeLdzsLzV19psuaQfewMyXB",
-  "model": "gpt-4-1106-preview",
+  "created": 1705329687,
+  "id": "chatcmpl-8hIRTIsxMD8ZhMZfSu0bqYZ80Q5d9",
+  "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
-  "system_fingerprint": "fp_168383a679",
+  "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 21,
-    "prompt_tokens": 21,
-    "total_tokens": 42
+    "completion_tokens": 5,
+    "prompt_tokens": 204,
+    "total_tokens": 209
   }
 }
-2024-01-13 08:32:57,974 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant!! A test sentence please Sure! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-01-15 06:41:31,575 - app - INFO - Generated conversation summary: JavaScript Code for UI Rendering
+2024-01-15 07:11:31,533 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-01-15 07:11:31,535 - app - INFO - Received temperature: 0.3
+2024-01-15 07:11:31,536 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a short code block of HTML for display testing'}], 'temperature': 0.3}
+2024-01-15 07:11:34,737 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Certainly! Here's a simple code block of HTML for display testing:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Display Testing</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            text-align: center;\n        }\n        \n        h1 {\n            color: #333;\n        }\n        \n        p {\n            color: #666;\n        }\n    </style>\n</head>\n<body>\n    <h1>Display Testing</h1>\n    <p>This is a sample HTML code for display testing.</p>\n</body>\n</html>\n```\n\nThis code creates a basic HTML document with a title, some CSS styling, and a heading and paragraph for display testing purposes. Feel free to modify it as needed for your specific testing requirements.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705331488,
+  "id": "chatcmpl-8hIuWNzLdbQ70cMIuaPQNdEQbQf47",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 164,
+    "prompt_tokens": 35,
+    "total_tokens": 199
+  }
+}
+2024-01-15 07:11:34,743 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide a short code block of HTML for display testing Certainly! Here's a simple code block of HTML for display testing:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Display Testing</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            text-align: center;\n        }\n        \n        h1 {\n            color: #333;\n        }\n        \n        p {\n            color: #666;\n        }\n    </style>\n</head>\n<body>\n    <h1>Display Testing</h1>\n    <p>This is a sample HTML code for display testing.</p>\n</body>\n</html>\n```\n\nThis code creates a basic HTML document with a title, some CSS styling, and a heading and paragraph for display testing purposes. Feel free to modify it as needed for your specific testing requirements."}], 'max_tokens': 10}
+2024-01-15 07:11:35,215 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "HTML code for display testing",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705331491,
+  "id": "chatcmpl-8hIuZQlYfXVDAIuxAMBNgzG2t9nH8",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 5,
+    "prompt_tokens": 213,
+    "total_tokens": 218
+  }
+}
+2024-01-15 07:11:35,219 - app - INFO - Generated conversation summary: HTML code for display testing
+2024-01-15 16:13:54,082 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-01-15 16:13:54,083 - app - INFO - Received temperature: 0.3
+2024-01-15 16:13:54,085 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a short sample of css code for a UI test'}], 'temperature': 0.3}
+2024-01-15 16:13:58,616 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Sure! Here's a short sample of CSS code for a UI test:\n\n```css\n/* Styling the container */\n.container {\n  width: 500px;\n  height: 300px;\n  background-color: #f2f2f2;\n  border: 1px solid #ccc;\n  padding: 20px;\n}\n\n/* Styling the heading */\n.container h1 {\n  font-size: 24px;\n  color: #333;\n  margin-bottom: 10px;\n}\n\n/* Styling the input field */\n.container input[type=\"text\"] {\n  width: 100%;\n  height: 40px;\n  padding: 5px;\n  font-size: 16px;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n\n/* Styling the button */\n.container button {\n  width: 100%;\n  height: 40px;\n  margin-top: 10px;\n  background-color: #007bff;\n  color: #fff;\n  font-size: 16px;\n  border: none;\n  border-radius: 4px;\n  cursor: pointer;\n}\n\n/* Styling the result */\n.container p {\n  margin-top: 20px;\n  font-size: 18px;\n  color: #333;\n}\n```\n\nThis CSS code provides basic styling for a UI test. It includes styles for a container, heading, input field, button, and result paragraph. You can modify and extend this code based on your specific UI test requirements.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705364034,
+  "id": "chatcmpl-8hRNS4tz1764OHTf07o6qWicuOuKv",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 313,
+    "prompt_tokens": 36,
+    "total_tokens": 349
+  }
+}
+2024-01-15 16:13:58,621 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide a short sample of css code for a UI test Sure! Here\'s a short sample of CSS code for a UI test:\n\n```css\n/* Styling the container */\n.container {\n  width: 500px;\n  height: 300px;\n  background-color: #f2f2f2;\n  border: 1px solid #ccc;\n  padding: 20px;\n}\n\n/* Styling the heading */\n.container h1 {\n  font-size: 24px;\n  color: #333;\n  margin-bottom: 10px;\n}\n\n/* Styling the input field */\n.container input[type="text"] {\n  width: 100%;\n  height: 40px;\n  padding: 5px;\n  font-size: 16px;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n\n/* Styling the button */\n.container button {\n  width: 100%;\n  height: 40px;\n  margin-top: 10px;\n  background-color: #007bff;\n  color: #fff;\n  font-size: 16px;\n  border: none;\n  border-radius: 4px;\n  cursor: pointer;\n}\n\n/* Styling the result */\n.container p {\n  margin-top: 20px;\n  font-size: 18px;\n  color: #333;\n}\n```\n\nThis CSS code provides basic styling for a UI test. It includes styles for a container, heading, input field, button, and result paragraph. You can modify and extend this code based on your specific UI test requirements.'}], 'max_tokens': 10}
+2024-01-15 16:13:59,466 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Sample CSS for UI Test",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705364039,
+  "id": "chatcmpl-8hRNXBXfLojDvAkCwjzVDx2vAJs15",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 5,
+    "prompt_tokens": 363,
+    "total_tokens": 368
+  }
+}
+2024-01-15 16:13:59,470 - app - INFO - Generated conversation summary: Sample CSS for UI Test
+2024-01-15 16:21:57,531 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-01-15 16:21:57,532 - app - INFO - Received temperature: 0.3
+2024-01-15 16:21:57,533 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample HTML code for a UI test'}], 'temperature': 0.3}

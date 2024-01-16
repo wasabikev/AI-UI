@@ -769,6 +769,16 @@ function detectAndRenderMarkdown(content) {
     return content;
 }
 
+// Helper function to escape HTML characters
+function escapeHtml(html) {
+    return html
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // This function renders the content inside triple backticks - the OpenAI Playground style.
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
@@ -800,6 +810,9 @@ function renderOpenAI(content) {
         if (!lang || lang === 'markdown') {
             // If no language is provided or the language is markdown, process it with the Markdown parser
             renderedContent = marked.parse(p1.trim());
+        } else if (lang === 'html') {
+            // If the language is HTML, escape it and wrap it in a code block
+            renderedContent = '<pre><code class="language-html">' + escapeHtml(p1.trim()) + '</code></pre>';
         } else {
             // Otherwise, treat it as a code block
             renderedContent = '<pre><code class="' + (lang ? 'language-' + lang : '') + '">' + p1.trim() + '</code></pre>';
@@ -820,13 +833,13 @@ function renderOpenAI(content) {
         return tempElement.innerHTML || match; // Ensure we return the original match if nothing else
     };
     
-
     // Replace content inside triple backticks with processed content
     const processedContent = content.replace(regex, replacer);
     console.log('Final processed content:', processedContent);
 
     return processedContent;
 }
+
 
 
 function updateConversationList() {
@@ -987,28 +1000,13 @@ function loadConversation(conversationId) {
 
             // Add each message to the chat. Style the messages based on their role.
             data.history.forEach(message => {
-                if (message.role === 'system') {
-                    // Log the system message for debugging
-                    console.log("System message from history:", message);
-
-                    // Display the system message with model and temperature information
-                    const systemMessageContent = renderOpenAI(message.content);
-                    const systemMessageHTML = `
-                        <div class="chat-entry system system-message">
-                            <strong>System:</strong> ${systemMessageContent}<br>
-                            <strong>Model:</strong> ${modelNameMapping(modelName)}, <strong>Temperature:</strong> ${selectedTemperature}°
-                        </div>
-                    `;
-                    $('#chat').append(systemMessageHTML);
-                } else {
-                    const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
-                    const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
-                    const messageContent = renderOpenAI(message.content);
-                    $('#chat').append(`<div class="chat-entry ${message.role} ${messageClass}">${prefix}${messageContent}</div>`);
-                }
+                const messageContent = renderOpenAI(message.content);
+                const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+                const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
+                $('#chat').append(`<div class="chat-entry ${message.role} ${messageClass}">${prefix}${messageContent}</div>`);
             });
 
-            Prism.highlightAll(); // Highlight code blocks
+            Prism.highlightAll(); // Highlight code blocks after adding content to the DOM
 
             // Important! Update the 'messages' array with the loaded conversation history
             messages = data.history;
@@ -1023,6 +1021,7 @@ function loadConversation(conversationId) {
             console.error(`Error fetching conversation with id: ${conversationId}. Error: ${error}`);
         });
 }
+
 
     
 
