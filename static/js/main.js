@@ -1013,32 +1013,17 @@ function loadConversation(conversationId) {
 
             // Add each message to the chat. Style the messages based on their role.
             data.history.forEach(message => {
-                // Handle the system message differently to include the model name and temperature
-                if (message.role === 'system') {
-                    let systemMessageContent = renderOpenAI(message.content);
-                    // Prepare the display content for system message
-                    const systemMessageHTML = `
-                        <div class="chat-entry system system-message">
-                            <strong>System:</strong> ${systemMessageContent}<br>
-                            <strong>Model:</strong> ${modelNameMapping(model)}, <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
-                        </div>`;
-                    $('#chat').append(systemMessageHTML);
-                } else {
-                    const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
-                    const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
-                    let processedContent = renderOpenAI(message.content);
-                    processedContent = processedContent.replace(/\\\\/g, '\\'); // Unescape LaTeX content
-                    const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
-                    $('#chat').append(messageHTML);
-                }
+                const messageElement = createMessageElement(message);
+                $('#chat').append(messageElement);
             });
 
             // After all messages are added to the DOM, call MathJax to typeset the entire chat container
-            setTimeout(() => {
+            // We use setTimeout to delay the call to MathJax.typesetPromise to ensure the DOM is fully updated
+            setTimeout(function() {
                 MathJax.typesetPromise().then(() => {
                     console.log('MathJax has finished typesetting.');
                 }).catch((err) => console.log('Error typesetting math content: ', err));
-            }, 0);
+            }, 0); // You can increase the delay if needed, but sometimes even a delay of 0 is enough
 
             Prism.highlightAll(); // Highlight code blocks after adding content to the DOM
 
@@ -1056,6 +1041,28 @@ function loadConversation(conversationId) {
         });
 }
 
+// Helper function to create a message element and process LaTeX content if present
+function createMessageElement(message) {
+    // Handle the system message differently to include the model name and temperature
+    if (message.role === 'system') {
+        let systemMessageContent = renderOpenAI(message.content);
+        // Prepare the display content for system message
+        const systemMessageHTML = `
+            <div class="chat-entry system system-message">
+                <strong>System:</strong> ${systemMessageContent}<br>
+                <strong>Model:</strong> ${modelNameMapping(model)}, <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
+            </div>`;
+        return $(systemMessageHTML);
+    } else {
+        const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+        const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
+        let processedContent = renderOpenAI(message.content);
+        processedContent = processedContent.replace(/\\\\/g, '\\'); // Unescape LaTeX content
+        const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
+        return $(messageHTML);
+    }
+}
+
 
 
     
@@ -1068,30 +1075,30 @@ $('#chat-form').on('submit', function (e) {
     console.log('Chat form submitted with user input:', $('#user_input').val());
     e.preventDefault();
     var userInput = $('#user_input').val();
-  
+
     var userInputDiv = $('<div class="chat-entry user user-message">')
-    .append('<i class="far fa-user"></i>')
-    .append($('<span>').text(userInput));
-  
+        .append('<i class="far fa-user"></i> ')
+        .append($('<span>').text(userInput));
+
     $('#chat').append(userInputDiv);
-    $('#chat').scrollTop($('#chat')[0].scrollHeight); 
+    $('#chat').scrollTop($('#chat')[0].scrollHeight);
 
-    messages.push({"role": "user", "content": userInput}); 
+    messages.push({ "role": "user", "content": userInput });
 
-    var userInputTextarea = $('#user_input');  
+    var userInputTextarea = $('#user_input');
     userInputTextarea.val('');
     userInputTextarea.css('height', defaultHeight);
 
     document.getElementById('loading').style.display = 'block';
-    
+
     let requestPayload = {
-        messages: messages, 
+        messages: messages,
         model: model,
         temperature: selectedTemperature
     };
 
     if (activeConversationId !== null) {
-       requestPayload.conversation_id = activeConversationId; 
+        requestPayload.conversation_id = activeConversationId;
     }
     console.log('Sending request payload:', JSON.stringify(requestPayload));
 
@@ -1107,51 +1114,51 @@ $('#chat-form').on('submit', function (e) {
 
         document.getElementById('loading').style.display = 'none';
 
-        if (!response.ok) { // Check if response status code is OK
-            return response.text().then(text => { 
-                // Use response.text() instead of response.json() if you suspect the server might be returning HTML error pages.
-                throw new Error(text);  // Throw an error with the server's response text.
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(text);
             });
         }
 
         return response.json();
     })
     .then(data => {
-        console.log("Complete server reponse:", data);
-        const renderedBotOutput = marked.parse(data.chat_output);
-        console.log("Rendered bot output:", renderedBotOutput); // Log this to debug
-        $('#chat').append('<div class="chat-entry bot bot-message"><i class="fas fa-robot"></i> ' + renderedBotOutput + '</div>');
+        console.log("Complete server response:", data);
+        const renderedBotOutput = renderOpenAI(data.chat_output);
+        const botMessageDiv = $('<div class="chat-entry bot bot-message">')
+            .append('<i class="fas fa-robot"></i> ')
+            .append(renderedBotOutput);
+        $('#chat').append(botMessageDiv);
 
-        console.log("Updated chat with server's response.");
+        $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        messages.push({ "role": "assistant", "content": data.chat_output });
 
-        $('#chat').scrollTop($('#chat')[0].scrollHeight);  // Scroll to the bottom of the chat
+        // Call MathJax to typeset the new message
+        MathJax.typesetPromise().then(() => {
+            console.log('MathJax has finished typesetting the new message.');
+        }).catch((err) => console.log('Error typesetting math content: ', err));
+
         Prism.highlightAll();
-        messages.push({"role": "assistant", "content": data.chat_output});
         updateConversationList();
 
         // Update the URL with the received conversation_id
         window.history.pushState({}, '', `/c/${data.conversation_id}`);
 
         if (data.conversation_title) {
-            // Update the title in the UI
             console.log("Received conversation_title from server:", data.conversation_title);
-            showConversationControls(data.conversation_title);
-
-            // Updating the token data in the UI, assuming your server response includes the necessary token data
-            if (data.usage) {
-            $('#prompt-tokens').text(`Prompt Tokens: ${data.usage.prompt_tokens}`);
-            $('#completion-tokens').text(`Completion Tokens: ${data.usage.completion_tokens}`);
-            $('#total-tokens').text(`Total Tokens: ${data.usage.total_tokens}`);
-        }
+            showConversationControls(data.conversation_title, data.usage);
         } else {
-            // If there's no title provided, show default
             console.log("No conversation_title from server. Showing default.");
             showConversationControls();
-        }    
+        }
         console.log('End of chat-form submit function');
-
     })
+    .catch(error => {
+        console.error('Error processing chat form submission:', error);
+        document.getElementById('loading').style.display = 'none';
+    });
 });
+
 
 // "New Chat" Button Click Event
 document.getElementById("new-chat-btn").addEventListener("click", function() {
