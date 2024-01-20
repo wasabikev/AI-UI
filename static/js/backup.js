@@ -48,6 +48,19 @@ function updateSystemMessageDropdown() {
     });
 }
 
+
+function renderMathInElement(element) {
+    // Check if the element's content contains LaTeX patterns
+    if (element.textContent.match(/\\\(.+?\\\)|\\\[\s\S]+?\\\]/)) {
+        // Update the math content to render it
+        MathJax.typesetPromise([element]).then(() => {
+            console.log('Math content updated in element.');
+        }).catch((err) => console.log('Error typesetting math content in element: ', err));
+    }
+}
+
+
+
 function showModalFlashMessage(message, category) { // Usage Example: showModalFlashMessage('System message saved.', 'success');
     var flashContainer = document.getElementById('modal-flash-message-container');
     flashContainer.innerHTML = ''; // Clear previous messages
@@ -769,7 +782,15 @@ function detectAndRenderMarkdown(content) {
     return content;
 }
 
-
+// Helper function to escape HTML characters
+function escapeHtml(html) {
+    return html
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 // This function renders the content inside triple backticks - the OpenAI Playground style.
 function renderOpenAI(content) {
@@ -802,6 +823,9 @@ function renderOpenAI(content) {
         if (!lang || lang === 'markdown') {
             // If no language is provided or the language is markdown, process it with the Markdown parser
             renderedContent = marked.parse(p1.trim());
+        } else if (lang === 'html') {
+            // If the language is HTML, escape it and wrap it in a code block
+            renderedContent = '<pre><code class="language-html">' + escapeHtml(p1.trim()) + '</code></pre>';
         } else {
             // Otherwise, treat it as a code block
             renderedContent = '<pre><code class="' + (lang ? 'language-' + lang : '') + '">' + p1.trim() + '</code></pre>';
@@ -822,13 +846,13 @@ function renderOpenAI(content) {
         return tempElement.innerHTML || match; // Ensure we return the original match if nothing else
     };
     
-
     // Replace content inside triple backticks with processed content
     const processedContent = content.replace(regex, replacer);
     console.log('Final processed content:', processedContent);
 
     return processedContent;
 }
+
 
 
 function updateConversationList() {
@@ -989,28 +1013,28 @@ function loadConversation(conversationId) {
 
             // Add each message to the chat. Style the messages based on their role.
             data.history.forEach(message => {
-                if (message.role === 'system') {
-                    // Log the system message for debugging
-                    console.log("System message from history:", message);
-
-                    // Display the system message with model and temperature information
-                    const systemMessageContent = renderOpenAI(message.content);
-                    const systemMessageHTML = `
-                        <div class="chat-entry system system-message">
-                            <strong>System:</strong> ${systemMessageContent}<br>
-                            <strong>Model:</strong> ${modelNameMapping(modelName)}, <strong>Temperature:</strong> ${selectedTemperature}°
-                        </div>
-                    `;
-                    $('#chat').append(systemMessageHTML);
-                } else {
-                    const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
-                    const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
-                    const messageContent = renderOpenAI(message.content);
-                    $('#chat').append(`<div class="chat-entry ${message.role} ${messageClass}">${prefix}${messageContent}</div>`);
-                }
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-entry ${message.role} ${message.role === 'user' ? 'user-message' : 'bot-message'}`;
+                // Process the message content for Markdown and other formatting
+                let processedContent = renderOpenAI(message.content);
+                // Unescape the LaTeX content by replacing double backslashes with single backslashes
+                processedContent = processedContent.replace(/\\\\/g, '\\');
+                // Include the prefix for user or assistant
+                const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+                // Set the processed content as the innerHTML of the messageDiv
+                messageDiv.innerHTML = prefix + processedContent;
+                document.getElementById('chat').appendChild(messageDiv);
             });
 
-            Prism.highlightAll(); // Highlight code blocks
+            // After all messages are added to the DOM, call MathJax to typeset the entire chat container
+            setTimeout(() => {
+                MathJax.typesetPromise().then(() => {
+                    console.log('MathJax has finished typesetting.');
+                }).catch((err) => console.log('Error typesetting math content: ', err));
+            }, 0);
+
+
+            Prism.highlightAll(); // Highlight code blocks after adding content to the DOM
 
             // Important! Update the 'messages' array with the loaded conversation history
             messages = data.history;
@@ -1025,6 +1049,7 @@ function loadConversation(conversationId) {
             console.error(`Error fetching conversation with id: ${conversationId}. Error: ${error}`);
         });
 }
+
 
     
 

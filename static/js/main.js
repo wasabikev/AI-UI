@@ -48,6 +48,19 @@ function updateSystemMessageDropdown() {
     });
 }
 
+
+function renderMathInElement(element) {
+    // Check if the element's content contains LaTeX patterns
+    if (element.textContent.match(/\\\(.+?\\\)|\\\[\s\S]+?\\\]/)) {
+        // Update the math content to render it
+        MathJax.typesetPromise([element]).then(() => {
+            console.log('Math content updated in element.');
+        }).catch((err) => console.log('Error typesetting math content in element: ', err));
+    }
+}
+
+
+
 function showModalFlashMessage(message, category) { // Usage Example: showModalFlashMessage('System message saved.', 'success');
     var flashContainer = document.getElementById('modal-flash-message-container');
     flashContainer.innerHTML = ''; // Clear previous messages
@@ -970,14 +983,14 @@ function loadConversation(conversationId) {
         .then(data => {
             // Update the conversation title in the UI
             $('#conversation-title').text(data.title);
-            
+
             // Update the messages array with the conversation history
             console.log('Parsed JSON data from conversation:', data);
 
             messages = data.history;
             console.log(`Received conversation data for id: ${conversationId}`);
             console.log('Token Count:', data.token_count);
-            console.log("Retrieved model name:", data.model_name);  // Log the retrieved model name
+            console.log("Retrieved model name:", data.model_name); // Log the retrieved model name
 
             // Update the dropdown display based on the model name from the conversation
             const modelName = data.model_name;
@@ -990,21 +1003,42 @@ function loadConversation(conversationId) {
 
             // Update the token data in the UI
             const tokenCount = data.token_count || 0;
-            showConversationControls(data.title || "AI &infin; UI", {prompt: 0, completion: 0, total: tokenCount});
+            showConversationControls(data.title || "AI ∞ UI", {prompt: 0, completion: 0, total: tokenCount});
 
             // Save this conversation id as the active conversation
             activeConversationId = conversationId;
-            
+
             // Clear the chat
             $('#chat').empty();
 
             // Add each message to the chat. Style the messages based on their role.
             data.history.forEach(message => {
-                const messageContent = renderOpenAI(message.content);
-                const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
-                const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
-                $('#chat').append(`<div class="chat-entry ${message.role} ${messageClass}">${prefix}${messageContent}</div>`);
+                // Handle the system message differently to include the model name and temperature
+                if (message.role === 'system') {
+                    let systemMessageContent = renderOpenAI(message.content);
+                    // Prepare the display content for system message
+                    const systemMessageHTML = `
+                        <div class="chat-entry system system-message">
+                            <strong>System:</strong> ${systemMessageContent}<br>
+                            <strong>Model:</strong> ${modelNameMapping(model)}, <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
+                        </div>`;
+                    $('#chat').append(systemMessageHTML);
+                } else {
+                    const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+                    const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
+                    let processedContent = renderOpenAI(message.content);
+                    processedContent = processedContent.replace(/\\\\/g, '\\'); // Unescape LaTeX content
+                    const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
+                    $('#chat').append(messageHTML);
+                }
             });
+
+            // After all messages are added to the DOM, call MathJax to typeset the entire chat container
+            setTimeout(() => {
+                MathJax.typesetPromise().then(() => {
+                    console.log('MathJax has finished typesetting.');
+                }).catch((err) => console.log('Error typesetting math content: ', err));
+            }, 0);
 
             Prism.highlightAll(); // Highlight code blocks after adding content to the DOM
 
@@ -1021,6 +1055,7 @@ function loadConversation(conversationId) {
             console.error(`Error fetching conversation with id: ${conversationId}. Error: ${error}`);
         });
 }
+
 
 
     
