@@ -1,49 +1,26 @@
-2024-01-20 09:48:59,351 - app - INFO - Response from OpenAI: {
+2024-01-20 11:53:57,019 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner. Please provide a quadratic formula Of course! The quadratic formula is a powerful tool that allows you to find the solutions to a quadratic equation of the form \\( ax^2 + bx + c = 0 \\), where \\( a \\), \\( b \\), and \\( c \\) are constants, and \\( a \\neq 0 \\).\n\nThe quadratic formula is:\n\n\\[\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n\\]\n\nHere\'s a breakdown of the formula:\n\n- \\( -b \\) is the opposite of the coefficient \\( b \\).\n- \\( \\pm \\) means that there will be two solutions: one with a plus and one with a minus.\n- \\( \\sqrt{{b^2 - 4ac}} \\) is the square root of the discriminant, which is \\( b^2 - 4ac \\). The discriminant can tell you about the nature of the roots:\n  - If \\( b^2 - 4ac > 0 \\), there are two real and distinct solutions.\n  - If \\( b^2 - 4ac = 0 \\), there is one real solution (the roots are the same).\n  - If \\( b^2 - 4ac < 0 \\), there are no real solutions; instead, there are two complex solutions.\n- \\( 2a \\) is two times the coefficient \\( a \\).\n\nWould you like to go through an example of using the quadratic formula to solve a quadratic equation?'}], 'max_tokens': 10}
+2024-01-20 11:53:57,403 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Absolutely! The quadratic formula is a powerful tool for solving quadratic equations, which are equations of the form \\( ax^2 + bx + c = 0 \\), where \\( a \\), \\( b \\), and \\( c \\) are constants, and \\( a \\) is not equal to zero.\n\nThe quadratic formula is:\n\n\\[\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n\\]\n\nLet's break this down a bit:\n\n- \\( x \\) represents the variable in the equation that we're trying to solve for.\n- The \\( \\pm \\) symbol indicates that there will be two solutions: one where you add the square root term and one where you subtract it.\n- The term \\( b^2 - 4ac \\) under the square root is called the discriminant. It's very important because it can tell you about the nature of the roots:\n  - If the discriminant is positive, you'll get two real and distinct solutions.\n  - If the discriminant is zero, you'll get exactly one real solution (since both solutions are the same).\n  - If the discriminant is negative, you'll get two complex solutions, which means they will have an imaginary part.\n\nWould you like to go through an example of using the quadratic formula to solve a quadratic equation? Or do you have any specific questions about the formula itself?",
+        "content": "Breaking Down the Quadratic Formula",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705772922,
-  "id": "chatcmpl-8j9kQweU6N1ylykefjcgHsv4h4TUu",
-  "model": "gpt-4-1106-preview",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_04de91a479",
-  "usage": {
-    "completion_tokens": 289,
-    "prompt_tokens": 134,
-    "total_tokens": 423
-  }
-}
-2024-01-20 09:48:59,372 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner. Please provide the quadratic formula Absolutely! The quadratic formula is a powerful tool for solving quadratic equations, which are equations of the form \\( ax^2 + bx + c = 0 \\), where \\( a \\), \\( b \\), and \\( c \\) are constants, and \\( a \\) is not equal to zero.\n\nThe quadratic formula is:\n\n\\[\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n\\]\n\nLet\'s break this down a bit:\n\n- \\( x \\) represents the variable in the equation that we\'re trying to solve for.\n- The \\( \\pm \\) symbol indicates that there will be two solutions: one where you add the square root term and one where you subtract it.\n- The term \\( b^2 - 4ac \\) under the square root is called the discriminant. It\'s very important because it can tell you about the nature of the roots:\n  - If the discriminant is positive, you\'ll get two real and distinct solutions.\n  - If the discriminant is zero, you\'ll get exactly one real solution (since both solutions are the same).\n  - If the discriminant is negative, you\'ll get two complex solutions, which means they will have an imaginary part.\n\nWould you like to go through an example of using the quadratic formula to solve a quadratic equation? Or do you have any specific questions about the formula itself?'}], 'max_tokens': 10}
-2024-01-20 09:49:00,251 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Quadratic formula breakdown",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705772938,
-  "id": "chatcmpl-8j9kgaDMkyEstZFlIyWDa0aSexzMA",
+  "created": 1705780436,
+  "id": "chatcmpl-8jBhcfsxOC59RAglSBVXei7XVepKg",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 4,
-    "prompt_tokens": 437,
-    "total_tokens": 441
+    "completion_tokens": 6,
+    "prompt_tokens": 459,
+    "total_tokens": 465
   }
 }
-2024-01-20 09:49:00,257 - app - INFO - Generated conversation summary: Quadratic formula breakdown
-2024-01-20 09:49:00,277 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.'}, {'role': 'user', 'content': 'Please provide the quadratic formula'}, {'role': 'assistant', 'content': "Absolutely! The quadratic formula is a powerful tool for solving quadratic equations, which are equations of the form \\( ax^2 + bx + c = 0 \\), where \\( a \\), \\( b \\), and \\( c \\) are constants, and \\( a \\) is not equal to zero.\n\nThe quadratic formula is:\n\n\\[\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n\\]\n\nLet's break this down a bit:\n\n- \\( x \\) represents the variable in the equation that we're trying to solve for.\n- The \\( \\pm \\) symbol indicates that there will be two solutions: one where you add the square root term and one where you subtract it.\n- The term \\( b^2 - 4ac \\) under the square root is called the discriminant. It's very important because it can tell you about the nature of the roots:\n  - If the discriminant is positive, you'll get two real and distinct solutions.\n  - If the discriminant is zero, you'll get exactly one real solution (since both solutions are the same).\n  - If the discriminant is negative, you'll get two complex solutions, which means they will have an imaginary part.\n\nWould you like to go through an example of using the quadratic formula to solve a quadratic equation? Or do you have any specific questions about the formula itself?"}]
+2024-01-20 11:53:57,421 - app - INFO - Generated conversation summary: Breaking Down the Quadratic Formula
+2024-01-20 11:53:57,426 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.'}, {'role': 'user', 'content': 'Please provide a quadratic formula'}, {'role': 'assistant', 'content': "Of course! The quadratic formula is a powerful tool that allows you to find the solutions to a quadratic equation of the form \\( ax^2 + bx + c = 0 \\), where \\( a \\), \\( b \\), and \\( c \\) are constants, and \\( a \\neq 0 \\).\n\nThe quadratic formula is:\n\n\\[\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n\\]\n\nHere's a breakdown of the formula:\n\n- \\( -b \\) is the opposite of the coefficient \\( b \\).\n- \\( \\pm \\) means that there will be two solutions: one with a plus and one with a minus.\n- \\( \\sqrt{{b^2 - 4ac}} \\) is the square root of the discriminant, which is \\( b^2 - 4ac \\). The discriminant can tell you about the nature of the roots:\n  - If \\( b^2 - 4ac > 0 \\), there are two real and distinct solutions.\n  - If \\( b^2 - 4ac = 0 \\), there is one real solution (the roots are the same).\n  - If \\( b^2 - 4ac < 0 \\), there are no real solutions; instead, there are two complex solutions.\n- \\( 2a \\) is two times the coefficient \\( a \\).\n\nWould you like to go through an example of using the quadratic formula to solve a quadratic equation?"}]
