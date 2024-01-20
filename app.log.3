@@ -1,129 +1,56 @@
-2024-01-15 06:41:31,566 - app - INFO - Response from OpenAI for summary: {
+2024-01-16 06:42:06,714 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.'}, {'role': 'user', 'content': "Please provide a sample math problem.  I'm testing the ability for the UI to properly display math content."}, {'role': 'assistant', 'content': "Of course! Let's start with a simple algebra problem that involves solving for an unknown variable. Here's the problem:\n\nSolve for \\( x \\) in the equation \\( 3x + 7 = 22 \\).\n\nNow, let's break it down step by step:\n\n1. The goal is to isolate \\( x \\) on one side of the equation. To do this, we first need to get rid of the 7 that is added to \\( 3x \\). We can do this by subtracting 7 from both sides of the equation.\n\n2. When we subtract 7 from both sides, the equation becomes \\( 3x + 7 - 7 = 22 - 7 \\), which simplifies to \\( 3x = 15 \\).\n\n3. Now, we have \\( 3x \\) equal to 15. To find the value of \\( x \\), we need to divide both sides of the equation by 3.\n\n4. Dividing both sides by 3 gives us \\( \\frac{3x}{3} = \\frac{15}{3} \\), which simplifies to \\( x = 5 \\).\n\nSo, the solution to the equation \\( 3x + 7 = 22 \\) is \\( x = 5 \\).\n\nI hope the formatting of the math content is clear for you! If you have any questions or need further clarification, feel free to ask."}]
+2024-01-16 16:27:04,819 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-16 16:27:04,820 - app - INFO - Received temperature: 0.3
+2024-01-16 16:27:04,821 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.'}, {'role': 'user', 'content': 'Please provide the quadratic formula in LaTeX format.'}], 'temperature': 0.3}
+2024-01-16 16:27:29,348 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "JavaScript Code for UI Rendering",
+        "content": "Certainly! The quadratic formula is used to find the solutions to a quadratic equation of the form \\( ax^2 + bx + c = 0 \\). In LaTeX, you can write the quadratic formula as follows:\n\n```latex\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n```\n\nWhen you compile this LaTeX code, it will display the quadratic formula as:\n\n\\[ x = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\]\n\nThis formula calculates the values of \\( x \\) by substituting the coefficients \\( a \\), \\( b \\), and \\( c \\) from the quadratic equation into the formula. The \\( \\pm \\) symbol indicates that there will be two solutions: one for the plus sign and one for the minus sign. The term under the square root, \\( b^2 - 4ac \\), is called the discriminant, and it determines the nature of the roots of the quadratic equation.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705329687,
-  "id": "chatcmpl-8hIRTIsxMD8ZhMZfSu0bqYZ80Q5d9",
+  "created": 1705451225,
+  "id": "chatcmpl-8ho3lzOF9Ph9XXfo60oBBOFMqKQI8",
+  "model": "gpt-4-1106-preview",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_168383a679",
+  "usage": {
+    "completion_tokens": 213,
+    "prompt_tokens": 138,
+    "total_tokens": 351
+  }
+}
+2024-01-16 16:27:29,352 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner. Please provide the quadratic formula in LaTeX format. Certainly! The quadratic formula is used to find the solutions to a quadratic equation of the form \\( ax^2 + bx + c = 0 \\). In LaTeX, you can write the quadratic formula as follows:\n\n```latex\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n```\n\nWhen you compile this LaTeX code, it will display the quadratic formula as:\n\n\\[ x = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\]\n\nThis formula calculates the values of \\( x \\) by substituting the coefficients \\( a \\), \\( b \\), and \\( c \\) from the quadratic equation into the formula. The \\( \\pm \\) symbol indicates that there will be two solutions: one for the plus sign and one for the minus sign. The term under the square root, \\( b^2 - 4ac \\), is called the discriminant, and it determines the nature of the roots of the quadratic equation.'}], 'max_tokens': 10}
+2024-01-16 16:27:29,647 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Quadratic Formula in LaTeX",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705451249,
+  "id": "chatcmpl-8ho49koq0DEJQbLhus3wJqwTu8eXu",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
     "completion_tokens": 5,
-    "prompt_tokens": 204,
-    "total_tokens": 209
+    "prompt_tokens": 365,
+    "total_tokens": 370
   }
 }
-2024-01-15 06:41:31,575 - app - INFO - Generated conversation summary: JavaScript Code for UI Rendering
-2024-01-15 07:11:31,533 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-15 07:11:31,535 - app - INFO - Received temperature: 0.3
-2024-01-15 07:11:31,536 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a short code block of HTML for display testing'}], 'temperature': 0.3}
-2024-01-15 07:11:34,737 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Certainly! Here's a simple code block of HTML for display testing:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Display Testing</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            text-align: center;\n        }\n        \n        h1 {\n            color: #333;\n        }\n        \n        p {\n            color: #666;\n        }\n    </style>\n</head>\n<body>\n    <h1>Display Testing</h1>\n    <p>This is a sample HTML code for display testing.</p>\n</body>\n</html>\n```\n\nThis code creates a basic HTML document with a title, some CSS styling, and a heading and paragraph for display testing purposes. Feel free to modify it as needed for your specific testing requirements.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705331488,
-  "id": "chatcmpl-8hIuWNzLdbQ70cMIuaPQNdEQbQf47",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 164,
-    "prompt_tokens": 35,
-    "total_tokens": 199
-  }
-}
-2024-01-15 07:11:34,743 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide a short code block of HTML for display testing Certainly! Here's a simple code block of HTML for display testing:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Display Testing</title>\n    <style>\n        body {\n            font-family: Arial, sans-serif;\n            text-align: center;\n        }\n        \n        h1 {\n            color: #333;\n        }\n        \n        p {\n            color: #666;\n        }\n    </style>\n</head>\n<body>\n    <h1>Display Testing</h1>\n    <p>This is a sample HTML code for display testing.</p>\n</body>\n</html>\n```\n\nThis code creates a basic HTML document with a title, some CSS styling, and a heading and paragraph for display testing purposes. Feel free to modify it as needed for your specific testing requirements."}], 'max_tokens': 10}
-2024-01-15 07:11:35,215 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "HTML code for display testing",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705331491,
-  "id": "chatcmpl-8hIuZQlYfXVDAIuxAMBNgzG2t9nH8",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 5,
-    "prompt_tokens": 213,
-    "total_tokens": 218
-  }
-}
-2024-01-15 07:11:35,219 - app - INFO - Generated conversation summary: HTML code for display testing
-2024-01-15 16:13:54,082 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-15 16:13:54,083 - app - INFO - Received temperature: 0.3
-2024-01-15 16:13:54,085 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a short sample of css code for a UI test'}], 'temperature': 0.3}
-2024-01-15 16:13:58,616 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sure! Here's a short sample of CSS code for a UI test:\n\n```css\n/* Styling the container */\n.container {\n  width: 500px;\n  height: 300px;\n  background-color: #f2f2f2;\n  border: 1px solid #ccc;\n  padding: 20px;\n}\n\n/* Styling the heading */\n.container h1 {\n  font-size: 24px;\n  color: #333;\n  margin-bottom: 10px;\n}\n\n/* Styling the input field */\n.container input[type=\"text\"] {\n  width: 100%;\n  height: 40px;\n  padding: 5px;\n  font-size: 16px;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n\n/* Styling the button */\n.container button {\n  width: 100%;\n  height: 40px;\n  margin-top: 10px;\n  background-color: #007bff;\n  color: #fff;\n  font-size: 16px;\n  border: none;\n  border-radius: 4px;\n  cursor: pointer;\n}\n\n/* Styling the result */\n.container p {\n  margin-top: 20px;\n  font-size: 18px;\n  color: #333;\n}\n```\n\nThis CSS code provides basic styling for a UI test. It includes styles for a container, heading, input field, button, and result paragraph. You can modify and extend this code based on your specific UI test requirements.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705364034,
-  "id": "chatcmpl-8hRNS4tz1764OHTf07o6qWicuOuKv",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 313,
-    "prompt_tokens": 36,
-    "total_tokens": 349
-  }
-}
-2024-01-15 16:13:58,621 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide a short sample of css code for a UI test Sure! Here\'s a short sample of CSS code for a UI test:\n\n```css\n/* Styling the container */\n.container {\n  width: 500px;\n  height: 300px;\n  background-color: #f2f2f2;\n  border: 1px solid #ccc;\n  padding: 20px;\n}\n\n/* Styling the heading */\n.container h1 {\n  font-size: 24px;\n  color: #333;\n  margin-bottom: 10px;\n}\n\n/* Styling the input field */\n.container input[type="text"] {\n  width: 100%;\n  height: 40px;\n  padding: 5px;\n  font-size: 16px;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n\n/* Styling the button */\n.container button {\n  width: 100%;\n  height: 40px;\n  margin-top: 10px;\n  background-color: #007bff;\n  color: #fff;\n  font-size: 16px;\n  border: none;\n  border-radius: 4px;\n  cursor: pointer;\n}\n\n/* Styling the result */\n.container p {\n  margin-top: 20px;\n  font-size: 18px;\n  color: #333;\n}\n```\n\nThis CSS code provides basic styling for a UI test. It includes styles for a container, heading, input field, button, and result paragraph. You can modify and extend this code based on your specific UI test requirements.'}], 'max_tokens': 10}
-2024-01-15 16:13:59,466 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sample CSS for UI Test",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705364039,
-  "id": "chatcmpl-8hRNXBXfLojDvAkCwjzVDx2vAJs15",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 5,
-    "prompt_tokens": 363,
-    "total_tokens": 368
-  }
-}
-2024-01-15 16:13:59,470 - app - INFO - Generated conversation summary: Sample CSS for UI Test
-2024-01-15 16:21:57,531 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-15 16:21:57,532 - app - INFO - Received temperature: 0.3
-2024-01-15 16:21:57,533 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample HTML code for a UI test'}], 'temperature': 0.3}
+2024-01-16 16:27:29,653 - app - INFO - Generated conversation summary: Quadratic Formula in LaTeX
+2024-01-16 16:27:29,668 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.'}, {'role': 'user', 'content': 'Please provide the quadratic formula in LaTeX format.'}, {'role': 'assistant', 'content': 'Certainly! The quadratic formula is used to find the solutions to a quadratic equation of the form \\( ax^2 + bx + c = 0 \\). In LaTeX, you can write the quadratic formula as follows:\n\n```latex\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n```\n\nWhen you compile this LaTeX code, it will display the quadratic formula as:\n\n\\[ x = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\]\n\nThis formula calculates the values of \\( x \\) by substituting the coefficients \\( a \\), \\( b \\), and \\( c \\) from the quadratic equation into the formula. The \\( \\pm \\) symbol indicates that there will be two solutions: one for the plus sign and one for the minus sign. The term under the square root, \\( b^2 - 4ac \\), is called the discriminant, and it determines the nature of the roots of the quadratic equation.'}]
+2024-01-16 16:31:22,075 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-16 16:31:22,075 - app - INFO - Received temperature: 0.3
+2024-01-16 16:31:22,076 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.'}, {'role': 'user', 'content': 'Please provide the quadratic formula'}], 'temperature': 0.3}
