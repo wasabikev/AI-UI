@@ -1,26 +1,102 @@
-2024-01-20 11:53:57,019 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner. Please provide a quadratic formula Of course! The quadratic formula is a powerful tool that allows you to find the solutions to a quadratic equation of the form \\( ax^2 + bx + c = 0 \\), where \\( a \\), \\( b \\), and \\( c \\) are constants, and \\( a \\neq 0 \\).\n\nThe quadratic formula is:\n\n\\[\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n\\]\n\nHere\'s a breakdown of the formula:\n\n- \\( -b \\) is the opposite of the coefficient \\( b \\).\n- \\( \\pm \\) means that there will be two solutions: one with a plus and one with a minus.\n- \\( \\sqrt{{b^2 - 4ac}} \\) is the square root of the discriminant, which is \\( b^2 - 4ac \\). The discriminant can tell you about the nature of the roots:\n  - If \\( b^2 - 4ac > 0 \\), there are two real and distinct solutions.\n  - If \\( b^2 - 4ac = 0 \\), there is one real solution (the roots are the same).\n  - If \\( b^2 - 4ac < 0 \\), there are no real solutions; instead, there are two complex solutions.\n- \\( 2a \\) is two times the coefficient \\( a \\).\n\nWould you like to go through an example of using the quadratic formula to solve a quadratic equation?'}], 'max_tokens': 10}
-2024-01-20 11:53:57,403 - app - INFO - Response from OpenAI for summary: {
+2024-01-21 11:59:04,268 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a sample paragraph with markdown for testing'}], 'temperature': 0.3}
+2024-01-21 11:59:07,978 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Breaking Down the Quadratic Formula",
+        "content": "Sure! Here's a sample paragraph with markdown:\n\n```\nAccording to a **recent study**, the effects of climate change are becoming increasingly evident. *Rising global temperatures* have led to more frequent and severe weather events, such as hurricanes and heatwaves. Additionally, **melting ice caps** and **rising sea levels** pose a significant threat to coastal communities around the world. The urgency to address climate change is clear, as it not only impacts the environment but also has far-reaching social and economic consequences. Governments, businesses, and individuals must take immediate action to mitigate the effects of climate change and transition to more sustainable practices.\n```\n\nIn this paragraph, the use of markdown syntax helps to emphasize certain words or phrases. The double asterisks (`**`) are used to make the words \"recent study\" bold, while the single asterisks (`*`) are used to italicize the words \"rising global temperatures\". This formatting can help draw attention to key points and make the text more visually appealing.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705780436,
-  "id": "chatcmpl-8jBhcfsxOC59RAglSBVXei7XVepKg",
+  "created": 1705867142,
+  "id": "chatcmpl-8jYG6bTQxQz10FBDGpTIwDu3m6fnM",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 6,
-    "prompt_tokens": 459,
-    "total_tokens": 465
+    "completion_tokens": 202,
+    "prompt_tokens": 33,
+    "total_tokens": 235
   }
 }
-2024-01-20 11:53:57,421 - app - INFO - Generated conversation summary: Breaking Down the Quadratic Formula
-2024-01-20 11:53:57,426 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.'}, {'role': 'user', 'content': 'Please provide a quadratic formula'}, {'role': 'assistant', 'content': "Of course! The quadratic formula is a powerful tool that allows you to find the solutions to a quadratic equation of the form \\( ax^2 + bx + c = 0 \\), where \\( a \\), \\( b \\), and \\( c \\) are constants, and \\( a \\neq 0 \\).\n\nThe quadratic formula is:\n\n\\[\nx = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}\n\\]\n\nHere's a breakdown of the formula:\n\n- \\( -b \\) is the opposite of the coefficient \\( b \\).\n- \\( \\pm \\) means that there will be two solutions: one with a plus and one with a minus.\n- \\( \\sqrt{{b^2 - 4ac}} \\) is the square root of the discriminant, which is \\( b^2 - 4ac \\). The discriminant can tell you about the nature of the roots:\n  - If \\( b^2 - 4ac > 0 \\), there are two real and distinct solutions.\n  - If \\( b^2 - 4ac = 0 \\), there is one real solution (the roots are the same).\n  - If \\( b^2 - 4ac < 0 \\), there are no real solutions; instead, there are two complex solutions.\n- \\( 2a \\) is two times the coefficient \\( a \\).\n\nWould you like to go through an example of using the quadratic formula to solve a quadratic equation?"}]
+2024-01-21 11:59:07,987 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide a sample paragraph with markdown for testing Sure! Here\'s a sample paragraph with markdown:\n\n```\nAccording to a **recent study**, the effects of climate change are becoming increasingly evident. *Rising global temperatures* have led to more frequent and severe weather events, such as hurricanes and heatwaves. Additionally, **melting ice caps** and **rising sea levels** pose a significant threat to coastal communities around the world. The urgency to address climate change is clear, as it not only impacts the environment but also has far-reaching social and economic consequences. Governments, businesses, and individuals must take immediate action to mitigate the effects of climate change and transition to more sustainable practices.\n```\n\nIn this paragraph, the use of markdown syntax helps to emphasize certain words or phrases. The double asterisks (`**`) are used to make the words "recent study" bold, while the single asterisks (`*`) are used to italicize the words "rising global temperatures". This formatting can help draw attention to key points and make the text more visually appealing.'}], 'max_tokens': 10}
+2024-01-21 11:59:08,880 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "length",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Effects of Climate Change: Rising Temperatures, Mel",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705867145,
+  "id": "chatcmpl-8jYG9oCTbbBhwFJ9fHmCsaBqa2YIP",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 10,
+    "prompt_tokens": 249,
+    "total_tokens": 259
+  }
+}
+2024-01-21 11:59:08,880 - app - INFO - Generated conversation summary: Effects of Climate Change: Rising Temperatures, Mel
+2024-01-21 11:59:08,899 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a sample paragraph with markdown for testing'}, {'role': 'assistant', 'content': 'Sure! Here\'s a sample paragraph with markdown:\n\n```\nAccording to a **recent study**, the effects of climate change are becoming increasingly evident. *Rising global temperatures* have led to more frequent and severe weather events, such as hurricanes and heatwaves. Additionally, **melting ice caps** and **rising sea levels** pose a significant threat to coastal communities around the world. The urgency to address climate change is clear, as it not only impacts the environment but also has far-reaching social and economic consequences. Governments, businesses, and individuals must take immediate action to mitigate the effects of climate change and transition to more sustainable practices.\n```\n\nIn this paragraph, the use of markdown syntax helps to emphasize certain words or phrases. The double asterisks (`**`) are used to make the words "recent study" bold, while the single asterisks (`*`) are used to italicize the words "rising global temperatures". This formatting can help draw attention to key points and make the text more visually appealing.'}]
+2024-01-21 12:06:47,033 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-01-21 12:06:47,035 - app - INFO - Received temperature: 0.3
+2024-01-21 12:06:47,035 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test paragraph'}], 'temperature': 0.3}
+2024-01-21 12:06:49,462 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Sure! Here's a test paragraph for you:\n\n\"The rise of social media has revolutionized the way people communicate and interact with each other. Platforms like Facebook, Twitter, and Instagram have not only connected individuals across the globe, but have also given them a platform to express their opinions, share their experiences, and engage in meaningful discussions. However, this increased connectivity has also brought about several challenges. The spread of fake news, cyberbullying, and privacy concerns have become prevalent issues in the digital age. As a society, we must navigate these challenges and find ways to harness the power of social media for positive change while mitigating its negative impacts.\"",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705867604,
+  "id": "chatcmpl-8jYNYMcM2lu7vbLEncmENQ9KPy76y",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 130,
+    "prompt_tokens": 29,
+    "total_tokens": 159
+  }
+}
+2024-01-21 12:06:49,468 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide a test paragraph Sure! Here\'s a test paragraph for you:\n\n"The rise of social media has revolutionized the way people communicate and interact with each other. Platforms like Facebook, Twitter, and Instagram have not only connected individuals across the globe, but have also given them a platform to express their opinions, share their experiences, and engage in meaningful discussions. However, this increased connectivity has also brought about several challenges. The spread of fake news, cyberbullying, and privacy concerns have become prevalent issues in the digital age. As a society, we must navigate these challenges and find ways to harness the power of social media for positive change while mitigating its negative impacts."'}], 'max_tokens': 10}
+2024-01-21 12:06:49,852 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "The Impact of Social Media",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705867606,
+  "id": "chatcmpl-8jYNax9DCbp6ZAiWmN9qKjYPue8ie",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 5,
+    "prompt_tokens": 173,
+    "total_tokens": 178
+  }
+}
+2024-01-21 12:06:49,857 - app - INFO - Generated conversation summary: The Impact of Social Media
+2024-01-21 12:06:49,867 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a test paragraph'}, {'role': 'assistant', 'content': 'Sure! Here\'s a test paragraph for you:\n\n"The rise of social media has revolutionized the way people communicate and interact with each other. Platforms like Facebook, Twitter, and Instagram have not only connected individuals across the globe, but have also given them a platform to express their opinions, share their experiences, and engage in meaningful discussions. However, this increased connectivity has also brought about several challenges. The spread of fake news, cyberbullying, and privacy concerns have become prevalent issues in the digital age. As a society, we must navigate these challenges and find ways to harness the power of social media for positive change while mitigating its negative impacts."'}]
