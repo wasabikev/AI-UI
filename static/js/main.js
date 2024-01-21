@@ -792,12 +792,23 @@ function escapeHtml(html) {
         .replace(/'/g, '&#039;');
 }
 
-// This function renders the content inside triple backticks - the OpenAI Playground style.
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
 
-    // First, check for potential markdown structures and process them
-    content = detectAndRenderMarkdown(content);
+    // First, convert all list items (top-level and nested) to <li> tags
+    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<li>$1</li>');
+
+    // Then, wrap consecutive <li> tags with <ul> tags
+    content = content.replace(/(<li>[\s\S]+?<\/li>)/gm, function(match) {
+        // Only wrap with <ul> if not already inside a list
+        if (!/^\s*<\/?ul>/.test(match)) {
+            return '<ul>' + match + '</ul>';
+        }
+        return match;
+    });
+
+    // Remove extra <ul> tags that appear due to consecutive list items
+    content = content.replace(/<\/ul>\s*<ul>/g, '');
 
     // Insert a line break before the first numbered item
     let isFirstNumberedItem = true;
@@ -852,6 +863,7 @@ function renderOpenAI(content) {
 
     return processedContent;
 }
+
 
 
 
@@ -963,9 +975,9 @@ function showConversationControls(title = "AI &infin; UI", tokens = {prompt: 0, 
     $("#conversation-title, #edit-title-btn, #delete-conversation-btn").show();
 
     // Update token data
-    $("#prompt-tokens").text(`Prompt Tokens: ${tokens.prompt}`);
-    $("#completion-tokens").text(`Completion Tokens: ${tokens.completion}`);
-    $("#total-tokens").text(`Total Tokens: ${tokens.total}`);
+    $("#prompt-tokens").text(`Prompt Tokens: ${tokens.prompt_tokens}`);
+    $("#completion-tokens").text(`Completion Tokens: ${tokens.completion_tokens}`);
+    $("#total-tokens").text(`Total Tokens: ${tokens.total_tokens}`);
 }
 
 
@@ -1001,9 +1013,13 @@ function loadConversation(conversationId) {
             // Retrieve and handle the temperature setting
             selectedTemperature = data.temperature ?? 0.7; // Use the temperature from the data, or default to 0.7 if it's null/undefined
 
-            // Update the token data in the UI
-            const tokenCount = data.token_count || 0;
-            showConversationControls(data.title || "AI ∞ UI", {prompt: 0, completion: 0, total: tokenCount});
+            // Update the token data in the UI for restored conversations
+            const tokens = {
+                prompt_tokens: 'NA',
+                completion_tokens: 'NA',
+                total_tokens: data.token_count || 'NA'
+            };
+            showConversationControls(data.title || "AI ∞ UI", tokens);
 
             // Save this conversation id as the active conversation
             activeConversationId = conversationId;
@@ -1057,15 +1073,12 @@ function createMessageElement(message) {
         const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
         const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
         let processedContent = renderOpenAI(message.content);
-        processedContent = processedContent.replace(/\\\\/g, '\\'); // Unescape LaTeX content
+        processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
         const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
         return $(messageHTML);
     }
 }
 
-
-
-    
 
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
