@@ -1,76 +1,80 @@
-2024-01-21 09:51:11,524 - app - INFO - Response from OpenAI for summary: {
+2024-01-21 11:47:35,740 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide some sample javascript, followed by a sample of markdown Sure! Here's a sample JavaScript code:\n\n```javascript\n// This function calculates the factorial of a given number\nfunction factorial(num) {\n  if (num === 0 || num === 1) {\n    return 1;\n  } else {\n    return num * factorial(num - 1);\n  }\n}\n\n// Example usage\nconsole.log(factorial(5)); // Output: 120\n```\n\nAnd here's a sample Markdown:\n\n```markdown\n# Heading 1\n\n## Heading 2\n\n### Heading 3\n\nThis is a paragraph of text.\n\n- This is a bullet point.\n- This is another bullet point.\n\n1. This is a numbered list item.\n2. This is another numbered list item.\n\n**This text is bold.**\n\n*This text is italic.*\n\n[This is a link](https://www.example.com).\n\n![This is an image](https://www.example.com/image.jpg)\n```\n\nI hope this helps! Let me know if you have any further questions."}], 'max_tokens': 10}
+2024-01-21 11:47:36,573 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Creating a Bar Graph of Daily Sales",
+        "content": "Sample JavaScript and Markdown",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705859468,
-  "id": "chatcmpl-8jWGKQHcXAphre3G9TZDyKhErZdva",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 7,
-    "prompt_tokens": 783,
-    "total_tokens": 790
-  }
-}
-2024-01-21 09:51:11,549 - app - INFO - Generated conversation summary: Creating a Bar Graph of Daily Sales
-2024-01-21 09:51:11,557 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.\n'}, {'role': 'user', 'content': 'Please input a series of numbers representing daily sales figures for the last seven days, and generate a bar graph to visualize these figures.'}, {'role': 'assistant', 'content': 'I\'m glad you\'re interested in visualizing data with a bar graph! However, I should let you know that as a text-based AI, I can\'t create visual graphics directly within this chat. But don\'t worry, I can certainly guide you through the process of creating a bar graph, and you can draw it on paper or use spreadsheet software like Microsoft Excel or Google Sheets to generate the graph.\n\nFirst, you\'ll need to provide the daily sales figures for the last seven days. Once you have those numbers, I\'ll explain how to set up your data for a bar graph and how to create one using a spreadsheet program.\n\nIf you\'re going to draw it by hand, here\'s a step-by-step guide:\n\n1. **Collect the Data**: Write down the sales figures for each day. For example, let\'s say the sales for the last seven days were $200, $150, $300, $250, $400, $350, and $300.\n\n2. **Draw the Axes**: On a piece of graph paper, draw a vertical axis (the y-axis) and a horizontal axis (the x-axis). The y-axis will represent the sales figures, and the x-axis will represent the days of the week.\n\n3. **Label the Axes**: Label the x-axis with the days of the week (Day 1, Day 2, etc., or Monday, Tuesday, etc.). Label the y-axis with the sales figures, making sure to space them out evenly. For example, if your highest sales figure is $400, you might want to use increments of $50 or $100.\n\n4. **Draw the Bars**: For each day, draw a bar that reaches the appropriate sales figure on the y-axis. The width of each bar should be the same, and there should be a little space between each bar to make the graph easy to read.\n\n5. **Title Your Graph**: Don\'t forget to give your graph a title that describes what the data represents, such as "Daily Sales Figures for the Last Seven Days."\n\nIf you\'re using a spreadsheet program, the steps are similar, but the software will handle most of the drawing for you:\n\n1. **Enter the Data**: Open your spreadsheet software and enter the daily sales figures into a column. Label another column with the corresponding days of the week.\n\n2. **Select the Data**: Highlight the cells that contain your sales figures and the days of the week.\n\n3. **Insert Bar Graph**: Look for the "Insert" menu, then find the option to insert a bar chart or column chart. The software will generate the graph based on your selected data.\n\n4. **Customize the Graph**: You can then customize the graph by adding titles, adjusting the color of the bars, and making sure the axes are labeled correctly.\n\nOnce you\'ve created your bar graph, you\'ll have a visual representation of the sales figures that will make it easier to compare the data at a glance. If you have any questions or need further assistance, feel free to ask!'}]
-2024-01-21 11:45:46,531 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-21 11:45:46,532 - app - INFO - Received temperature: 0.3
-2024-01-21 11:45:46,533 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide a small sample of HTML and markdown'}], 'temperature': 0.3}
-2024-01-21 11:45:52,286 - app - INFO - Response from OpenAI: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Sure! Here's a small sample of HTML code:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n    <title>My Webpage</title>\n    <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n    <header>\n        <h1>Welcome to My Webpage</h1>\n    </header>\n    \n    <nav>\n        <ul>\n            <li><a href=\"home.html\">Home</a></li>\n            <li><a href=\"about.html\">About</a></li>\n            <li><a href=\"contact.html\">Contact</a></li>\n        </ul>\n    </nav>\n    \n    <main>\n        <section>\n            <h2>About Me</h2>\n            <p>I am a web developer with a passion for creating beautiful and functional websites.</p>\n        </section>\n        \n        <section>\n            <h2>Contact Me</h2>\n            <p>You can reach me at <a href=\"mailto:example@example.com\">example@example.com</a>.</p>\n        </section>\n    </main>\n    \n    <footer>\n        <p>&copy; 2021 My Webpage. All rights reserved.</p>\n    </footer>\n</body>\n</html>\n```\n\nAnd here's a small sample of Markdown:\n\n```markdown\n# My Webpage\n\nWelcome to my webpage! This is a sample Markdown document.\n\n## About Me\n\nI am a web developer with a passion for creating beautiful and functional websites.\n\n## Contact Me\n\nYou can reach me at example@example.com.\n\n---\n\n&copy; 2021 My Webpage. All rights reserved.\n```\n\nNote that Markdown is a lightweight markup language used for formatting text, while HTML is a markup language used for creating the structure and presentation of web pages.",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705866344,
-  "id": "chatcmpl-8jY3EXTujfkf59xNU3g3Ixh3FhMtX",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 371,
-    "prompt_tokens": 33,
-    "total_tokens": 404
-  }
-}
-2024-01-21 11:45:52,293 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide a small sample of HTML and markdown Sure! Here\'s a small sample of HTML code:\n\n```html\n<!DOCTYPE html>\n<html>\n<head>\n    <title>My Webpage</title>\n    <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n    <header>\n        <h1>Welcome to My Webpage</h1>\n    </header>\n    \n    <nav>\n        <ul>\n            <li><a href="home.html">Home</a></li>\n            <li><a href="about.html">About</a></li>\n            <li><a href="contact.html">Contact</a></li>\n        </ul>\n    </nav>\n    \n    <main>\n        <section>\n            <h2>About Me</h2>\n            <p>I am a web developer with a passion for creating beautiful and functional websites.</p>\n        </section>\n        \n        <section>\n            <h2>Contact Me</h2>\n            <p>You can reach me at <a href="mailto:example@example.com">example@example.com</a>.</p>\n        </section>\n    </main>\n    \n    <footer>\n        <p>&copy; 2021 My Webpage. All rights reserved.</p>\n    </footer>\n</body>\n</html>\n```\n\nAnd here\'s a small sample of Markdown:\n\n```markdown\n# My Webpage\n\nWelcome to my webpage! This is a sample Markdown document.\n\n## About Me\n\nI am a web developer with a passion for creating beautiful and functional websites.\n\n## Contact Me\n\nYou can reach me at example@example.com.\n\n---\n\n&copy; 2021 My Webpage. All rights reserved.\n```\n\nNote that Markdown is a lightweight markup language used for formatting text, while HTML is a markup language used for creating the structure and presentation of web pages.'}], 'max_tokens': 10}
-2024-01-21 11:45:53,127 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "HTML and Markdown Sample",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705866350,
-  "id": "chatcmpl-8jY3K1Wi4Zi6LNZO7avLayRzccp80",
+  "created": 1705866453,
+  "id": "chatcmpl-8jY4zDR85L9xwSqsz8TIRdhWOnsWo",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
     "completion_tokens": 4,
-    "prompt_tokens": 418,
-    "total_tokens": 422
+    "prompt_tokens": 253,
+    "total_tokens": 257
   }
 }
-2024-01-21 11:45:53,131 - app - INFO - Generated conversation summary: HTML and Markdown Sample
+2024-01-21 11:47:36,580 - app - INFO - Generated conversation summary: Sample JavaScript and Markdown
+2024-01-21 11:47:36,586 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample javascript, followed by a sample of markdown'}, {'role': 'assistant', 'content': "Sure! Here's a sample JavaScript code:\n\n```javascript\n// This function calculates the factorial of a given number\nfunction factorial(num) {\n  if (num === 0 || num === 1) {\n    return 1;\n  } else {\n    return num * factorial(num - 1);\n  }\n}\n\n// Example usage\nconsole.log(factorial(5)); // Output: 120\n```\n\nAnd here's a sample Markdown:\n\n```markdown\n# Heading 1\n\n## Heading 2\n\n### Heading 3\n\nThis is a paragraph of text.\n\n- This is a bullet point.\n- This is another bullet point.\n\n1. This is a numbered list item.\n2. This is another numbered list item.\n\n**This text is bold.**\n\n*This text is italic.*\n\n[This is a link](https://www.example.com).\n\n![This is an image](https://www.example.com/image.jpg)\n```\n\nI hope this helps! Let me know if you have any further questions."}]
+2024-01-21 11:48:41,788 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-01-21 11:48:41,789 - app - INFO - Received temperature: 0.3
+2024-01-21 11:48:41,790 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample output that includes markdown, javascript, and HTML'}], 'temperature': 0.3}
+2024-01-21 11:48:46,294 - app - INFO - Response from OpenAI: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Sure! Here's an example of a markdown file that includes embedded JavaScript code and HTML:\n\n```markdown\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet('John');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id=\"myDiv\">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById('myDiv').style.color = 'blue';\n</script>\n```\n\nThat's it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.\n```\n\nWhen rendered, the above markdown file will display the following content:\n\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet('John');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id=\"myDiv\">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById('myDiv').style.color = 'blue';\n</script>\n```\n\nThat's it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705866519,
+  "id": "chatcmpl-8jY63z0GYAkKgnGrxYEvnm18zySkK",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 320,
+    "prompt_tokens": 37,
+    "total_tokens": 357
+  }
+}
+2024-01-21 11:48:46,301 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide some sample output that includes markdown, javascript, and HTML Sure! Here\'s an example of a markdown file that includes embedded JavaScript code and HTML:\n\n```markdown\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.\n```\n\nWhen rendered, the above markdown file will display the following content:\n\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.'}], 'max_tokens': 10}
+2024-01-21 11:48:47,178 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Markdown Example with JavaScript and HTML",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1705866524,
+  "id": "chatcmpl-8jY68vnYI87LSMkjh7dOA80cyJY4o",
+  "model": "gpt-3.5-turbo-0613",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 371,
+    "total_tokens": 377
+  }
+}
+2024-01-21 11:48:47,178 - app - INFO - Generated conversation summary: Markdown Example with JavaScript and HTML
+2024-01-21 11:48:47,191 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample output that includes markdown, javascript, and HTML'}, {'role': 'assistant', 'content': 'Sure! Here\'s an example of a markdown file that includes embedded JavaScript code and HTML:\n\n```markdown\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.\n```\n\nWhen rendered, the above markdown file will display the following content:\n\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.'}]
+2024-01-21 11:59:04,264 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-01-21 11:59:04,267 - app - INFO - Received temperature: 0.3
