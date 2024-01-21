@@ -746,12 +746,14 @@ document.addEventListener('click', function(event) {
 
 
 function detectAndRenderMarkdown(content) {
-    // Check for headers, lists, links, etc.
     const markdownPatterns = [
         /^# .+/gm,       // Headers
         /^\* .+/gm,      // Unordered lists
         /^\d+\. .+/gm,   // Ordered lists
-        /\[.+\]\(.+\)/g // Links
+        /\[.+\]\(.+\)/g, // Links
+        /\*\*(.+)\*\*/g, // Bold
+        /\*(.+)\*/g,     // Italics
+        /^> .+/gm        // Blockquotes
     ];
 
     let containsMarkdown = false;
@@ -762,17 +764,11 @@ function detectAndRenderMarkdown(content) {
         }
     }
 
-    // If potential markdown structures are detected, process the content with the Markdown parser
     if (containsMarkdown) {
-        // Avoid processing content inside triple backticks
         const codeBlockRegex = /```[\s\S]*?```/g;
         const codeBlocks = [...content.matchAll(codeBlockRegex)];
-
-        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%'); // Temporary placeholder
-
+        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%');
         content = marked.parse(content);
-
-        // Restore code blocks
         let blockIndex = 0;
         content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
             return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
@@ -781,6 +777,7 @@ function detectAndRenderMarkdown(content) {
 
     return content;
 }
+
 
 // Helper function to escape HTML characters
 function escapeHtml(html) {
@@ -794,6 +791,9 @@ function escapeHtml(html) {
 
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
+
+    // Process Markdown content first
+    content = detectAndRenderMarkdown(content);
 
     // First, convert all list items (top-level and nested) to <li> tags
     content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<li>$1</li>');
@@ -1057,7 +1057,7 @@ function loadConversation(conversationId) {
         });
 }
 
-// Helper function to create a message element and process LaTeX content if present
+// Helper function to fetch and process system messages
 function createMessageElement(message) {
     // Handle the system message differently to include the model name and temperature
     if (message.role === 'system') {
