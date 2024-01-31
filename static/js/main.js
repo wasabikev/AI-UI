@@ -536,7 +536,8 @@ function modelNameMapping(modelName) {
     switch(modelName) {
         case "gpt-3.5-turbo-0613": return "GPT-3.5";
         case "gpt-4-0613": return "GPT-4 (8k)";
-        case "gpt-4-1106-preview": return "GPT-4 (128K)"; 
+        case "gpt-4-1106-preview": return "GPT-4 (1106)"; 
+        case "gpt-4-0125-preview": return "GPT-4 (Turbo)";
         default: return "Unknown Model"; // Handle any unexpected values
     }
 }
@@ -554,7 +555,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview"]; 
+    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview"]; 
 
     // Add each model to the dropdown
     models.forEach((modelItem) => {
@@ -649,29 +650,33 @@ document.getElementById("modalTemperatureAdjustBtn").addEventListener("click", f
     $('#temperatureModal').modal('show');
 });
 
-// Main temperature adjust button
+// Function to toggle temperature settings visibility
+function toggleTemperatureSettings() {
+    var temperatureLabel = document.getElementById('temperatureLabel');
+    var temperatureOptions = document.getElementById('temperatureOptions');
+    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
+    var descriptionLabel = document.getElementById('descriptionLabel'); // Label for the description
+    var descriptionInput = document.getElementById('systemMessageDescription'); // Input for the description
+
+    if (temperatureOptions.style.display === 'none') {
+        temperatureLabel.style.display = 'block';
+        temperatureOptions.style.display = 'block';
+        systemMessageContentGroup.style.display = 'none';
+        descriptionLabel.style.display = 'none'; // Hide the description label
+        descriptionInput.style.display = 'none'; // Hide the description input
+    } else {
+        temperatureLabel.style.display = 'none';
+        temperatureOptions.style.display = 'none';
+        systemMessageContentGroup.style.display = 'block';
+        descriptionLabel.style.display = 'block'; // Show the description label
+        descriptionInput.style.display = 'block'; // Show the description input
+    }
+}
+
+// Main temperature adjust button event listener
 document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
     $('#systemMessageModal').modal('show'); // Open the system message modal
-
-    // Function to toggle temperature settings visibility
-    function toggleTemperatureSettings(show) {
-        var temperatureLabel = document.getElementById('temperatureLabel');
-        var temperatureOptions = document.getElementById('temperatureOptions');
-        var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-
-        if (show) {
-            temperatureLabel.style.display = 'block';
-            temperatureOptions.style.display = 'block';
-            systemMessageContentGroup.style.display = 'none';
-        } else {
-            temperatureLabel.style.display = 'none';
-            temperatureOptions.style.display = 'none';
-            systemMessageContentGroup.style.display = 'block';
-        }
-    }
-
-    // Ensure the temperature options are visible
-    toggleTemperatureSettings(true);
+    toggleTemperatureSettings(); // Call the function to ensure the temperature options are visible
 });
 
 

@@ -4,6 +4,37 @@ body, html {
     overflow: hidden;
 }
 
+
+/* Ensure that modals on screens with a max height of 1080px are styled properly */
+@media (max-height: 1080px) {
+    .modal-dialog.systemMessage-modal-lg {
+        max-height: 90vh; /* 90% of the viewport height to account for any margins */
+        /* overflow-y: auto;  Enables scrolling within the modal dialog if needed */
+    }
+
+    .modal-body {
+        max-height: 80vh; /* 80% of the viewport height should give enough room for header/footer */
+        overflow-y: auto; /*  Adds a scrollbar to the modal body if the content is too tall */
+    }
+
+    /* This ensures that the body grows with the content, up to the max-height specified */
+    .modal-content {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+    }
+
+    /* Make sure the header and footer do not shrink */
+    .modal-header, .modal-footer {
+        flex-shrink: 0;
+    }
+}
+
+/* To avoid layout shift due to scrollbar, always show a scrollbar 
+body {
+    overflow-y: scroll;
+}*/
+
 .hidden {
     display: none;
 }
@@ -31,7 +62,7 @@ body, html {
     height: 45vh; /* Match the height of the System Message modal */
     min-height: 150px; /* Match the min-height of the System Message modal */
     max-height: 600px; /* Match the max-height of the System Message modal */
-    overflow-y: auto; /* Add vertical scrollbar when content overflows */
+    /* overflow-y: auto;  Add vertical scrollbar when content overflows */
 }
 
 #temperatureModal .modal-header,
@@ -74,10 +105,11 @@ body, html {
 }
 
 #systemMessageContent {
-    height: 45vh; /* 50% of the viewport height */
-    min-height: 150px; /* Minimum height */
-    max-height: 600px; /* Maximum height */
-    overflow-y: auto; /* Add vertical scrollbar when content overflows */
+    height: 35vh; /* 50% of the viewport height */
+    /* min-height: 150px;  Minimum height */
+    /* max-height: 600px;  Maximum height */
+    max-height: calc(100vh - 250px); /* Adjust 250px to fit the modal content within the viewport */
+   /* overflow-y: auto;  Add vertical scrollbar when content overflows */
 }
 
 /* System messages */
