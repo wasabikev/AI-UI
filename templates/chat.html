@@ -104,7 +104,8 @@
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                 <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo-0613">GPT-3.5</a></li>
                                 <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4 (8k)</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (128K)</a></li> 
+                                <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (1106)</a></li>
+                                <li><a class="dropdown-item" href="#" data-model="gpt-4-0125-preview">GPT-4 (Turbo)</a></li> 
                             </ul>
                         </div>
                         <!-- Temperature Adjustment Button -->
@@ -217,7 +218,7 @@
                     <!-- Column for description -->
                     <div class="col-md-12">
                         <div class="form-group" style="margin-top: -7px;">
-                            <label for="systemMessageDescription" style="color: white;">Description</label>
+                            <label for="systemMessageDescription" id="descriptionLabel" style="color: white;">Description</label>
                             <input type="text" class="form-control" id="systemMessageDescription" style="color: black;">
                         </div>
                     </div>
@@ -228,39 +229,38 @@
                 </div>
                 <!-- Temperature Options -->
                 <div id="temperatureOptions" style="display: none;">
-                    <div class="form-check">
-                        <div class="form-group"></div>
+                    <div class="form-check" style="margin-bottom: 10px;">
                         <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0" value="0">
                         <label class="form-check-label" for="temperature0">
-                            <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Ideal for testing and scenarios where consistency is key. Less creative, more straightforward.
+                            <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Not creative.
                             <br><span class="temperature-use-case">Use Cases: Information retrieval, fact-checking, and data extraction.</span>
                         </label>
                     </div>
-                    <div class="form-check">
+                    <div class="form-check" style="margin-bottom: 10px;">
                         <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.3" value="0.3">
                         <label class="form-check-label" for="temperature0.3">
-                            <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use where a higher level of reliability is desired.
+                            <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use.
                             <br><span class="temperature-use-case">Use Cases: Technical writing, code generation, or legal document drafting.</span>
                         </label>
                     </div>
-                    <div class="form-check">
+                    <div class="form-check" style="margin-bottom: 10px;">
                         <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.7" value="0.7" checked>
                         <label class="form-check-label" for="temperature0.7">
-                            <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. Provides a good mix of interesting yet coherent responses.
+                            <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. 
                             <br><span class="temperature-use-case">Use Cases: Creative writing, marketing content creation, or conversational AI.</span>
                         </label>
                     </div>
-                    <div class="form-check">
+                    <div class="form-check" style="margin-bottom: 10px;">
                         <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.0" value="1.0">
                         <label class="form-check-label" for="temperature1.0">
-                            <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming and scenarios where out-of-the-box thinking is desired.
+                            <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming.
                             <br><span class="temperature-use-case">Use Cases: Brainstorming, ideation, or artistic pursuits.</span>
                         </label>
                     </div>
-                    <div class="form-check">
+                    <div class="form-check" style="margin-bottom: 10px;">
                         <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.5" value="1.5">
                         <label class="form-check-label" for="temperature1.5">
-                            <strong>1.5 - Experimental:</strong> Unconventional and less constrained responses. Can be more abstract or off-topic at times.
+                            <strong>1.5 - Experimental:</strong> Unconventional, abstract or off-topic at times.
                             <br><span class="temperature-use-case">Use Cases: Experimental and avant-garde content generation.</span>
                         </label>
                     </div>
@@ -270,7 +270,7 @@
                 <div id="systemMessageContentGroup">
                     <div class="form-group">
                     <label for="systemMessageContent" style="color: white;">Content</label>
-                    <textarea class="form-control" id="systemMessageContent" rows="8" style="color: black;"></textarea>
+                    <textarea class="form-control" id="systemMessageContent" style="color: black;"></textarea>
                 </div>
     </div>
 
