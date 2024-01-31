@@ -1,80 +1,51 @@
-2024-01-21 11:47:35,740 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide some sample javascript, followed by a sample of markdown Sure! Here's a sample JavaScript code:\n\n```javascript\n// This function calculates the factorial of a given number\nfunction factorial(num) {\n  if (num === 0 || num === 1) {\n    return 1;\n  } else {\n    return num * factorial(num - 1);\n  }\n}\n\n// Example usage\nconsole.log(factorial(5)); // Output: 120\n```\n\nAnd here's a sample Markdown:\n\n```markdown\n# Heading 1\n\n## Heading 2\n\n### Heading 3\n\nThis is a paragraph of text.\n\n- This is a bullet point.\n- This is another bullet point.\n\n1. This is a numbered list item.\n2. This is another numbered list item.\n\n**This text is bold.**\n\n*This text is italic.*\n\n[This is a link](https://www.example.com).\n\n![This is an image](https://www.example.com/image.jpg)\n```\n\nI hope this helps! Let me know if you have any further questions."}], 'max_tokens': 10}
-2024-01-21 11:47:36,573 - app - INFO - Response from OpenAI for summary: {
+2024-01-21 13:23:40,863 - app - INFO - Received model: gpt-4-1106-preview
+2024-01-21 13:23:40,867 - app - INFO - Received temperature: 0.3
+2024-01-21 13:23:40,869 - app - INFO - Sending request to OpenAI: {'model': 'gpt-4-1106-preview', 'messages': [{'role': 'system', 'content': 'Your role is to deliver highly accurate, factual information on tax, accounting, bookkeeping and finance.s. Avoid guesses or assumptions, stating uncertainties clearly.\n\nAdopt a conservative approach in tax matters, prioritizing compliance and penalty minimization. Reflect on your responses, considering the implications in tax reporting and firm policies. In cases where specifics of a tax scenario or firm procedures are unclear but following a certain procedure provides protection, advise doing so.\n\nAccuracy is paramount. Avoid misinformation. When faced with incomplete or ambiguous queries, always ask for clarification to ensure accuracy. Provide thorough analysis and list applicable forms and procedures for scenarios involving closely held businesses and individuals, adhering to the high standards of diligence and accuracy required by tax professionals.\n\nIn addition to tax and accounting guidance, offer insights on best practices for bookkeeping and managing money.'}, {'role': 'user', 'content': 'Do I want a 403b savings plan or a Roth account ? (This is for a young person just starting out. They are still in college and they have to make a selection for one of their first jobs.)'}], 'temperature': 0.3}
+2024-01-21 13:23:57,490 - app - INFO - Response from OpenAI: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Sample JavaScript and Markdown",
+        "content": "Choosing between a 403(b) savings plan and a Roth account (likely a Roth IRA or Roth 403(b)) depends on several factors, including current income, expected future income, tax considerations, and retirement goals. Here's a breakdown of each option to help make an informed decision:\n\n**403(b) Savings Plan:**\n- A 403(b) plan is a tax-deferred retirement plan available to employees of public schools, certain non-profits, and some ministers.\n- Contributions are made pre-tax, which can reduce your taxable income in the year the contributions are made.\n- Taxes on contributions and earnings are deferred until you withdraw the money, typically in retirement when you may be in a lower tax bracket.\n- There may be a penalty for early withdrawals before age 59\u00bd, subject to certain exceptions.\n- Some 403(b) plans may offer a Roth option, which allows for after-tax contributions with tax-free withdrawals in retirement.\n\n**Roth Account (Roth IRA or Roth 403(b)):**\n- Contributions are made with after-tax dollars, meaning there's no immediate tax deduction.\n- Earnings and withdrawals are tax-free in retirement, provided certain conditions are met (usually that the account has been open for at least five years and withdrawals are made after age 59\u00bd).\n- There is no tax deduction for contributions, but the ability to withdraw funds tax-free in retirement can be advantageous, especially if you expect to be in a higher tax bracket later on.\n- Roth IRAs have income limits for eligibility, while Roth 403(b) plans do not.\n- Roth IRAs allow for more investment options and flexibility, whereas 403(b) plans are limited to the options provided by the plan.\n\nFor a young person just starting out, especially one who is still in college and likely in a low tax bracket, a Roth account can be particularly attractive. The reason is that the tax rate on the income they contribute is likely lower now than it will be in the future when they are further along in their career. Therefore, paying tax on the income now and enjoying tax-free growth and withdrawals in retirement can be a significant benefit.\n\nHowever, if the employer offers a match on the 403(b) contributions, that is an important consideration as well, because it's essentially free money and can significantly boost retirement savings.\n\nIt's also worth noting that one isn't necessarily exclusive of the other; it's possible to contribute to both a 403(b) and a Roth IRA in the same year, subject to income limits and contribution limits.\n\nUltimately, the decision should be based on individual circumstances, including current and expected future income, tax rates, retirement goals, and the specifics of the employer's 403(b) plan. It may be beneficial to consult with a financial advisor or tax professional to make the most informed decision based on personal financial goals and the details of each option.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705866453,
-  "id": "chatcmpl-8jY4zDR85L9xwSqsz8TIRdhWOnsWo",
-  "model": "gpt-3.5-turbo-0613",
+  "created": 1705872218,
+  "id": "chatcmpl-8jZZy7tilk3pG1gGTJNz4UqfDnmRF",
+  "model": "gpt-4-1106-preview",
   "object": "chat.completion",
-  "system_fingerprint": null,
+  "system_fingerprint": "fp_3de4f27bba",
   "usage": {
-    "completion_tokens": 4,
-    "prompt_tokens": 253,
-    "total_tokens": 257
+    "completion_tokens": 582,
+    "prompt_tokens": 218,
+    "total_tokens": 800
   }
 }
-2024-01-21 11:47:36,580 - app - INFO - Generated conversation summary: Sample JavaScript and Markdown
-2024-01-21 11:47:36,586 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample javascript, followed by a sample of markdown'}, {'role': 'assistant', 'content': "Sure! Here's a sample JavaScript code:\n\n```javascript\n// This function calculates the factorial of a given number\nfunction factorial(num) {\n  if (num === 0 || num === 1) {\n    return 1;\n  } else {\n    return num * factorial(num - 1);\n  }\n}\n\n// Example usage\nconsole.log(factorial(5)); // Output: 120\n```\n\nAnd here's a sample Markdown:\n\n```markdown\n# Heading 1\n\n## Heading 2\n\n### Heading 3\n\nThis is a paragraph of text.\n\n- This is a bullet point.\n- This is another bullet point.\n\n1. This is a numbered list item.\n2. This is another numbered list item.\n\n**This text is bold.**\n\n*This text is italic.*\n\n[This is a link](https://www.example.com).\n\n![This is an image](https://www.example.com/image.jpg)\n```\n\nI hope this helps! Let me know if you have any further questions."}]
-2024-01-21 11:48:41,788 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-21 11:48:41,789 - app - INFO - Received temperature: 0.3
-2024-01-21 11:48:41,790 - app - INFO - Sending request to OpenAI: {'model': 'gpt-3.5-turbo-0613', 'messages': [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample output that includes markdown, javascript, and HTML'}], 'temperature': 0.3}
-2024-01-21 11:48:46,294 - app - INFO - Response from OpenAI: {
+2024-01-21 13:23:57,498 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYour role is to deliver highly accurate, factual information on tax, accounting, bookkeeping and finance.s. Avoid guesses or assumptions, stating uncertainties clearly.\n\nAdopt a conservative approach in tax matters, prioritizing compliance and penalty minimization. Reflect on your responses, considering the implications in tax reporting and firm policies. In cases where specifics of a tax scenario or firm procedures are unclear but following a certain procedure provides protection, advise doing so.\n\nAccuracy is paramount. Avoid misinformation. When faced with incomplete or ambiguous queries, always ask for clarification to ensure accuracy. Provide thorough analysis and list applicable forms and procedures for scenarios involving closely held businesses and individuals, adhering to the high standards of diligence and accuracy required by tax professionals.\n\nIn addition to tax and accounting guidance, offer insights on best practices for bookkeeping and managing money. Do I want a 403b savings plan or a Roth account ? (This is for a young person just starting out. They are still in college and they have to make a selection for one of their first jobs.) Choosing between a 403(b) savings plan and a Roth account (likely a Roth IRA or Roth 403(b)) depends on several factors, including current income, expected future income, tax considerations, and retirement goals. Here's a breakdown of each option to help make an informed decision:\n\n**403(b) Savings Plan:**\n- A 403(b) plan is a tax-deferred retirement plan available to employees of public schools, certain non-profits, and some ministers.\n- Contributions are made pre-tax, which can reduce your taxable income in the year the contributions are made.\n- Taxes on contributions and earnings are deferred until you withdraw the money, typically in retirement when you may be in a lower tax bracket.\n- There may be a penalty for early withdrawals before age 59½, subject to certain exceptions.\n- Some 403(b) plans may offer a Roth option, which allows for after-tax contributions with tax-free withdrawals in retirement.\n\n**Roth Account (Roth IRA or Roth 403(b)):**\n- Contributions are made with after-tax dollars, meaning there's no immediate tax deduction.\n- Earnings and withdrawals are tax-free in retirement, provided certain conditions are met (usually that the account has been open for at least five years and withdrawals are made after age 59½).\n- There is no tax deduction for contributions, but the ability to withdraw funds tax-free in retirement can be advantageous, especially if you expect to be in a higher tax bracket later on.\n- Roth IRAs have income limits for eligibility, while Roth 403(b) plans do not.\n- Roth IRAs allow for more investment options and flexibility, whereas 403(b) plans are limited to the options provided by the plan.\n\nFor a young person just starting out, especially one who is still in college and likely in a low tax bracket, a Roth account can be particularly attractive. The reason is that the tax rate on the income they contribute is likely lower now than it will be in the future when they are further along in their career. Therefore, paying tax on the income now and enjoying tax-free growth and withdrawals in retirement can be a significant benefit.\n\nHowever, if the employer offers a match on the 403(b) contributions, that is an important consideration as well, because it's essentially free money and can significantly boost retirement savings.\n\nIt's also worth noting that one isn't necessarily exclusive of the other; it's possible to contribute to both a 403(b) and a Roth IRA in the same year, subject to income limits and contribution limits.\n\nUltimately, the decision should be based on individual circumstances, including current and expected future income, tax rates, retirement goals, and the specifics of the employer's 403(b) plan. It may be beneficial to consult with a financial advisor or tax professional to make the most informed decision based on personal financial goals and the details of each option."}], 'max_tokens': 10}
+2024-01-21 13:23:58,421 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
-      "finish_reason": "stop",
+      "finish_reason": "length",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Sure! Here's an example of a markdown file that includes embedded JavaScript code and HTML:\n\n```markdown\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet('John');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id=\"myDiv\">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById('myDiv').style.color = 'blue';\n</script>\n```\n\nThat's it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.\n```\n\nWhen rendered, the above markdown file will display the following content:\n\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet('John');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id=\"myDiv\">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById('myDiv').style.color = 'blue';\n</script>\n```\n\nThat's it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.",
+        "content": "Choosing Between a 403(b) and Roth Account",
         "role": "assistant"
       }
     }
   ],
-  "created": 1705866519,
-  "id": "chatcmpl-8jY63z0GYAkKgnGrxYEvnm18zySkK",
+  "created": 1705872235,
+  "id": "chatcmpl-8jZaFrC4rxRF7mLFW1uLueWOTo8oF",
   "model": "gpt-3.5-turbo-0613",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 320,
-    "prompt_tokens": 37,
-    "total_tokens": 357
+    "completion_tokens": 10,
+    "prompt_tokens": 814,
+    "total_tokens": 824
   }
 }
-2024-01-21 11:48:46,301 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. Please provide some sample output that includes markdown, javascript, and HTML Sure! Here\'s an example of a markdown file that includes embedded JavaScript code and HTML:\n\n```markdown\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.\n```\n\nWhen rendered, the above markdown file will display the following content:\n\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.'}], 'max_tokens': 10}
-2024-01-21 11:48:47,178 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Markdown Example with JavaScript and HTML",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1705866524,
-  "id": "chatcmpl-8jY68vnYI87LSMkjh7dOA80cyJY4o",
-  "model": "gpt-3.5-turbo-0613",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 6,
-    "prompt_tokens": 371,
-    "total_tokens": 377
-  }
-}
-2024-01-21 11:48:47,178 - app - INFO - Generated conversation summary: Markdown Example with JavaScript and HTML
-2024-01-21 11:48:47,191 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'Please provide some sample output that includes markdown, javascript, and HTML'}, {'role': 'assistant', 'content': 'Sure! Here\'s an example of a markdown file that includes embedded JavaScript code and HTML:\n\n```markdown\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.\n```\n\nWhen rendered, the above markdown file will display the following content:\n\n# My Markdown File\n\nThis is a paragraph of text.\n\n```javascript\n// This is a JavaScript code snippet\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet(\'John\');\n```\n\nBelow is an HTML code snippet:\n\n```html\n<!-- This is an HTML code snippet -->\n<div id="myDiv">\n  <h1>Hello, World!</h1>\n</div>\n\n<script>\n  // This is a JavaScript code snippet embedded in HTML\n  document.getElementById(\'myDiv\').style.color = \'blue\';\n</script>\n```\n\nThat\'s it! Markdown allows you to write plain text with embedded code snippets in various programming languages, including JavaScript and HTML.'}]
-2024-01-21 11:59:04,264 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-01-21 11:59:04,267 - app - INFO - Received temperature: 0.3
+2024-01-21 13:23:58,435 - app - INFO - Generated conversation summary: Choosing Between a 403(b) and Roth Account
