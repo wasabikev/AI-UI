@@ -48,7 +48,6 @@ function updateSystemMessageDropdown() {
     });
 }
 
-
 function renderMathInElement(element) {
     // Check if the element's content contains LaTeX patterns
     if (element.textContent.match(/\\\(.+?\\\)|\\\[\s\S]+?\\\]/)) {
