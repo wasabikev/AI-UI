@@ -749,6 +749,25 @@ document.addEventListener('click', function(event) {
 });
 
 
+function copyCodeToClipboard(button) {
+    const codeBlock = button.closest('.code-block').querySelector('pre code');
+    const range = document.createRange();
+    window.getSelection().removeAllRanges(); // Clear current selection
+    range.selectNode(codeBlock);
+    window.getSelection().addRange(range); // Select the code block's content
+
+    try {
+        document.execCommand('copy'); // Copy the selection to clipboard
+        button.textContent = 'Copied!'; // Optional: Provide user feedback
+    } catch (err) {
+        console.error('Failed to copy code: ', err);
+        button.textContent = 'Failed to copy'; // Optional: Provide user feedback on failure
+    }
+
+    window.getSelection().removeAllRanges(); // Clear selection
+}
+
+
 function detectAndRenderMarkdown(content) {
     const markdownPatterns = [
         /^# .+/gm,       // Headers
@@ -783,7 +802,7 @@ function detectAndRenderMarkdown(content) {
 }
 
 
-// Helper function to escape HTML characters
+// Enhanced HTML escaping function
 function escapeHtml(html) {
     return html
         .replace(/&/g, '&amp;')
@@ -796,77 +815,72 @@ function escapeHtml(html) {
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
 
-    // Process Markdown content first
+    // Process the content to handle markdown
     content = detectAndRenderMarkdown(content);
 
-    // First, convert all list items (top-level and nested) to <li> tags
-    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<li>$1</li>');
+    // Process lists and handle code snippets securely
+    content = handleListsAndCode(content);
+    const processedContent = processCodeSnippets(content);
 
-    // Then, wrap consecutive <li> tags with <ul> tags
+    console.log('Final processed content:', processedContent);
+    return processedContent;
+}
+
+function handleListsAndCode(content) {
+    // Process list items
+    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<li>$1</li>');
     content = content.replace(/(<li>[\s\S]+?<\/li>)/gm, function(match) {
-        // Only wrap with <ul> if not already inside a list
         if (!/^\s*<\/?ul>/.test(match)) {
             return '<ul>' + match + '</ul>';
         }
         return match;
     });
-
-    // Remove extra <ul> tags that appear due to consecutive list items
     content = content.replace(/<\/ul>\s*<ul>/g, '');
 
-    // Insert a line break before the first numbered item
+    // Process numbered lists
     let isFirstNumberedItem = true;
-    content = content.replace(/\n\n(\d+\. )/g, (match, p1) => {
+    content = content.replace(/\n\n(\d+\. )/g, function(match, p1) {
         if (isFirstNumberedItem) {
             isFirstNumberedItem = false;
             return '<br><br>\n\n' + p1;
         }
         return match;
     });
-
-    // Insert an additional newline between numbered list items
     content = content.replace(/(\n)(\d+\. )/g, '\n\n$2');
 
-    // Regular expression to match content inside triple backticks, capturing the optional language declaration
-    const regex = /```(\w+)?([\s\S]*?)```/g;
-
-    // Function to process matched content
-    const replacer = (match, lang, p1) => {
-        console.log('Matched content inside backticks with language:', lang, 'Content:', p1.trim());
-    
-        let renderedContent;
-        if (!lang || lang === 'markdown') {
-            // If no language is provided or the language is markdown, process it with the Markdown parser
-            renderedContent = marked.parse(p1.trim());
-        } else if (lang === 'html') {
-            // If the language is HTML, escape it and wrap it in a code block
-            renderedContent = '<pre><code class="language-html">' + escapeHtml(p1.trim()) + '</code></pre>';
-        } else {
-            // Otherwise, treat it as a code block
-            renderedContent = '<pre><code class="' + (lang ? 'language-' + lang : '') + '">' + p1.trim() + '</code></pre>';
-        }
-        console.log('Rendered Content:', renderedContent);
-        
-        // Create a temporary element to hold the rendered content
-        const tempElement = document.createElement('div');
-        tempElement.innerHTML = renderedContent;
-    
-        // Apply Prism highlighting to the content inside the temporary element
-        Prism.highlightAllUnder(tempElement);
-    
-        // Log Prism highlighting to the content inside the temporary element
-        console.log('Highlighted content:', tempElement.innerHTML);
-    
-        // Return the highlighted content
-        return tempElement.innerHTML || match; // Ensure we return the original match if nothing else
-    };
-    
-    // Replace content inside triple backticks with processed content
-    const processedContent = content.replace(regex, replacer);
-    console.log('Final processed content:', processedContent);
-
-    return processedContent;
+    return content; // Return the processed content for further processing
 }
+
+function processCodeSnippets(content) {
+    const regex = /```(\w+)?\n?([\s\S]+?)```/g; // Ensure greedy matching for content
+
+    const replacer = (match, lang, code) => {
+        if (!code) return ''; // Defensive: Avoid processing undefined code blocks
+
+        let escapedCode = escapeHtml(code.trim());
+        const languageClass = lang ? 'language-' + lang : 'language-plaintext';
+        const languageReadable = lang ? lang.toUpperCase() : 'CODE';
+
+        // Wrap the code with a div that includes a header and the Prism-formatted code block
+        const wrappedCode = `
+        <div class="code-block">
+            <div class="code-block-header">
+                <span class="code-type">${languageReadable}</span>
+                <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
+            </div>
+            <pre><code class="${languageClass}">${escapedCode}</code></pre>
+        </div>
+        `;
+
+        return wrappedCode;
+    };
+
+    // Replace all instances of code blocks with processed content
+    return content.replace(regex, replacer);
+}
+
+
+
 
 
 
