@@ -30,10 +30,87 @@ body, html {
     }
 }
 
-/* To avoid layout shift due to scrollbar, always show a scrollbar 
-body {
-    overflow-y: scroll;
-}*/
+
+/* Adjust the font size and color of the code type text in the header */
+.code-block .code-block-header .code-type {
+    font-size: 0.8rem; /* Adjust the font size to make it smaller */
+    text-transform: lowercase; /* Convert the text to lowercase */
+    color: grey; /* Change the color to grey */
+    transform: translateY(2px); /* Slightly move the button down to align with the text */
+}
+
+.code-block .code-block-header .code-type,
+.code-block .code-block-header .copy-code {
+    font-size: 0.8rem; /* Smaller font size */
+    line-height: .8; /* Reduce line height to minimize excess space */
+}
+
+/* Style the "Copy code" button for a mouse-over effect */
+.code-block .code-block-header .copy-code {
+    background-color: transparent; /* Ensure the button has a transparent background */
+    font-size: 0.8rem; /* Adjust the font size to make it smaller */
+    color: grey; /* Initial color of the button */
+    transition: color 0.3s ease; /* Smooth transition for color change */
+    transform: translateY(4px); /* Slightly move the button down to align with the text */
+}
+
+.code-block .code-block-header .copy-code:hover {
+    color: #ffffff; /* Change color on hover to indicate interactivity */
+    cursor: pointer; /* Change the cursor to indicate clickable action */
+}
+
+/* Adjust the margin/padding directly below the code block header */
+.code-block .code-block-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 4px 8px; /* Adjust this padding to control the header's height indirectly */
+    height: auto; /* Allow the header to grow with its content */
+}
+
+/* Reduce the top padding or margin of the pre or code element */
+.code-block pre, .code-block pre code {
+    margin-top: 0; 
+    padding-top: 0; 
+}
+
+/* Hide the duplicate "Copy to Clipboard" button added by Prism.js */
+.code-block .copy-to-clipboard-button {
+    display: none !important;
+}
+
+.code-block {
+    background-color: #1E1E1E; /* Dark background for the code block */
+    margin: 1em 0;
+    position: relative;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5em 1em;
+    background-color: #1e1e1e; /* Slightly darker than the code block for contrast  #3F484B #1e1e1e*/
+    color: #ffffff;
+    font-family: sans-serif;
+}
+
+.code-type {
+    font-weight: bold;
+}
+
+.copy-code {
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+pre code {
+    display: block;
+    padding: 1em;
+    overflow-x: auto;
+}
+
 
 .hidden {
     display: none;
