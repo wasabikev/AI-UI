@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from sqlalchemy.dialects.postgresql import JSON  # Import JSON support
 
 db = SQLAlchemy()
 
@@ -109,6 +110,7 @@ class SystemMessage(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Foreign key to the user table
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    source_config = db.Column(JSON)  # Field for storing RAG source configurations
 
     creator = db.relationship('User', backref='created_system_messages')  # Relationship to the user table
 
@@ -126,5 +128,6 @@ class SystemMessage(db.Model):
             'created_by': self.created_by,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
+            'source_config': self.source_config,  # Include the source config in the dictionary representation
         }
 

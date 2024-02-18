@@ -90,30 +90,33 @@ DEFAULT_SYSTEM_MESSAGE = {
     "temperature": 0.3
 }
 
-with app.app_context():
-    # Retrieve the admin user
-    admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+@app.cli.command("init_app")
+def init_app():
+    """Initialize the application."""
+    with app.app_context():
+        # Retrieve the admin user
+        admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
 
-    # Check if the default system message exists
-    default_message = SystemMessage.query.filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"]).first()
+        # Check if the default system message exists
+        default_message = SystemMessage.query.filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"]).first()
 
-    if not default_message and admin_user:
-        # Create a new default system message associated with the admin user
-        new_default_message = SystemMessage(
-            name=DEFAULT_SYSTEM_MESSAGE["name"],
-            content=DEFAULT_SYSTEM_MESSAGE["content"],
-            description=DEFAULT_SYSTEM_MESSAGE["description"],
-            model_name=DEFAULT_SYSTEM_MESSAGE["model_name"],
-            temperature=DEFAULT_SYSTEM_MESSAGE["temperature"],
-            created_by=admin_user.id  # Associate with the admin user's ID
-        )
+        if not default_message and admin_user:
+            # Create a new default system message associated with the admin user
+            new_default_message = SystemMessage(
+                name=DEFAULT_SYSTEM_MESSAGE["name"],
+                content=DEFAULT_SYSTEM_MESSAGE["content"],
+                description=DEFAULT_SYSTEM_MESSAGE["description"],
+                model_name=DEFAULT_SYSTEM_MESSAGE["model_name"],
+                temperature=DEFAULT_SYSTEM_MESSAGE["temperature"],
+                created_by=admin_user.id  # Associate with the admin user's ID
+            )
 
-        try:
-            db.session.add(new_default_message)
-            db.session.commit()
-            print("Default system message created")
-        except Exception as e:
-            print(f"Error creating default system message: {e}")
+            try:
+                db.session.add(new_default_message)
+                db.session.commit()
+                print("Default system message created")
+            except Exception as e:
+                print(f"Error creating default system message: {e}")
 
 @app.route('/get-current-model', methods=['GET'])
 @login_required
