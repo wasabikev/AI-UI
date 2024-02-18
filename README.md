@@ -12,6 +12,10 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **Multiple AI Models**: The interface supports switching between different AI models to cater to diverse conversational needs.
 - **Interactive UI**: A user-friendly interface with a chat box and messaging system that ensures a seamless conversational flow.
 - **Admin Dashboard**: An admin interface for user management and system message configuration.
+- **Rich Text Interaction**: Supports Markdown, code snippets with syntax highlighting, and LaTeX content, enabling rich text interactions within the chat interface.
+- **System Message Customization**: Offers a comprehensive system message management interface, allowing users to create, update, delete, and select system messages with customizable content, model names, and temperature settings.
+- **Flexible AI Behavior**: Users can adjust the "temperature" setting to influence the variability of AI responses and select from different AI models to tailor interactions to their needs.
+- **Dynamic UI and Real-time Feedback**: Features a dynamic user interface that updates in real-time, providing an interactive and responsive user experience.
 
 ## Key Components
 
@@ -44,6 +48,11 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `updateConversationList()`: Refreshes the conversation list in the sidebar.
 - `loadConversation()`: Loads messages from a selected conversation into the chat interface.
 - `sendMessage()`: Sends user input to the server for processing and appends the AI's response to the chat.
+- `renderOpenAI(content)`: Processes and renders Markdown, code snippets, and LaTeX content within the chat interface.
+- `updateSystemMessageDropdown()`, `populateSystemMessageModal()`, `updateModelDropdownInModal(modelName)`: Functions related to system message management, allowing for the customization of automated responses.
+- `updateTemperatureDisplay()`, `toggleTemperatureSettings()`: Functions for managing the temperature setting and model selection, providing flexibility in AI interactions.
+- `createMessageElement(message)`, `updateConversationList()`, `loadConversation(conversationId)`: Functions for dynamically updating the UI and handling real-time user interactions.
+
 
 ### models.py
 
