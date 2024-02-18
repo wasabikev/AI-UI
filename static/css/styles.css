@@ -9,24 +9,50 @@ body, html {
 @media (max-height: 1080px) {
     .modal-dialog.systemMessage-modal-lg {
         max-height: 90vh; /* 90% of the viewport height to account for any margins */
-        /* overflow-y: auto;  Enables scrolling within the modal dialog if needed */
+        max-width: 1100px; /* Adjust based on your needs, ensuring it's wide enough */
+        display: flex; /* This ensures the modal stretches to accommodate the sidebar */
+        overflow: hidden; /* Prevents external scrollbars */
+    }
+
+    .modal-content {
+        display: flex;
+       /* flex-direction: vertical;  Change to row for horizontal layout */
+        height: auto;
+    }
+
+    .modal-main {
+        flex-grow: 1; /* Allows the main content to fill the rest of the space */
+        /* overflow-y: auto;  Adds a scrollbar to the main content if the content is too tall */
+        /* max-height: 80vh;  Adjust if necessary */
+        display: flex;
+        flex-direction: column; /* Keeps the internal layout vertical */
     }
 
     .modal-body {
-        max-height: 80vh; /* 80% of the viewport height should give enough room for header/footer */
         overflow-y: auto; /*  Adds a scrollbar to the modal body if the content is too tall */
-    }
-
-    /* This ensures that the body grows with the content, up to the max-height specified */
-    .modal-content {
-        display: flex;
-        flex-direction: column;
-        height: auto;
     }
 
     /* Make sure the header and footer do not shrink */
     .modal-header, .modal-footer {
         flex-shrink: 0;
+    }
+
+    .modal-sidebar {
+        background-color: #3F484B; /* Or any color that matches your design */
+        color: #fff;
+        padding: 20px 20px 10px 20px;
+        width: 300px; /* Adjust based on your preference */
+        overflow-y: auto; /* Allows scrolling within the sidebar if needed */
+        scrollbar-color: #7F898B #3F484B;
+        scrollbar-width: thin;
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+    }
+
+    .modal-flex-container {
+        display: flex; /* Enables flex layout */
+        flex-direction: horizontal; /* Change to row for horizontal layout */
+        width: 100%; /* Ensures the container fills the modal width */
     }
 }
 
@@ -175,10 +201,6 @@ pre code {
 
 #systemMessageModal .modal-footer {
     border-top: none; /* Remove the default top border */
-}
-
-.systemMessage-modal-lg {
-    max-width: 50%; /* Increase to 80% of the viewport width */
 }
 
 #systemMessageContent {

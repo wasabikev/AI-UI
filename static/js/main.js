@@ -143,11 +143,6 @@ document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
 });
 
 
-$('#systemMessageModal').on('show.bs.modal', function (event) {
-    // Reset isSaved to false whenever the modal is shown
-    isSaved = false;
-});
-
 $('#systemMessageModal').on('hide.bs.modal', function (event) {
     if (!isSaved) {
         selectedTemperature = initialTemperature;
@@ -169,6 +164,7 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
             }
         }
     }
+    $(this).find('.modal-dialog').css('height', 'auto');
 });
 
 
