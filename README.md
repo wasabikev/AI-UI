@@ -60,6 +60,12 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `User`: Represents a user with fields for username, email, and password.
 - `SystemMessage`: Represents a system message that can be used as a template or preset response.
 
+### Modal-Based User Interface Guidelines
+
+- In our project, we prioritize a modal-based approach for user interfaces when requesting input or displaying information that requires user interaction. This approach ensures a consistent, accessible, and user-friendly experience across the application. 
+- Use Modals for User Input: Whenever the application requires input from the user, whether it's form submission, settings configuration, or any other input-driven task, use a modal window. This includes actions like adding or editing data, confirming decisions, or any interaction that benefits from focused attention.
+- For future iterations and feature implementations, we strongly encourage maintaining the modal-based approach for user interfaces. This consistency is key to providing an intuitive and pleasant user experience across our application.
+
 ## Getting Started
 
 1. Clone the repository: `git clone <repository-url>`
