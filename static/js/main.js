@@ -12,6 +12,86 @@ let initialTemperature;
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
 
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Fetch and process system messages
+    fetchAndProcessSystemMessages().then(() => {
+        // Populate the system message modal
+        populateSystemMessageModal();
+
+        // Check if there's an active conversation and if the chat is empty
+        if (!activeConversationId && $('#chat').children().length === 0) {
+            // Find the default system message and display it
+            const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+            if (defaultSystemMessage) {
+                displaySystemMessage(defaultSystemMessage);
+            } else if (systemMessages.length > 0) {
+                // If there's no "Default System Message", display the first one in the list
+                displaySystemMessage(systemMessages[0]);
+            }
+        }
+    }).catch(error => {
+        console.error('Error during system message fetch and display:', error);
+    });
+
+    // Event listener for opening the Add Website Modal
+    document.getElementById('addWebsiteButton').addEventListener('click', function() {
+        $('#addWebsiteModal').modal('show');
+    });
+
+    // Add event listener to clear the websiteURL input when the modal is closed
+    $('#addWebsiteModal').on('hidden.bs.modal', function () {
+        document.getElementById('websiteURL').value = '';
+    });
+
+    // Event listener for the form submission inside the Add Website Modal
+    document.getElementById('addWebsiteForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+        const websiteURL = document.getElementById('websiteURL').value;
+
+        if (websiteURL) {
+            // Here, you can send the website URL to your backend for processing or storing
+            // Example: saveWebsiteURL(websiteURL);
+            console.log(`Website URL added: ${websiteURL}`); // For demonstration purposes
+
+            // Optionally, close the modal after submission
+            $('#addWebsiteModal').modal('hide');
+        } else {
+            alert('No website URL provided.');
+        }
+    });
+});
+
+
+function saveWebsiteURL(websiteURL, systemMessageId) {
+    fetch(`/api/system-messages/${systemMessageId}/add-website`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ websiteURL: websiteURL }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        // Handle success, such as updating the UI or showing a success message
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        // Handle error, such as showing an error message to the user
+    });
+}
+
+
+
+
+
 function updateSystemMessageDropdown() {
     let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
     let dropdownButton = document.getElementById('systemMessageDropdown'); // Button for the dropdown
@@ -1202,27 +1282,7 @@ document.getElementById("new-chat-btn").addEventListener("click", function() {
     });
 });
 
-document.addEventListener("DOMContentLoaded", function() {
-    // Fetch and process system messages
-    fetchAndProcessSystemMessages().then(() => {
-        // Populate the system message modal
-        populateSystemMessageModal();
 
-        // Check if there's an active conversation and if the chat is empty
-        if (!activeConversationId && $('#chat').children().length === 0) {
-            // Find the default system message and display it
-            const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
-            if (defaultSystemMessage) {
-                displaySystemMessage(defaultSystemMessage);
-            } else if (systemMessages.length > 0) {
-                // If there's no "Default System Message", display the first one in the list
-                displaySystemMessage(systemMessages[0]);
-            }
-        }
-    }).catch(error => {
-        console.error('Error during system message fetch and display:', error);
-    });
-});
 
 
 // This function checks if there's an active conversation in the session.

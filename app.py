@@ -118,6 +118,23 @@ def init_app():
             except Exception as e:
                 print(f"Error creating default system message: {e}")
 
+@app.route('/api/system-messages/<int:system_message_id>/add-website', methods=['POST'])
+def add_website_to_system_message(system_message_id):
+    data = request.json
+    website_url = data.get('websiteURL')
+    
+    system_message = SystemMessage.query.get(system_message_id)
+    if system_message:
+        if not system_message.source_config:
+            system_message.source_config = {'websites': []}
+        system_message.source_config['websites'].append(website_url)
+        db.session.commit()
+        return jsonify({'message': 'Website URL added successfully'}), 200
+    else:
+        return jsonify({'error': 'System message not found'}), 404
+
+
+
 @app.route('/get-current-model', methods=['GET'])
 @login_required
 def get_current_model():
