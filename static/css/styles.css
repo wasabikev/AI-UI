@@ -4,6 +4,14 @@ body, html {
     overflow: hidden;
 }
 
+#addWebsiteButton {
+    margin-right: 10px; /* Adjust the space as needed */
+}
+
+.modal-second-level {
+    z-index: 1060; /* Default z-index for modals is 1050 */
+}
+
 
 /* Ensure that modals on screens with a max height of 1080px are styled properly */
 @media (max-height: 1080px) {
