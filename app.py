@@ -13,6 +13,7 @@ from flask_migrate import Migrate
 import openai
 import os
 import logging
+import anthropic
 
 import requests
 import json
@@ -58,6 +59,10 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 # Initialize database
 db.init_app(app)
 migrate = Migrate(app, db)
+
+anthropic.api_key = os.environ.get('ANTHROPIC_API_KEY')
+if anthropic.api_key is None:
+    raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
 # Backup Admin user creation logic
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') # set this in your .env file
@@ -438,6 +443,48 @@ def reset_conversation():
 
 
 
+def get_response_from_model(model, messages, temperature):
+    """
+    Routes the request to the appropriate API based on the model selected.
+    """
+    if model in ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-0125-preview"]:
+        # OpenAI models
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature
+        }
+        response = openai.ChatCompletion.create(**payload)
+        chat_output = response['choices'][0]['message']['content']
+    elif model == "claude-3-opus-20240229":
+        # Anthropic model
+        client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+        # Construct the conversation history for Messages API
+        anthropic_messages = []
+        system_message = None
+        for message in messages:
+            if message['role'] == 'system':
+                system_message = message['content']
+            elif message['role'] == 'user':
+                anthropic_messages.append({"role": "user", "content": message['content']})
+            elif message['role'] == 'assistant':
+                anthropic_messages.append({"role": "assistant", "content": message['content']})
+
+        # Send the conversation to the Anthropic Messages API
+        response = client.messages.create(
+            model=model,
+            messages=anthropic_messages,
+            max_tokens=1000,  # Specify the maximum number of tokens to generate
+            temperature=temperature
+        )
+        chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
+    else:
+        chat_output = "Sorry, the selected model is not supported yet."
+   
+    return chat_output
+
+
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
@@ -459,23 +506,11 @@ def chat():
             app.logger.info(f'Using existing conversation with id {conversation_id}.')
         else:
             app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
-            conversation = None  # Reset to ensure a new conversation is started
+            conversation = None
 
-    # Preparing the payload for the OpenAI API
-    api_request_payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature  
-    }
-
-    # Log the request payload for debugging
-    app.logger.info(f"Sending request to OpenAI: {api_request_payload}")
-
-
-    # Generating a response from the selected model
-    response = openai.ChatCompletion.create(**api_request_payload)
-    chat_output = response['choices'][0]['message']['content']
-    app.logger.info("Response from OpenAI: {}".format(response))
+    # Use the abstracted function to get a response from the appropriate model
+    chat_output = get_response_from_model(model, messages, temperature)
+    app.logger.info("Response from model: {}".format(chat_output))
 
     new_message = {"role": "assistant", "content": chat_output}
     messages.append(new_message)  # Append AI's message to the list
@@ -484,52 +519,39 @@ def chat():
         # Create a new Conversation object with the temperature
         conversation = Conversation(history=json.dumps(messages), 
                                     temperature=temperature,
-                                    user_id=current_user.id
-                                    )
+                                    user_id=current_user.id)
 
         # Generate the title for the conversation
-        conversation_title = generate_summary(messages)
+        conversation_title = generate_summary(messages)  # Uses GPT-3.5-turbo by default
 
         # Update the title of the conversation
         conversation.title = conversation_title
         
         db.session.add(conversation)
-        db.session.commit()
-
-        # Store conversation ID in session
-        session['conversation_id'] = conversation.id
     else:
         # Update existing conversation
         conversation.history = json.dumps(messages)
-        conversation.temperature = temperature  # Update the temperature here
+        conversation.temperature = temperature
 
-        db.session.commit()
-
-    # Extract token data from OpenAI API's response
-    token_data = {
-        'prompt_tokens': response.get('usage', {}).get('prompt_tokens', 0),
-        'completion_tokens': response.get('usage', {}).get('completion_tokens', 0),
-        'total_tokens': response.get('usage', {}).get('total_tokens', 0)
-    }
-
-    # Update the model name and token count of the conversation
+    # Update the model name of the conversation
     conversation.model_name = model
-    conversation.token_count = token_data['total_tokens']
+
+    # Assumption: Update token count logic here if applicable based on response from the model
+    # For now, skipping token count update as it depends on the specific API's response format
+
+    db.session.commit()
 
     # Log the messages to ensure they are received correctly
     app.logger.info(f'Received messages: {messages}')
                                           
-    # Commit changes made to the conversation object
-    db.session.commit()
-
-    # Update the session's conversation_id every time
+    # Store/update the conversation ID in session
     session['conversation_id'] = conversation.id
 
     return jsonify({
         'chat_output': chat_output,
         'conversation_id': conversation.id,
-        'conversation_title': conversation.title,
-        'usage': token_data
+        'conversation_title': conversation.title
+        # Token count or other metrics can be added here if needed
     })
 
 

@@ -10,26 +10,29 @@ load_dotenv()
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
-# Dependencies for authentication
-from auth import auth  # Import the auth blueprint
-
 import openai
 import os
 import logging
+import anthropic
 
 import requests
 import json
 
-from models import db, Folder, Conversation
+from models import db, Folder, Conversation, User, SystemMessage
 from logging.handlers import RotatingFileHandler # for log file rotation
+from werkzeug.security import generate_password_hash
+
+from auth import auth as auth_blueprint  # Import the auth blueprint
 
 app = Flask(__name__)
+
 app.logger.setLevel(logging.INFO)  # Set logging level to INFO
 handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3) # Create log file with max size of 10KB and max number of 3 files
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 app.logger.addHandler(handler)
-app.register_blueprint(auth, url_prefix='/auth')  # Register the auth blueprint
+app.register_blueprint(auth_blueprint)  
+
 
 # Initialize the login manager
 login_manager = LoginManager()
@@ -57,13 +60,170 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 db.init_app(app)
 migrate = Migrate(app, db)
 
+anthropic.api_key = os.environ.get('ANTHROPIC_API_KEY')
+if anthropic.api_key is None:
+    raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+
+# Backup Admin user creation logic
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') # set this in your .env file
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+ADMIN_EMAIL = "admin@backup.com" # Change this to your own email address
+
+with app.app_context():
+    # Check if the admin user exists
+    admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+
+    if not admin_user and ADMIN_USERNAME and ADMIN_PASSWORD:
+        # Create a new admin user
+        hashed_password = generate_password_hash(ADMIN_PASSWORD)
+        new_admin = User(username=ADMIN_USERNAME, email=ADMIN_EMAIL,
+                         password_hash=hashed_password, is_admin=True, status="Active")
+
+        try:
+            db.session.add(new_admin)
+            db.session.commit()
+            print("Admin user created")
+        except Exception as e:
+            print(f"Error creating admin user: {e}")
+
+# Default System Message creation logic
+DEFAULT_SYSTEM_MESSAGE = {
+    "name": "Default System Message",
+    "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
+    "description": "Default entry for database",
+    "model_name": "gpt-3.5-turbo-0613",
+    "temperature": 0.3
+}
+
+@app.cli.command("init_app")
+def init_app():
+    """Initialize the application."""
+    with app.app_context():
+        # Retrieve the admin user
+        admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+
+        # Check if the default system message exists
+        default_message = SystemMessage.query.filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"]).first()
+
+        if not default_message and admin_user:
+            # Create a new default system message associated with the admin user
+            new_default_message = SystemMessage(
+                name=DEFAULT_SYSTEM_MESSAGE["name"],
+                content=DEFAULT_SYSTEM_MESSAGE["content"],
+                description=DEFAULT_SYSTEM_MESSAGE["description"],
+                model_name=DEFAULT_SYSTEM_MESSAGE["model_name"],
+                temperature=DEFAULT_SYSTEM_MESSAGE["temperature"],
+                created_by=admin_user.id  # Associate with the admin user's ID
+            )
+
+            try:
+                db.session.add(new_default_message)
+                db.session.commit()
+                print("Default system message created")
+            except Exception as e:
+                print(f"Error creating default system message: {e}")
+
+@app.route('/api/system-messages/<int:system_message_id>/add-website', methods=['POST'])
+def add_website_to_system_message(system_message_id):
+    data = request.json
+    website_url = data.get('websiteURL')
+    
+    system_message = SystemMessage.query.get(system_message_id)
+    if system_message:
+        if not system_message.source_config:
+            system_message.source_config = {'websites': []}
+        system_message.source_config['websites'].append(website_url)
+        db.session.commit()
+        return jsonify({'message': 'Website URL added successfully'}), 200
+    else:
+        return jsonify({'error': 'System message not found'}), 404
+
+
+
+@app.route('/get-current-model', methods=['GET'])
+@login_required
+def get_current_model():
+    # Assuming the current model is associated with the default system message
+    default_message = SystemMessage.query.filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"]).first()
+
+    if default_message:
+        return jsonify({'model_name': default_message.model_name})
+    else:
+        return jsonify({'error': 'Default system message not found'}), 404
+
+@app.route('/system-messages', methods=['POST'])
+@login_required  # Ensure only authenticated users can perform this action
+def create_system_message():
+    if not current_user.is_admin:  # Ensure only admins can create system messages
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    new_system_message = SystemMessage(
+        name=data['name'],
+        content=data['content'],
+        description=data.get('description', ''),
+        model_name=data.get('model_name', ''),
+        temperature=data.get('temperature', 0.7),
+        created_by=current_user.id
+    )
+    db.session.add(new_system_message)
+    db.session.commit()
+    return jsonify(new_system_message.to_dict()), 201
+
+@app.route('/api/system_messages')
+@login_required
+def get_system_messages():
+    system_messages = SystemMessage.query.all()
+    return jsonify([{
+        'id': message.id,  
+        'name': message.name,
+        'content': message.content,
+        'description': message.description,
+        'model_name': message.model_name,
+        'temperature': message.temperature
+    } for message in system_messages])
+
+@app.route('/system-messages/<int:message_id>', methods=['PUT'])
+@login_required
+def update_system_message(message_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    system_message = SystemMessage.query.get_or_404(message_id)
+    data = request.get_json()
+
+    system_message.name = data.get('name', system_message.name)
+    system_message.content = data.get('content', system_message.content)
+    system_message.description = data.get('description', system_message.description)
+    system_message.model_name = data.get('model_name', system_message.model_name)
+    system_message.temperature = data.get('temperature', system_message.temperature)
+
+    db.session.commit()
+    return jsonify(system_message.to_dict())
+
+@app.route('/system-messages/<int:message_id>', methods=['DELETE'])
+@login_required
+def delete_system_message(message_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    system_message = SystemMessage.query.get_or_404(message_id)
+    db.session.delete(system_message)
+    db.session.commit()
+    return jsonify({'message': 'System message deleted successfully'})
+
+
+@app.route('/trigger-flash')
+def trigger_flash():
+    flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
+    return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
+
+
 @app.route('/chat/<int:conversation_id>')
 @login_required
 def chat_interface(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
     return render_template('chat.html', conversation=conversation)
-
-
 
 
 # Fetch all conversations from the database and convert them to a list of dictionaries
@@ -116,12 +276,14 @@ def create_conversation_in_folder(folder_id):
     db.session.commit()
     return jsonify({"message": "Conversation created successfully"}), 201
 
+# Fetch all conversations from the database for listing in the left sidebar
 @app.route('/api/conversations', methods=['GET'])
+@login_required
 def get_conversations():
-    # Fetch all conversations from database ordered by 'updated_at' descending (latest first)
-    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
+    # Fetch all conversations from database for the current user
+    conversations = Conversation.query.filter_by(user_id=current_user.id).order_by(Conversation.updated_at.desc()).all()
+ 
     # Convert the list of Conversation objects into a list of dictionaries
-    # Include id, title, history, model_name, and token_count in each dictionary
     conversations_dict = [{"id": c.id, 
                            "title": c.title, 
                            "history": json.loads(c.history), 
@@ -129,10 +291,11 @@ def get_conversations():
                            "token_count": c.token_count,
                            "updated_at": c.updated_at,
                            "temperature": c.temperature} 
-
-                          for c in conversations]
+                          for c in conversations]  
     return jsonify(conversations_dict)
 
+
+# Fetch a specific conversation from the database to display in the chat interface
 @app.route('/conversations/<int:conversation_id>', methods=['GET'])
 def get_conversation(conversation_id):
     # Fetch a specific conversation from database
@@ -235,25 +398,40 @@ def clear_session():
     return jsonify({"message": "Session cleared"}), 200
 
 
+def estimate_token_count(text):
+    # Simplistic estimation. You may need a more accurate method.
+    return len(text.split())
+
 def generate_summary(messages):
-    conversation_history = ' '.join([message['content'] for message in messages])
+    # Use only the most recent messages or truncate to reduce token count
+    conversation_history = ' '.join([message['content'] for message in messages[-5:]])
+    
+    if estimate_token_count(conversation_history) > 4000:  # Adjust the limit as needed
+        conversation_history = conversation_history[:4000]  # Truncate to fit the token limit
+        app.logger.info("Conversation history truncated for summary generation")
+
+    summary_request_payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text:\n" + conversation_history}
+        ],
+        "max_tokens": 10
+    }
+
+    app.logger.info(f"Sending summary request to OpenAI: {summary_request_payload}")
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo", # or any appropriate model you are using
-            messages=[
-                {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text. Since it is a title it should have no periods and all the words should be Capatilized Like This:\n" + conversation_history}
-            ],
-            max_tokens=10
-        )
+        response = openai.ChatCompletion.create(**summary_request_payload)
         summary = response['choices'][0]['message']['content'].strip()
-    except KeyError:
-        app.logger.error(f"Failed to generate conversation summary: {response.json()}")
-        summary = messages[0]['content']  # use the first user message as a fallback title
-        if len(summary) > 120:
-            summary = summary[:117] + '...'
+        app.logger.info(f"Response from OpenAI for summary: {response}")
+        app.logger.info(f"Generated conversation summary: {summary}")
+    except Exception as e:
+        app.logger.error(f"Error in generate_summary: {e}")
+        summary = "Conversation Summary"  # Fallback title
 
     return summary
+
+
 
 
 @app.route('/reset-conversation', methods=['POST'])
@@ -266,6 +444,7 @@ def reset_conversation():
 
 
 @app.route('/chat', methods=['POST'])
+@login_required
 def chat():
     messages = request.json.get('messages')
     model = request.json.get('model')  # Fetch the model
@@ -280,10 +459,12 @@ def chat():
 
     if conversation_id:
         conversation = Conversation.query.get(conversation_id)
-        if conversation:
-            app.logger.info(f'Fetched conversation with id {conversation_id} from provided ID/session.')
+        # Check if the conversation belongs to the current user
+        if conversation and conversation.user_id == current_user.id:
+            app.logger.info(f'Using existing conversation with id {conversation_id}.')
         else:
-            app.logger.info(f'No conversation found with id {conversation_id} from provided ID/session.')
+            app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
+            conversation = None  # Reset to ensure a new conversation is started
 
     # Preparing the payload for the OpenAI API
     api_request_payload = {
@@ -306,7 +487,10 @@ def chat():
 
     if not conversation:
         # Create a new Conversation object with the temperature
-        conversation = Conversation(history=json.dumps(messages), temperature=temperature)
+        conversation = Conversation(history=json.dumps(messages), 
+                                    temperature=temperature,
+                                    user_id=current_user.id
+                                    )
 
         # Generate the title for the conversation
         conversation_title = generate_summary(messages)
@@ -337,6 +521,9 @@ def chat():
     conversation.model_name = model
     conversation.token_count = token_data['total_tokens']
 
+    # Log the messages to ensure they are received correctly
+    app.logger.info(f'Received messages: {messages}')
+                                          
     # Commit changes made to the conversation object
     db.session.commit()
 
