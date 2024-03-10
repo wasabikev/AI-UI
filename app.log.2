@@ -1,23 +1,92 @@
-2024-02-10 11:27:55,082 - app - INFO - Response from OpenAI: {
+2024-03-10 13:04:22,716 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Given the feedback and the need to ensure that the flex layout correctly positions the sidebar alongside the main content without affecting the internal layout, we should adjust the structure of the modal content in the `chat.html` file. Specifically, we'll wrap the sidebar and the main modal content (header, body, footer) in a new `div` with a flexbox layout, ensuring they are displayed side-by-side while the internal structure of the main content remains unaffected.\n\nHere\u2019s how you can adjust the HTML structure of the `systemMessageModal` within the `chat.html` file to meet these requirements:\n\n```html\n<!-- System Message Selection Modal -->\n<div class=\"modal fade\" id=\"systemMessageModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"systemMessageModalLabel\" aria-hidden=\"true\">\n    <div class=\"modal-dialog systemMessage-modal-lg\" role=\"document\">\n        <div class=\"modal-content\">\n            \n            <!-- Flex Container for Sidebar and Main Content -->\n            <div class=\"d-flex\" style=\"width: 100%;\">\n\n                <!-- Sidebar Container -->\n                <div class=\"modal-sidebar\">\n                    <div id=\"rag-controls\">\n                        <h6>RAG Controls</h6>\n                        <!-- Placeholder for dynamic RAG controls -->\n                        <div id=\"website-identifier\"></div>\n                        <div id=\"file-upload-control\"></div>\n                    </div>\n                </div>\n\n                <!-- Main Content Container -->\n                <div class=\"modal-main flex-grow-1\">\n                    <div class=\"modal-header\">\n                        <h5 class=\"modal-title\" id=\"systemMessageModalLabel\">System: <!-- Title for the dropdown -->\n                        <!-- Dropdown for selecting the system message -->\n                        <div class=\"dropdown d-inline-block\">\n                            <button class=\"btn btn-secondary dropdown-toggle\" type=\"button\" id=\"systemMessageDropdown\" data-toggle=\"dropdown\" aria-haspopup=\"true\" aria-expanded=\"false\">\n                                Select System Message\n                            </button>\n                            <div class=\"dropdown-menu\" aria-labelledby=\"systemMessageDropdown\">\n                                <!-- Dropdown items will be populated here -->\n                            </div>\n                            <button id=\"new-system-message-btn\" class=\"btn btn-info ml-2\">+ New</button>\n                        </div>\n                        </h5>\n                        <!-- Other header elements (Model Dropdown, Temperature Adjustment Button, etc.) go here -->\n                    </div>\n\n                    <div class=\"modal-body\">\n                        <!-- Modal body content goes here -->\n                    </div>\n\n                    <div class=\"modal-footer\">\n                        <button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Close</button>\n                        <button type=\"button\" class=\"btn btn-primary\" id=\"saveSystemMessageChanges\">Save Changes</button>\n                    </div>\n                </div> <!-- End Main Content Container -->\n\n            </div> <!-- End Flex Container -->\n            \n        </div>\n    </div>\n</div>\n```\n\nThis structure ensures that the sidebar and the main content within the modal are laid out side-by-side using Flexbox (`d-flex` class), with the main content area (`modal-main`) set to grow and fill the remaining space (`flex-grow-1`). This layout adjustment aligns with the feedback to keep the internal structure of the main content area intact while also incorporating the sidebar as part of the modal design.",
+        "content": "Flask app development",
         "role": "assistant"
       }
     }
   ],
-  "created": 1707593248,
-  "id": "chatcmpl-8qnIWvM8DFhVi7zJ0TzVYT1Yd6qMU",
-  "model": "gpt-4-0125-preview",
+  "created": 1710101060,
+  "id": "chatcmpl-91Jh6theINjdmKDxwnFFfP7T109lb",
+  "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_f084bcfc79",
+  "system_fingerprint": "fp_4f0b692a78",
   "usage": {
-    "completion_tokens": 675,
-    "prompt_tokens": 4627,
-    "total_tokens": 5302
+    "completion_tokens": 4,
+    "prompt_tokens": 96,
+    "total_tokens": 100
   }
 }
+2024-03-10 13:04:22,723 - app - INFO - Generated conversation summary: Flask app development
+2024-03-10 13:04:22,731 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is a pangram, meaning it contains all 26 letters of the English alphabet. It is often used as a sample sentence to test fonts, keyboards, displays, and other text-related systems.'}]
+2024-03-10 13:05:31,755 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-10 13:05:31,756 - app - INFO - Received temperature: 0.7
+2024-03-10 13:05:31,758 - app - INFO - Using existing conversation with id 307.
+2024-03-10 13:05:55,620 - app - INFO - Response from model: Certainly! Here's some sample output that includes Python, JavaScript, and Markdown:
+
+Python:
+```python
+def fibonacci(n):
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    elif n == 2:
+        return [0, 1]
+    else:
+        fib = [0, 1]
+        for i in range(2, n):
+            fib.append(fib[i-1] + fib[i-2])
+        return fib
+
+print(fibonacci(10))
+```
+
+JavaScript:
+```javascript
+function isPalindrome(str) {
+    str = str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    let left = 0;
+    let right = str.length - 1;
+    while (left < right) {
+        if (str[left] !== str[right]) {
+            return false;
+        }
+        left++;
+        right--;
+    }
+    return true;
+}
+
+console.log(isPalindrome("A man, a plan, a canal, Panama!"));
+```
+
+Markdown:
+# Welcome to My Blog
+
+## Introduction
+This is a sample blog post written in **Markdown**. Markdown is a lightweight markup language that is easy to read and write.
+
+## Features
+- It supports *italics* and **bold** text
+- You can create lists, like this one
+- It allows you to add [links](https://www.example.com)
+- You can also add images: ![Alt Text](image.jpg)
+
+## Code Blocks
+Markdown also supports code blocks, which is great for showcasing code snippets:
+
+```python
+def greet(name):
+    print(f"Hello, {name}!")
+```
+
+## Conclusion
+That's a brief overview of what you can do with Markdown. It's a versatile and user-friendly language for creating formatted text.
+
+This sample output includes Python code for generating Fibonacci numbers, JavaScript code for checking if a string is a palindrome, and a Markdown document showcasing various formatting options such as headings, lists, links, images, and code blocks.
+2024-03-10 13:05:55,637 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is a pangram, meaning it contains all 26 letters of the English alphabet. It is often used as a sample sentence to test fonts, keyboards, displays, and other text-related systems.'}, {'role': 'user', 'content': 'Can you please give me some sample output to test the UI? Please include Python, javascript, and markdown'}, {'role': 'assistant', 'content': 'Certainly! Here\'s some sample output that includes Python, JavaScript, and Markdown:\n\nPython:\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    elif n == 2:\n        return [0, 1]\n    else:\n        fib = [0, 1]\n        for i in range(2, n):\n            fib.append(fib[i-1] + fib[i-2])\n        return fib\n\nprint(fibonacci(10))\n```\n\nJavaScript:\n```javascript\nfunction isPalindrome(str) {\n    str = str.replace(/[^a-zA-Z0-9]/g, \'\').toLowerCase();\n    let left = 0;\n    let right = str.length - 1;\n    while (left < right) {\n        if (str[left] !== str[right]) {\n            return false;\n        }\n        left++;\n        right--;\n    }\n    return true;\n}\n\nconsole.log(isPalindrome("A man, a plan, a canal, Panama!"));\n```\n\nMarkdown:\n# Welcome to My Blog\n\n## Introduction\nThis is a sample blog post written in **Markdown**. Markdown is a lightweight markup language that is easy to read and write.\n\n## Features\n- It supports *italics* and **bold** text\n- You can create lists, like this one\n- It allows you to add [links](https://www.example.com)\n- You can also add images: ![Alt Text](image.jpg)\n\n## Code Blocks\nMarkdown also supports code blocks, which is great for showcasing code snippets:\n\n```python\ndef greet(name):\n    print(f"Hello, {name}!")\n```\n\n## Conclusion\nThat\'s a brief overview of what you can do with Markdown. It\'s a versatile and user-friendly language for creating formatted text.\n\nThis sample output includes Python code for generating Fibonacci numbers, JavaScript code for checking if a string is a palindrome, and a Markdown document showcasing various formatting options such as headings, lists, links, images, and code blocks.'}]

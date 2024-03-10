@@ -608,13 +608,18 @@ const temperatureDescriptions = {
 
 // Helper function to map model names to their display values
 function modelNameMapping(modelName) {
+    console.log("Input model name:", modelName);
+    let mappedName;
     switch(modelName) {
-        case "gpt-3.5-turbo-0613": return "GPT-3.5";
-        case "gpt-4-0613": return "GPT-4 (8k)";
-        case "gpt-4-1106-preview": return "GPT-4 (1106)"; 
-        case "gpt-4-0125-preview": return "GPT-4 (Turbo)";
-        default: return "Unknown Model"; // Handle any unexpected values
+        case "gpt-3.5-turbo-0613": mappedName = "GPT-3.5"; break;
+        case "gpt-4-0613": mappedName = "GPT-4 (8k)"; break;
+        case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
+        case "gpt-4-0125-preview": mappedName = "GPT-4 (Turbo)"; break;
+        case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
+        default: mappedName = "Unknown Model"; break;
     }
+    console.log("Mapped model name:", mappedName);
+    return mappedName;
 }
 
 // Function to populate the model dropdown in the modal
@@ -630,7 +635,8 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview"]; 
+    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview","claude-3-opus-20240229"];
+    console.log("Available models:", models);
 
     // Add each model to the dropdown
     models.forEach((modelItem) => {

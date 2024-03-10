@@ -12,6 +12,86 @@ let initialTemperature;
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
 
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Fetch and process system messages
+    fetchAndProcessSystemMessages().then(() => {
+        // Populate the system message modal
+        populateSystemMessageModal();
+
+        // Check if there's an active conversation and if the chat is empty
+        if (!activeConversationId && $('#chat').children().length === 0) {
+            // Find the default system message and display it
+            const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+            if (defaultSystemMessage) {
+                displaySystemMessage(defaultSystemMessage);
+            } else if (systemMessages.length > 0) {
+                // If there's no "Default System Message", display the first one in the list
+                displaySystemMessage(systemMessages[0]);
+            }
+        }
+    }).catch(error => {
+        console.error('Error during system message fetch and display:', error);
+    });
+
+    // Event listener for opening the Add Website Modal
+    document.getElementById('addWebsiteButton').addEventListener('click', function() {
+        $('#addWebsiteModal').modal('show');
+    });
+
+    // Add event listener to clear the websiteURL input when the modal is closed
+    $('#addWebsiteModal').on('hidden.bs.modal', function () {
+        document.getElementById('websiteURL').value = '';
+    });
+
+    // Event listener for the form submission inside the Add Website Modal
+    document.getElementById('addWebsiteForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+        const websiteURL = document.getElementById('websiteURL').value;
+
+        if (websiteURL) {
+            // Here, you can send the website URL to your backend for processing or storing
+            // Example: saveWebsiteURL(websiteURL);
+            console.log(`Website URL added: ${websiteURL}`); // For demonstration purposes
+
+            // Optionally, close the modal after submission
+            $('#addWebsiteModal').modal('hide');
+        } else {
+            alert('No website URL provided.');
+        }
+    });
+});
+
+
+function saveWebsiteURL(websiteURL, systemMessageId) {
+    fetch(`/api/system-messages/${systemMessageId}/add-website`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ websiteURL: websiteURL }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        // Handle success, such as updating the UI or showing a success message
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        // Handle error, such as showing an error message to the user
+    });
+}
+
+
+
+
+
 function updateSystemMessageDropdown() {
     let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
     let dropdownButton = document.getElementById('systemMessageDropdown'); // Button for the dropdown
@@ -47,7 +127,6 @@ function updateSystemMessageDropdown() {
         dropdownMenu.appendChild(dropdownItem);
     });
 }
-
 
 function renderMathInElement(element) {
     // Check if the element's content contains LaTeX patterns
@@ -144,11 +223,6 @@ document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
 });
 
 
-$('#systemMessageModal').on('show.bs.modal', function (event) {
-    // Reset isSaved to false whenever the modal is shown
-    isSaved = false;
-});
-
 $('#systemMessageModal').on('hide.bs.modal', function (event) {
     if (!isSaved) {
         selectedTemperature = initialTemperature;
@@ -170,6 +244,7 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
             }
         }
     }
+    $(this).find('.modal-dialog').css('height', 'auto');
 });
 
 
@@ -536,7 +611,8 @@ function modelNameMapping(modelName) {
     switch(modelName) {
         case "gpt-3.5-turbo-0613": return "GPT-3.5";
         case "gpt-4-0613": return "GPT-4 (8k)";
-        case "gpt-4-1106-preview": return "GPT-4 (128K)"; 
+        case "gpt-4-1106-preview": return "GPT-4 (1106)"; 
+        case "gpt-4-0125-preview": return "GPT-4 (Turbo)";
         default: return "Unknown Model"; // Handle any unexpected values
     }
 }
@@ -554,7 +630,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview"]; 
+    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview"]; 
 
     // Add each model to the dropdown
     models.forEach((modelItem) => {
@@ -649,29 +725,33 @@ document.getElementById("modalTemperatureAdjustBtn").addEventListener("click", f
     $('#temperatureModal').modal('show');
 });
 
-// Main temperature adjust button
+// Function to toggle temperature settings visibility
+function toggleTemperatureSettings() {
+    var temperatureLabel = document.getElementById('temperatureLabel');
+    var temperatureOptions = document.getElementById('temperatureOptions');
+    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
+    var descriptionLabel = document.getElementById('descriptionLabel'); // Label for the description
+    var descriptionInput = document.getElementById('systemMessageDescription'); // Input for the description
+
+    if (temperatureOptions.style.display === 'none') {
+        temperatureLabel.style.display = 'block';
+        temperatureOptions.style.display = 'block';
+        systemMessageContentGroup.style.display = 'none';
+        descriptionLabel.style.display = 'none'; // Hide the description label
+        descriptionInput.style.display = 'none'; // Hide the description input
+    } else {
+        temperatureLabel.style.display = 'none';
+        temperatureOptions.style.display = 'none';
+        systemMessageContentGroup.style.display = 'block';
+        descriptionLabel.style.display = 'block'; // Show the description label
+        descriptionInput.style.display = 'block'; // Show the description input
+    }
+}
+
+// Main temperature adjust button event listener
 document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
     $('#systemMessageModal').modal('show'); // Open the system message modal
-
-    // Function to toggle temperature settings visibility
-    function toggleTemperatureSettings(show) {
-        var temperatureLabel = document.getElementById('temperatureLabel');
-        var temperatureOptions = document.getElementById('temperatureOptions');
-        var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-
-        if (show) {
-            temperatureLabel.style.display = 'block';
-            temperatureOptions.style.display = 'block';
-            systemMessageContentGroup.style.display = 'none';
-        } else {
-            temperatureLabel.style.display = 'none';
-            temperatureOptions.style.display = 'none';
-            systemMessageContentGroup.style.display = 'block';
-        }
-    }
-
-    // Ensure the temperature options are visible
-    toggleTemperatureSettings(true);
+    toggleTemperatureSettings(); // Call the function to ensure the temperature options are visible
 });
 
 
@@ -745,13 +825,34 @@ document.addEventListener('click', function(event) {
 });
 
 
+function copyCodeToClipboard(button) {
+    const codeBlock = button.closest('.code-block').querySelector('pre code');
+    const range = document.createRange();
+    window.getSelection().removeAllRanges(); // Clear current selection
+    range.selectNode(codeBlock);
+    window.getSelection().addRange(range); // Select the code block's content
+
+    try {
+        document.execCommand('copy'); // Copy the selection to clipboard
+        button.textContent = 'Copied!'; // Optional: Provide user feedback
+    } catch (err) {
+        console.error('Failed to copy code: ', err);
+        button.textContent = 'Failed to copy'; // Optional: Provide user feedback on failure
+    }
+
+    window.getSelection().removeAllRanges(); // Clear selection
+}
+
+
 function detectAndRenderMarkdown(content) {
-    // Check for headers, lists, links, etc.
     const markdownPatterns = [
         /^# .+/gm,       // Headers
         /^\* .+/gm,      // Unordered lists
         /^\d+\. .+/gm,   // Ordered lists
-        /\[.+\]\(.+\)/g // Links
+        /\[.+\]\(.+\)/g, // Links
+        /\*\*(.+)\*\*/g, // Bold
+        /\*(.+)\*/g,     // Italics
+        /^> .+/gm        // Blockquotes
     ];
 
     let containsMarkdown = false;
@@ -762,17 +863,11 @@ function detectAndRenderMarkdown(content) {
         }
     }
 
-    // If potential markdown structures are detected, process the content with the Markdown parser
     if (containsMarkdown) {
-        // Avoid processing content inside triple backticks
         const codeBlockRegex = /```[\s\S]*?```/g;
         const codeBlocks = [...content.matchAll(codeBlockRegex)];
-
-        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%'); // Temporary placeholder
-
+        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%');
         content = marked.parse(content);
-
-        // Restore code blocks
         let blockIndex = 0;
         content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
             return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
@@ -782,7 +877,8 @@ function detectAndRenderMarkdown(content) {
     return content;
 }
 
-// Helper function to escape HTML characters
+
+// Enhanced HTML escaping function
 function escapeHtml(html) {
     return html
         .replace(/&/g, '&amp;')
@@ -792,66 +888,76 @@ function escapeHtml(html) {
         .replace(/'/g, '&#039;');
 }
 
-// This function renders the content inside triple backticks - the OpenAI Playground style.
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
 
-    // First, check for potential markdown structures and process them
+    // Process the content to handle markdown
     content = detectAndRenderMarkdown(content);
 
-    // Insert a line break before the first numbered item
+    // Process lists and handle code snippets securely
+    content = handleListsAndCode(content);
+    const processedContent = processCodeSnippets(content);
+
+    console.log('Final processed content:', processedContent);
+    return processedContent;
+}
+
+function handleListsAndCode(content) {
+    // Process list items
+    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<li>$1</li>');
+    content = content.replace(/(<li>[\s\S]+?<\/li>)/gm, function(match) {
+        if (!/^\s*<\/?ul>/.test(match)) {
+            return '<ul>' + match + '</ul>';
+        }
+        return match;
+    });
+    content = content.replace(/<\/ul>\s*<ul>/g, '');
+
+    // Process numbered lists
     let isFirstNumberedItem = true;
-    content = content.replace(/\n\n(\d+\. )/g, (match, p1) => {
+    content = content.replace(/\n\n(\d+\. )/g, function(match, p1) {
         if (isFirstNumberedItem) {
             isFirstNumberedItem = false;
             return '<br><br>\n\n' + p1;
         }
         return match;
     });
-
-    // Insert an additional newline between numbered list items
     content = content.replace(/(\n)(\d+\. )/g, '\n\n$2');
 
-    // Regular expression to match content inside triple backticks, capturing the optional language declaration
-    const regex = /```(\w+)?([\s\S]*?)```/g;
-
-    // Function to process matched content
-    const replacer = (match, lang, p1) => {
-        console.log('Matched content inside backticks with language:', lang, 'Content:', p1.trim());
-    
-        let renderedContent;
-        if (!lang || lang === 'markdown') {
-            // If no language is provided or the language is markdown, process it with the Markdown parser
-            renderedContent = marked.parse(p1.trim());
-        } else if (lang === 'html') {
-            // If the language is HTML, escape it and wrap it in a code block
-            renderedContent = '<pre><code class="language-html">' + escapeHtml(p1.trim()) + '</code></pre>';
-        } else {
-            // Otherwise, treat it as a code block
-            renderedContent = '<pre><code class="' + (lang ? 'language-' + lang : '') + '">' + p1.trim() + '</code></pre>';
-        }
-        console.log('Rendered Content:', renderedContent);
-        
-        // Create a temporary element to hold the rendered content
-        const tempElement = document.createElement('div');
-        tempElement.innerHTML = renderedContent;
-    
-        // Apply Prism highlighting to the content inside the temporary element
-        Prism.highlightAllUnder(tempElement);
-    
-        // Log Prism highlighting to the content inside the temporary element
-        console.log('Highlighted content:', tempElement.innerHTML);
-    
-        // Return the highlighted content
-        return tempElement.innerHTML || match; // Ensure we return the original match if nothing else
-    };
-    
-    // Replace content inside triple backticks with processed content
-    const processedContent = content.replace(regex, replacer);
-    console.log('Final processed content:', processedContent);
-
-    return processedContent;
+    return content; // Return the processed content for further processing
 }
+
+function processCodeSnippets(content) {
+    const regex = /```(\w+)?\n?([\s\S]+?)```/g; // Ensure greedy matching for content
+
+    const replacer = (match, lang, code) => {
+        if (!code) return ''; // Defensive: Avoid processing undefined code blocks
+
+        let escapedCode = escapeHtml(code.trim());
+        const languageClass = lang ? 'language-' + lang : 'language-plaintext';
+        const languageReadable = lang ? lang.toUpperCase() : 'CODE';
+
+        // Wrap the code with a div that includes a header and the Prism-formatted code block
+        const wrappedCode = `
+        <div class="code-block">
+            <div class="code-block-header">
+                <span class="code-type">${languageReadable}</span>
+                <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
+            </div>
+            <pre><code class="${languageClass}">${escapedCode}</code></pre>
+        </div>
+        `;
+
+        return wrappedCode;
+    };
+
+    // Replace all instances of code blocks with processed content
+    return content.replace(regex, replacer);
+}
+
+
+
+
 
 
 
@@ -963,9 +1069,9 @@ function showConversationControls(title = "AI &infin; UI", tokens = {prompt: 0, 
     $("#conversation-title, #edit-title-btn, #delete-conversation-btn").show();
 
     // Update token data
-    $("#prompt-tokens").text(`Prompt Tokens: ${tokens.prompt}`);
-    $("#completion-tokens").text(`Completion Tokens: ${tokens.completion}`);
-    $("#total-tokens").text(`Total Tokens: ${tokens.total}`);
+    $("#prompt-tokens").text(`Prompt Tokens: ${tokens.prompt_tokens}`);
+    $("#completion-tokens").text(`Completion Tokens: ${tokens.completion_tokens}`);
+    $("#total-tokens").text(`Total Tokens: ${tokens.total_tokens}`);
 }
 
 
@@ -983,14 +1089,14 @@ function loadConversation(conversationId) {
         .then(data => {
             // Update the conversation title in the UI
             $('#conversation-title').text(data.title);
-            
+
             // Update the messages array with the conversation history
             console.log('Parsed JSON data from conversation:', data);
 
             messages = data.history;
             console.log(`Received conversation data for id: ${conversationId}`);
             console.log('Token Count:', data.token_count);
-            console.log("Retrieved model name:", data.model_name);  // Log the retrieved model name
+            console.log("Retrieved model name:", data.model_name); // Log the retrieved model name
 
             // Update the dropdown display based on the model name from the conversation
             const modelName = data.model_name;
@@ -1001,38 +1107,33 @@ function loadConversation(conversationId) {
             // Retrieve and handle the temperature setting
             selectedTemperature = data.temperature ?? 0.7; // Use the temperature from the data, or default to 0.7 if it's null/undefined
 
-            // Update the token data in the UI
-            const tokenCount = data.token_count || 0;
-            showConversationControls(data.title || "AI &infin; UI", {prompt: 0, completion: 0, total: tokenCount});
+            // Update the token data in the UI for restored conversations
+            const tokens = {
+                prompt_tokens: 'NA',
+                completion_tokens: 'NA',
+                total_tokens: data.token_count || 'NA'
+            };
+            showConversationControls(data.title || "AI ∞ UI", tokens);
 
             // Save this conversation id as the active conversation
             activeConversationId = conversationId;
-            
+
             // Clear the chat
             $('#chat').empty();
 
             // Add each message to the chat. Style the messages based on their role.
             data.history.forEach(message => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `chat-entry ${message.role} ${message.role === 'user' ? 'user-message' : 'bot-message'}`;
-                // Process the message content for Markdown and other formatting
-                let processedContent = renderOpenAI(message.content);
-                // Unescape the LaTeX content by replacing double backslashes with single backslashes
-                processedContent = processedContent.replace(/\\\\/g, '\\');
-                // Include the prefix for user or assistant
-                const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
-                // Set the processed content as the innerHTML of the messageDiv
-                messageDiv.innerHTML = prefix + processedContent;
-                document.getElementById('chat').appendChild(messageDiv);
+                const messageElement = createMessageElement(message);
+                $('#chat').append(messageElement);
             });
 
             // After all messages are added to the DOM, call MathJax to typeset the entire chat container
-            setTimeout(() => {
+            // We use setTimeout to delay the call to MathJax.typesetPromise to ensure the DOM is fully updated
+            setTimeout(function() {
                 MathJax.typesetPromise().then(() => {
                     console.log('MathJax has finished typesetting.');
                 }).catch((err) => console.log('Error typesetting math content: ', err));
-            }, 0);
-
+            }, 0); // You can increase the delay if needed, but sometimes even a delay of 0 is enough
 
             Prism.highlightAll(); // Highlight code blocks after adding content to the DOM
 
@@ -1050,8 +1151,35 @@ function loadConversation(conversationId) {
         });
 }
 
+function createMessageElement(message) {
+    let contentElement;
+    if (message.role === 'system') {
+        // Process system message content as before
+        let systemMessageContent = renderOpenAI(message.content);
+        contentElement = `
+            <div class="chat-entry system system-message">
+                <strong>System:</strong> ${systemMessageContent}<br>
+                <strong>Model:</strong> ${modelNameMapping(model)}, <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
+            </div>`;
+    } else if (message.role === 'user') {
+        // Wrap user inputs in <pre><code> to display as plain text
+        let escapedContent = escapeHtml(message.content);
+        contentElement = `
+            <div class="chat-entry user user-message">
+                <i class="far fa-user"></i> <pre><code>${escapedContent}</code></pre>
+            </div>`;
+    } else {
+        // Handle bot messages, potentially also wrapping in <pre><code> if needed
+        let botMessageContent = renderOpenAI(message.content);
+        contentElement = `
+            <div class="chat-entry bot bot-message">
+                <i class="fas fa-robot"></i> ${botMessageContent}
+            </div>`;
+    }
+    return $(contentElement);
+}
 
-    
+
 
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
@@ -1061,30 +1189,30 @@ $('#chat-form').on('submit', function (e) {
     console.log('Chat form submitted with user input:', $('#user_input').val());
     e.preventDefault();
     var userInput = $('#user_input').val();
-  
+
     var userInputDiv = $('<div class="chat-entry user user-message">')
-    .append('<i class="far fa-user"></i>')
-    .append($('<span>').text(userInput));
-  
+        .append('<i class="far fa-user"></i> ')
+        .append($('<span>').text(userInput));
+
     $('#chat').append(userInputDiv);
-    $('#chat').scrollTop($('#chat')[0].scrollHeight); 
+    $('#chat').scrollTop($('#chat')[0].scrollHeight);
 
-    messages.push({"role": "user", "content": userInput}); 
+    messages.push({ "role": "user", "content": userInput });
 
-    var userInputTextarea = $('#user_input');  
+    var userInputTextarea = $('#user_input');
     userInputTextarea.val('');
     userInputTextarea.css('height', defaultHeight);
 
     document.getElementById('loading').style.display = 'block';
-    
+
     let requestPayload = {
-        messages: messages, 
+        messages: messages,
         model: model,
         temperature: selectedTemperature
     };
 
     if (activeConversationId !== null) {
-       requestPayload.conversation_id = activeConversationId; 
+        requestPayload.conversation_id = activeConversationId;
     }
     console.log('Sending request payload:', JSON.stringify(requestPayload));
 
@@ -1100,51 +1228,51 @@ $('#chat-form').on('submit', function (e) {
 
         document.getElementById('loading').style.display = 'none';
 
-        if (!response.ok) { // Check if response status code is OK
-            return response.text().then(text => { 
-                // Use response.text() instead of response.json() if you suspect the server might be returning HTML error pages.
-                throw new Error(text);  // Throw an error with the server's response text.
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(text);
             });
         }
 
         return response.json();
     })
     .then(data => {
-        console.log("Complete server reponse:", data);
-        const renderedBotOutput = marked.parse(data.chat_output);
-        console.log("Rendered bot output:", renderedBotOutput); // Log this to debug
-        $('#chat').append('<div class="chat-entry bot bot-message"><i class="fas fa-robot"></i> ' + renderedBotOutput + '</div>');
+        console.log("Complete server response:", data);
+        const renderedBotOutput = renderOpenAI(data.chat_output);
+        const botMessageDiv = $('<div class="chat-entry bot bot-message">')
+            .append('<i class="fas fa-robot"></i> ')
+            .append(renderedBotOutput);
+        $('#chat').append(botMessageDiv);
 
-        console.log("Updated chat with server's response.");
+        $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        messages.push({ "role": "assistant", "content": data.chat_output });
 
-        $('#chat').scrollTop($('#chat')[0].scrollHeight);  // Scroll to the bottom of the chat
+        // Call MathJax to typeset the new message
+        MathJax.typesetPromise().then(() => {
+            console.log('MathJax has finished typesetting the new message.');
+        }).catch((err) => console.log('Error typesetting math content: ', err));
+
         Prism.highlightAll();
-        messages.push({"role": "assistant", "content": data.chat_output});
         updateConversationList();
 
         // Update the URL with the received conversation_id
         window.history.pushState({}, '', `/c/${data.conversation_id}`);
 
         if (data.conversation_title) {
-            // Update the title in the UI
             console.log("Received conversation_title from server:", data.conversation_title);
-            showConversationControls(data.conversation_title);
-
-            // Updating the token data in the UI, assuming your server response includes the necessary token data
-            if (data.usage) {
-            $('#prompt-tokens').text(`Prompt Tokens: ${data.usage.prompt_tokens}`);
-            $('#completion-tokens').text(`Completion Tokens: ${data.usage.completion_tokens}`);
-            $('#total-tokens').text(`Total Tokens: ${data.usage.total_tokens}`);
-        }
+            showConversationControls(data.conversation_title, data.usage);
         } else {
-            // If there's no title provided, show default
             console.log("No conversation_title from server. Showing default.");
             showConversationControls();
-        }    
+        }
         console.log('End of chat-form submit function');
-
     })
+    .catch(error => {
+        console.error('Error processing chat form submission:', error);
+        document.getElementById('loading').style.display = 'none';
+    });
 });
+
 
 // "New Chat" Button Click Event
 document.getElementById("new-chat-btn").addEventListener("click", function() {
@@ -1161,27 +1289,7 @@ document.getElementById("new-chat-btn").addEventListener("click", function() {
     });
 });
 
-document.addEventListener("DOMContentLoaded", function() {
-    // Fetch and process system messages
-    fetchAndProcessSystemMessages().then(() => {
-        // Populate the system message modal
-        populateSystemMessageModal();
 
-        // Check if there's an active conversation and if the chat is empty
-        if (!activeConversationId && $('#chat').children().length === 0) {
-            // Find the default system message and display it
-            const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
-            if (defaultSystemMessage) {
-                displaySystemMessage(defaultSystemMessage);
-            } else if (systemMessages.length > 0) {
-                // If there's no "Default System Message", display the first one in the list
-                displaySystemMessage(systemMessages[0]);
-            }
-        }
-    }).catch(error => {
-        console.error('Error during system message fetch and display:', error);
-    });
-});
 
 
 // This function checks if there's an active conversation in the session.
