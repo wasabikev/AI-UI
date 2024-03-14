@@ -1,134 +1,53 @@
-2024-03-13 20:07:16,349 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 511, in chat
-    chat_output = get_response_from_model(model, messages, temperature)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 474, in get_response_from_model
-    response = client.messages.create(
-               ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_utils\_utils.py", line 275, in wrapper
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\resources\messages.py", line 658, in create
-    return self._post(
-           ^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_base_client.py", line 1208, in post
-    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_base_client.py", line 897, in request
-    return self._request(
-           ^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_base_client.py", line 988, in _request
-    raise self._make_status_error_from_response(err.response) from None
-anthropic.BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'messages: first message must use the "user" role'}}
-2024-03-13 20:09:01,028 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-13 20:09:01,029 - app - INFO - Received temperature: 0.7
-2024-03-13 20:09:05,744 - app - INFO - Response from model: Here is a test sentence for you:
-
-The quick brown fox jumps over the lazy dog.
-
-This sentence is often used for testing purposes because it contains all 26 letters of the English alphabet. It is a pangram, which is a sentence that uses every letter of the alphabet at least once.
-2024-03-13 20:09:05,746 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is often used for testing purposes because it contains all 26 letters of the English alphabet. It is a pangram, which is a sentence that uses every letter of the alphabet at least once.'}], 'max_tokens': 10}
-2024-03-13 20:09:06,384 - app - INFO - Response from OpenAI for summary: {
+2024-03-14 07:30:30,839 - app - INFO - Response from model: "The pen is mightier than the sword" is a metaphorical statement that emphasizes the power of written words and communication over physical force or violence. This saying suggests that the ability to express ideas, persuade others, and influence thoughts can be more effective and long-lasting than the use of physical might. It highlights the importance of intellectual discourse, diplomacy, and the free exchange of ideas in resolving conflicts and shaping society. However, it is essential to recognize that the impact of words depends on various factors, such as the context, the credibility of the writer, and the receptiveness of the audience. Additionally, while peaceful dialogue and written arguments are preferable, there may be instances where physical action is necessary, such as in self-defense or protecting others from harm. Ultimately, the adage serves as a reminder of the potential influence of well-crafted words, but it should not be interpreted as an absolute dismissal of the role of physical action in certain circumstances.
+2024-03-14 07:30:31,045 - app - INFO - Prompt tokens: 344
+2024-03-14 07:30:31,045 - app - INFO - Completion tokens: 189
+2024-03-14 07:30:31,045 - app - INFO - Total tokens: 533
+2024-03-14 07:30:31,060 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'A test sentence please', 'role': 'user'}, {'content': 'I do not have a specific test sentence prepared. However, I am ready to engage in critical thinking and analysis on any topic or question you would like to discuss. Please feel free to present a subject, argument, or piece of information that you would like me to examine and provide my analytical perspective on.', 'role': 'assistant'}, {'content': "Another please. Anything will do. It's a UI test.", 'role': 'user'}, {'content': '"The early bird catches the worm" is a common adage that suggests being prompt and proactive leads to success. While this saying highlights the potential benefits of taking initiative, it oversimplifies the complexities of achievement. Success often involves a multitude of factors, including skill, opportunity, persistence, and even luck, beyond just being first or early. Additionally, the phrase fails to consider the value of strategic planning, collaboration, and adaptability in attaining goals. As with any generalization, this adage should be viewed as a simplified perspective rather than an absolute truth.', 'role': 'assistant'}, {'content': 'One more time please', 'role': 'user'}, {'content': '"All that glitters is not gold" is a well-known saying that cautions against being deceived by superficial appearances. This adage encourages critical thinking and deeper analysis, as it suggests that things that appear attractive or valuable on the surface may not necessarily be so. It highlights the importance of looking beyond first impressions and conducting thorough evaluations before making judgments or decisions. However, the saying may also lead to excessive skepticism or cynicism if applied indiscriminately. While it is crucial to be discerning, it is equally important to recognize genuine value and not dismiss everything based on initial perceptions. Striking a balance between healthy skepticism and open-mindedness is key to effective critical thinking.', 'role': 'assistant'}, {'role': 'user', 'content': 'Another please'}, {'role': 'assistant', 'content': '"The pen is mightier than the sword" is a metaphorical statement that emphasizes the power of written words and communication over physical force or violence. This saying suggests that the ability to express ideas, persuade others, and influence thoughts can be more effective and long-lasting than the use of physical might. It highlights the importance of intellectual discourse, diplomacy, and the free exchange of ideas in resolving conflicts and shaping society. However, it is essential to recognize that the impact of words depends on various factors, such as the context, the credibility of the writer, and the receptiveness of the audience. Additionally, while peaceful dialogue and written arguments are preferable, there may be instances where physical action is necessary, such as in self-defense or protecting others from harm. Ultimately, the adage serves as a reminder of the potential influence of well-crafted words, but it should not be interpreted as an absolute dismissal of the role of physical action in certain circumstances.'}]
+2024-03-14 07:31:01,009 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-14 07:31:01,009 - app - INFO - Received temperature: 0.7
+2024-03-14 07:31:02,736 - app - INFO - Response from model: Certainly! "Analyzing the implications of advancements in artificial intelligence requires both critical thinking and an understanding of the ethical considerations involved."
+2024-03-14 07:31:02,737 - app - INFO - Prompt tokens: 17
+2024-03-14 07:31:02,738 - app - INFO - Completion tokens: 25
+2024-03-14 07:31:02,739 - app - INFO - Total tokens: 42
+2024-03-14 07:31:02,740 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! "Analyzing the implications of advancements in artificial intelligence requires both critical thinking and an understanding of the ethical considerations involved."'}], 'max_tokens': 10}
+2024-03-14 07:31:03,384 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Stored System Message Test - apple",
+        "content": "AI Implications Analysis",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710385746,
-  "id": "chatcmpl-92VkocSG0yhE24GCjDqvWNxxgMeuW",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_4f0b692a78",
-  "usage": {
-    "completion_tokens": 6,
-    "prompt_tokens": 116,
-    "total_tokens": 122
-  }
-}
-2024-03-13 20:09:06,400 - app - INFO - Generated conversation summary: Stored System Message Test - apple
-2024-03-13 20:09:06,408 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is often used for testing purposes because it contains all 26 letters of the English alphabet. It is a pangram, which is a sentence that uses every letter of the alphabet at least once.'}]
-2024-03-13 20:16:48,034 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-13 20:16:48,035 - app - INFO - Received temperature: 0.7
-2024-03-13 20:16:50,218 - app - INFO - Response from model: Here is a test sentence for you:
-
-The quick brown fox jumps over the lazy dog.
-2024-03-13 20:16:50,219 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.'}], 'max_tokens': 10}
-2024-03-13 20:16:51,146 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Stored Message Test ",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1710386210,
-  "id": "chatcmpl-92VsIgIk44sOKrEx91tIU2AVIljG1",
+  "created": 1710426662,
+  "id": "chatcmpl-92gOkkBTREzNAmVwf5ZniF9kmoHKa",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_4f0b692a78",
   "usage": {
     "completion_tokens": 4,
-    "prompt_tokens": 75,
-    "total_tokens": 79
+    "prompt_tokens": 67,
+    "total_tokens": 71
   }
 }
-2024-03-13 20:16:51,152 - app - INFO - Generated conversation summary: Stored Message Test
-2024-03-13 20:16:51,159 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.'}]
-2024-03-13 20:25:12,788 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-13 20:25:12,789 - app - INFO - Received temperature: 0.7
-2024-03-13 20:25:15,500 - app - INFO - Response from model: Here is a test sentence for you. apple
-2024-03-13 20:25:15,502 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you. apple'}], 'max_tokens': 10}
-2024-03-13 20:25:16,520 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Flask app system message apple",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1710386716,
-  "id": "chatcmpl-92W0SmoGIyc9Vs3jIjntpX6tmXbYh",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_4f0b692a78",
-  "usage": {
-    "completion_tokens": 6,
-    "prompt_tokens": 66,
-    "total_tokens": 72
-  }
-}
-2024-03-13 20:25:16,538 - app - INFO - Generated conversation summary: Flask app system message apple
-2024-03-13 20:25:16,545 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you. apple'}]
+2024-03-14 07:31:03,390 - app - INFO - Generated conversation summary: AI Implications Analysis
+2024-03-14 07:31:03,398 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! "Analyzing the implications of advancements in artificial intelligence requires both critical thinking and an understanding of the ethical considerations involved."'}]
+2024-03-14 07:31:15,858 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-14 07:31:15,859 - app - INFO - Received temperature: 0.7
+2024-03-14 07:31:15,860 - app - INFO - Using existing conversation with id 320.
+2024-03-14 07:31:17,578 - app - INFO - Response from model: "Exploring the impact of renewable energy sources on global economies demonstrates the complexity of balancing environmental sustainability with economic growth."
+2024-03-14 07:31:17,578 - app - INFO - Prompt tokens: 45
+2024-03-14 07:31:17,578 - app - INFO - Completion tokens: 23
+2024-03-14 07:31:17,578 - app - INFO - Total tokens: 68
+2024-03-14 07:31:17,578 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! "Analyzing the implications of advancements in artificial intelligence requires both critical thinking and an understanding of the ethical considerations involved."'}, {'role': 'user', 'content': 'One more please'}, {'role': 'assistant', 'content': '"Exploring the impact of renewable energy sources on global economies demonstrates the complexity of balancing environmental sustainability with economic growth."'}]
+2024-03-14 07:31:34,234 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-14 07:31:34,234 - app - INFO - Received temperature: 0.7
+2024-03-14 07:31:34,235 - app - INFO - Using existing conversation with id 320.
+2024-03-14 07:31:35,895 - app - INFO - Response from model: "Understanding the relationship between social media usage and mental health calls for a nuanced analysis of user behavior and the psychological effects of digital interaction."
+2024-03-14 07:31:35,895 - app - INFO - Prompt tokens: 71
+2024-03-14 07:31:35,895 - app - INFO - Completion tokens: 27
+2024-03-14 07:31:35,895 - app - INFO - Total tokens: 98
+2024-03-14 07:31:35,909 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! "Analyzing the implications of advancements in artificial intelligence requires both critical thinking and an understanding of the ethical considerations involved."'}, {'role': 'user', 'content': 'One more please'}, {'role': 'assistant', 'content': '"Exploring the impact of renewable energy sources on global economies demonstrates the complexity of balancing environmental sustainability with economic growth."'}, {'role': 'user', 'content': 'One more please'}, {'role': 'assistant', 'content': '"Understanding the relationship between social media usage and mental health calls for a nuanced analysis of user behavior and the psychological effects of digital interaction."'}]
