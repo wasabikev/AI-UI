@@ -1,23 +1,83 @@
-2024-03-13 19:37:15,957 - app - INFO - Response from OpenAI for summary: {
+2024-03-14 06:38:11,545 - app - ERROR - Exception on /chat [POST]
+Traceback (most recent call last):
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 522, in chat
+    prompt_tokens = count_tokens(model, user_input)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 588, in count_tokens
+    encoding = tiktoken.encoding_for_model("claude-v1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\tiktoken\model.py", line 97, in encoding_for_model
+    return get_encoding(encoding_name_for_model(model_name))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\tiktoken\model.py", line 84, in encoding_name_for_model
+    raise KeyError(
+KeyError: 'Could not automatically map claude-v1 to a tokeniser. Please use `tiktoken.get_encoding` to explicitly get the tokeniser you expect.'
+2024-03-14 06:38:33,584 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-14 06:38:33,585 - app - INFO - Received temperature: 0.7
+2024-03-14 06:38:33,587 - app - INFO - Using existing conversation with id 316.
+2024-03-14 06:38:38,322 - app - INFO - Response from model: Certainly. Here's another sentence for critical analysis: "Global climate change presents an unprecedented challenge to international policy, demanding cooperative efforts that transcend traditional geopolitical boundaries." This sentence touches on the complexities of addressing climate change on a global scale, the necessity of international collaboration, and the potential difficulties in aligning diverse political interests for a common goal. How would you like to approach the examination of this sentence?
+2024-03-14 06:38:38,322 - app - INFO - Prompt tokens: 4
+2024-03-14 06:38:38,322 - app - INFO - Completion tokens: 79
+2024-03-14 06:38:38,322 - app - INFO - Total tokens: 83
+2024-03-14 06:38:38,334 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'A test sentence please', 'role': 'user'}, {'content': 'Absolutely, let\'s create a test sentence for analysis. How about: "The rapid technological advancements of the 21st century have fundamentally altered the way we communicate, impacting interpersonal relationships significantly." This sentence can be dissected in terms of its implications on society, potential positive and negative consequences, and the balance between technology and human interaction. How would you like to proceed with the analysis?', 'role': 'assistant'}, {'role': 'user', 'content': 'Another test sentence please'}, {'role': 'assistant', 'content': 'Certainly. Here\'s another sentence for critical analysis: "Global climate change presents an unprecedented challenge to international policy, demanding cooperative efforts that transcend traditional geopolitical boundaries." This sentence touches on the complexities of addressing climate change on a global scale, the necessity of international collaboration, and the potential difficulties in aligning diverse political interests for a common goal. How would you like to approach the examination of this sentence?'}]
+2024-03-14 06:39:45,547 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-14 06:39:45,548 - app - INFO - Received temperature: 0.7
+2024-03-14 06:39:45,550 - app - INFO - Using existing conversation with id 316.
+2024-03-14 06:39:49,307 - app - INFO - Response from model: Sure, here's a shorter sentence: "Urbanization accelerates environmental degradation." This concise statement opens up discussions on the impacts of urban growth on natural landscapes, the challenges of sustainable development, and the balance between expansion and conservation. How would you like to delve into this topic?
+2024-03-14 06:39:49,307 - app - INFO - Prompt tokens: 6
+2024-03-14 06:39:49,307 - app - INFO - Completion tokens: 56
+2024-03-14 06:39:49,307 - app - INFO - Total tokens: 62
+2024-03-14 06:39:49,307 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'A test sentence please', 'role': 'user'}, {'content': 'Absolutely, let\'s create a test sentence for analysis. How about: "The rapid technological advancements of the 21st century have fundamentally altered the way we communicate, impacting interpersonal relationships significantly." This sentence can be dissected in terms of its implications on society, potential positive and negative consequences, and the balance between technology and human interaction. How would you like to proceed with the analysis?', 'role': 'assistant'}, {'role': 'user', 'content': 'Another test sentence please'}, {'role': 'assistant', 'content': 'Certainly. Here\'s another sentence for critical analysis: "Global climate change presents an unprecedented challenge to international policy, demanding cooperative efforts that transcend traditional geopolitical boundaries." This sentence touches on the complexities of addressing climate change on a global scale, the necessity of international collaboration, and the potential difficulties in aligning diverse political interests for a common goal. How would you like to approach the examination of this sentence?'}, {'role': 'user', 'content': 'Another short(er) sentence please'}, {'role': 'assistant', 'content': 'Sure, here\'s a shorter sentence: "Urbanization accelerates environmental degradation." This concise statement opens up discussions on the impacts of urban growth on natural landscapes, the challenges of sustainable development, and the balance between expansion and conservation. How would you like to delve into this topic?'}]
+2024-03-14 06:40:51,587 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-14 06:40:51,588 - app - INFO - Received temperature: 0.7
+2024-03-14 06:40:54,926 - app - INFO - Response from model: Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."
+2024-03-14 06:40:54,926 - app - INFO - Prompt tokens: 4
+2024-03-14 06:40:54,942 - app - INFO - Completion tokens: 19
+2024-03-14 06:40:54,943 - app - INFO - Total tokens: 23
+2024-03-14 06:40:54,943 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-03-14 06:40:55,410 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Flask AI \u221e UI apple",
+        "content": "Critical thinking specialist",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710383835,
-  "id": "chatcmpl-92VFzMTl7vfQEQXvQHMqGaHO3Pmcn",
+  "created": 1710423654,
+  "id": "chatcmpl-92fcEDvuHvvZJycXM3bTxUEeocvDK",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_4f0b692a78",
   "usage": {
-    "completion_tokens": 7,
-    "prompt_tokens": 2238,
-    "total_tokens": 2245
+    "completion_tokens": 3,
+    "prompt_tokens": 61,
+    "total_tokens": 64
   }
 }
+2024-03-14 06:40:55,410 - app - INFO - Generated conversation summary: Critical thinking specialist
+2024-03-14 06:40:55,426 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."'}]
+2024-03-14 06:54:59,705 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-14 06:54:59,706 - app - INFO - Received temperature: 0.7
+2024-03-14 06:55:04,709 - app - INFO - Response from model: Certainly! Here's a carefully constructed test sentence: "The quick brown fox jumps over the lazy dog," which is known for including every letter of the English alphabet at least once, making it a pangram.
