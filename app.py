@@ -471,6 +471,14 @@ def get_response_from_model(model, messages, temperature):
             elif message['role'] == 'assistant':
                 anthropic_messages.append({"role": "assistant", "content": message['content']})
 
+        # Prepend the system message to the user's first message
+        if system_message and anthropic_messages:
+            anthropic_messages[0]['content'] = f"{system_message}\n\nUser: {anthropic_messages[0]['content']}"
+
+        # Ensure the first message has the "user" role
+        if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
+            anthropic_messages.insert(0, {"role": "user", "content": ""})
+
         # Send the conversation to the Anthropic Messages API
         response = client.messages.create(
             model=model,
