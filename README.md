@@ -9,7 +9,7 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **Persisted Conversations**: Conversations are stored in a database, allowing for historical review and continuation of discussions.
 - **Real-time Chat**: Immediate communication with AI models, simulating a real-time conversation.
 - **Conversation Management**: Users can create, read, update, and delete conversations.
-- **Multiple AI Models**: The interface supports switching between different AI models to cater to diverse conversational needs.
+- **Multiple AI Models**: The interface supports switching between different AI models, including OpenAI and Anthropic models, to cater to diverse conversational needs. (More models to come later)
 - **Interactive UI**: A user-friendly interface with a chat box and messaging system that ensures a seamless conversational flow.
 - **Admin Dashboard**: An admin interface for user management and system message configuration.
 - **Rich Text Interaction**: Supports Markdown, code snippets with syntax highlighting, and LaTeX content, enabling rich text interactions within the chat interface.
@@ -25,7 +25,7 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 
 ## Main Files & Their Roles
 
-- **server.py**: Flask server that handles routes, API communication, and session management.
+- **app.py**: Flask server that handles routes, API communication, and session management.
 - **auth.py**: Authentication logic for user login, registration, and session handling.
 - **models.py**: SQLAlchemy models defining the database schema for users, conversations, and system messages.
 - **main.js**: Client-side logic for handling UI events, API calls, and dynamic content updates.
@@ -35,9 +35,10 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 
 ## Key Functions
 
-### server.py
+### app.py
 
-- `chat()`: Endpoint for processing and responding to user messages.
+- `get_response_from_model(model, messages, temperature)': Routes the request to the appropriate API based on the selected model (OpenAI or Anthropic).
+- `chat()`: Endpoint for processing and responding to user messages from AI models
 - `get_conversations()`: Retrieves a list of conversations for the current user.
 - `get_conversation()`: Fetches details of a specific conversation.
 - `update_conversation_title()`: Endpoint to update a conversation's title.
@@ -65,6 +66,10 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - In our project, we prioritize a modal-based approach for user interfaces when requesting input or displaying information that requires user interaction. This approach ensures a consistent, accessible, and user-friendly experience across the application. 
 - Use Modals for User Input: Whenever the application requires input from the user, whether it's form submission, settings configuration, or any other input-driven task, use a modal window. This includes actions like adding or editing data, confirming decisions, or any interaction that benefits from focused attention.
 - For future iterations and feature implementations, we strongly encourage maintaining the modal-based approach for user interfaces. This consistency is key to providing an intuitive and pleasant user experience across our application.
+
+## Setting up API Keys
+1. Create a new file called `.env` in the project's root directory.
+2. Add the following line to the `.env` file, replacing `<your_api_key_here>` with your actual API key:
 
 ## Getting Started
 

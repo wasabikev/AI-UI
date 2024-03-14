@@ -1,92 +1,68 @@
-2024-03-10 13:04:22,716 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Flask app development",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1710101060,
-  "id": "chatcmpl-91Jh6theINjdmKDxwnFFfP7T109lb",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_4f0b692a78",
-  "usage": {
-    "completion_tokens": 4,
-    "prompt_tokens": 96,
-    "total_tokens": 100
-  }
-}
-2024-03-10 13:04:22,723 - app - INFO - Generated conversation summary: Flask app development
-2024-03-10 13:04:22,731 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is a pangram, meaning it contains all 26 letters of the English alphabet. It is often used as a sample sentence to test fonts, keyboards, displays, and other text-related systems.'}]
-2024-03-10 13:05:31,755 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-10 13:05:31,756 - app - INFO - Received temperature: 0.7
-2024-03-10 13:05:31,758 - app - INFO - Using existing conversation with id 307.
-2024-03-10 13:05:55,620 - app - INFO - Response from model: Certainly! Here's some sample output that includes Python, JavaScript, and Markdown:
+2024-03-13 19:39:57,254 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-13 19:39:57,255 - app - INFO - Received temperature: 1
+2024-03-13 19:39:57,257 - app - INFO - Using existing conversation with id 310.
+2024-03-13 19:40:30,348 - app - INFO - Response from model: It seems that the system message is not being passed to the Anthropic API correctly. Let's make the necessary changes to ensure the system message is included in the API request.
 
-Python:
+Here's the updated `get_response_from_model` function with the changes:
+
 ```python
-def fibonacci(n):
-    if n <= 0:
-        return []
-    elif n == 1:
-        return [0]
-    elif n == 2:
-        return [0, 1]
-    else:
-        fib = [0, 1]
-        for i in range(2, n):
-            fib.append(fib[i-1] + fib[i-2])
-        return fib
-
-print(fibonacci(10))
-```
-
-JavaScript:
-```javascript
-function isPalindrome(str) {
-    str = str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-    let left = 0;
-    let right = str.length - 1;
-    while (left < right) {
-        if (str[left] !== str[right]) {
-            return false;
+def get_response_from_model(model, messages, temperature):
+    """
+    Routes the request to the appropriate API based on the model selected.
+    """
+    if model in ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-0125-preview"]:
+        # OpenAI models
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature
         }
-        left++;
-        right--;
-    }
-    return true;
-}
+        response = openai.ChatCompletion.create(**payload)
+        chat_output = response['choices'][0]['message']['content']
+    elif model == "claude-3-opus-20240229":
+        # Anthropic model
+        client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-console.log(isPalindrome("A man, a plan, a canal, Panama!"));
+        # Construct the conversation history for Messages API
+        anthropic_messages = []
+        system_message = None
+        for message in messages:
+            if message['role'] == 'system':
+                system_message = message['content']
+            elif message['role'] == 'user':
+                anthropic_messages.append({"role": "user", "content": message['content']})
+            elif message['role'] == 'assistant':
+                anthropic_messages.append({"role": "assistant", "content": message['content']})
+
+        # Send the conversation to the Anthropic Messages API
+        response = client.messages.create(
+            model=model,
+            messages=anthropic_messages,
+            max_tokens=1000,  # Specify the maximum number of tokens to generate
+            temperature=temperature,
+            system_prompt=system_message  # Include the system message in the API request
+        )
+        chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
+    else:
+        chat_output = "Sorry, the selected model is not supported yet."
+   
+    return chat_output
 ```
 
-Markdown:
-# Welcome to My Blog
-
-## Introduction
-This is a sample blog post written in **Markdown**. Markdown is a lightweight markup language that is easy to read and write.
-
-## Features
-- It supports *italics* and **bold** text
-- You can create lists, like this one
-- It allows you to add [links](https://www.example.com)
-- You can also add images: ![Alt Text](image.jpg)
-
-## Code Blocks
-Markdown also supports code blocks, which is great for showcasing code snippets:
+The main change is in the Anthropic API request. We include the `system_prompt` parameter and pass the `system_message` variable to it. This ensures that the system message is sent to the Anthropic API along with the conversation history.
 
 ```python
-def greet(name):
-    print(f"Hello, {name}!")
+response = client.messages.create(
+    model=model,
+    messages=anthropic_messages,
+    max_tokens=1000,  # Specify the maximum number of tokens to generate
+    temperature=temperature,
+    system_prompt=system_message  # Include the system message in the API request
+)
 ```
 
-## Conclusion
-That's a brief overview of what you can do with Markdown. It's a versatile and user-friendly language for creating formatted text.
+With this modification, the system message should now be correctly passed to the Anthropic API, and the AI assistant should respond accordingly.
 
-This sample output includes Python code for generating Fibonacci numbers, JavaScript code for checking if a string is a palindrome, and a Markdown document showcasing various formatting options such as headings, lists, links, images, and code blocks.
-2024-03-10 13:05:55,637 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is a pangram, meaning it contains all 26 letters of the English alphabet. It is often used as a sample sentence to test fonts, keyboards, displays, and other text-related systems.'}, {'role': 'user', 'content': 'Can you please give me some sample output to test the UI? Please include Python, javascript, and markdown'}, {'role': 'assistant', 'content': 'Certainly! Here\'s some sample output that includes Python, JavaScript, and Markdown:\n\nPython:\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    elif n == 2:\n        return [0, 1]\n    else:\n        fib = [0, 1]\n        for i in range(2, n):\n            fib.append(fib[i-1] + fib[i-2])\n        return fib\n\nprint(fibonacci(10))\n```\n\nJavaScript:\n```javascript\nfunction isPalindrome(str) {\n    str = str.replace(/[^a-zA-Z0-9]/g, \'\').toLowerCase();\n    let left = 0;\n    let right = str.length - 1;\n    while (left < right) {\n        if (str[left] !== str[right]) {\n            return false;\n        }\n        left++;\n        right--;\n    }\n    return true;\n}\n\nconsole.log(isPalindrome("A man, a plan, a canal, Panama!"));\n```\n\nMarkdown:\n# Welcome to My Blog\n\n## Introduction\nThis is a sample blog post written in **Markdown**. Markdown is a lightweight markup language that is easy to read and write.\n\n## Features\n- It supports *italics* and **bold** text\n- You can create lists, like this one\n- It allows you to add [links](https://www.example.com)\n- You can also add images: ![Alt Text](image.jpg)\n\n## Code Blocks\nMarkdown also supports code blocks, which is great for showcasing code snippets:\n\n```python\ndef greet(name):\n    print(f"Hello, {name}!")\n```\n\n## Conclusion\nThat\'s a brief overview of what you can do with Markdown. It\'s a versatile and user-friendly language for creating formatted text.\n\nThis sample output includes Python code for generating Fibonacci numbers, JavaScript code for checking if a string is a palindrome, and a Markdown document showcasing various formatting options such as headings, lists, links, images, and code blocks.'}]
+Make sure to update the `app.py` file with this modified `get_response_from_model` function.
+
+Let me know if you have any further questions or if there's anything else I can assist you with!
