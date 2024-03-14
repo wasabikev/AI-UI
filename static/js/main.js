@@ -1259,7 +1259,11 @@ $('#chat-form').on('submit', function (e) {
 
         if (data.conversation_title) {
             console.log("Received conversation_title from server:", data.conversation_title);
-            showConversationControls(data.conversation_title, data.usage);
+            // Log the token usage data
+            console.log("Token usage data:", data.usage);
+            // Update token data in the UI
+            const tokens = data.usage;
+            showConversationControls(data.conversation_title, tokens);
         } else {
             console.log("No conversation_title from server. Showing default.");
             showConversationControls();

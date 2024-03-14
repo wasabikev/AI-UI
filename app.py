@@ -14,6 +14,7 @@ import openai
 import os
 import logging
 import anthropic
+import tiktoken 
 
 import requests
 import json
@@ -456,6 +457,7 @@ def get_response_from_model(model, messages, temperature):
         }
         response = openai.ChatCompletion.create(**payload)
         chat_output = response['choices'][0]['message']['content']
+        model_name = response['model']  # Extract the model name from the API response
     elif model == "claude-3-opus-20240229":
         # Anthropic model
         client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -483,14 +485,16 @@ def get_response_from_model(model, messages, temperature):
         response = client.messages.create(
             model=model,
             messages=anthropic_messages,
-            max_tokens=1000,  # Specify the maximum number of tokens to generate
+            max_tokens=2000,  # Specify the maximum number of tokens to generate
             temperature=temperature
         )
         chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
+        model_name = model  # Use the provided model name for Anthropic
     else:
         chat_output = "Sorry, the selected model is not supported yet."
-   
-    return chat_output
+        model_name = None  # Set model_name to None for unsupported models
+        
+    return chat_output, model_name
 
 
 @app.route('/chat', methods=['POST'])
@@ -517,17 +521,32 @@ def chat():
             conversation = None
 
     # Use the abstracted function to get a response from the appropriate model
-    chat_output = get_response_from_model(model, messages, temperature)
+    chat_output, model_name = get_response_from_model(model, messages, temperature)
     app.logger.info("Response from model: {}".format(chat_output))
+
+    # Count tokens in the entire conversation history
+    prompt_tokens = count_tokens(model_name, messages)
+
+    # Count tokens in the assistant's output
+    completion_tokens = count_tokens(model_name, [{"content": chat_output}])
+
+    # Calculate total tokens
+    total_tokens = prompt_tokens + completion_tokens
+
+    # Log the token counts
+    app.logger.info(f'Prompt tokens: {prompt_tokens}')
+    app.logger.info(f'Completion tokens: {completion_tokens}')
+    app.logger.info(f'Total tokens: {total_tokens}')
 
     new_message = {"role": "assistant", "content": chat_output}
     messages.append(new_message)  # Append AI's message to the list
 
     if not conversation:
-        # Create a new Conversation object with the temperature
+        # Create a new Conversation object with the temperature and token counts
         conversation = Conversation(history=json.dumps(messages), 
                                     temperature=temperature,
-                                    user_id=current_user.id)
+                                    user_id=current_user.id,
+                                    token_count=total_tokens)
 
         # Generate the title for the conversation
         conversation_title = generate_summary(messages)  # Uses GPT-3.5-turbo by default
@@ -540,12 +559,10 @@ def chat():
         # Update existing conversation
         conversation.history = json.dumps(messages)
         conversation.temperature = temperature
+        conversation.token_count = conversation.token_count + total_tokens  # Update the token count
 
     # Update the model name of the conversation
     conversation.model_name = model
-
-    # Assumption: Update token count logic here if applicable based on response from the model
-    # For now, skipping token count update as it depends on the specific API's response format
 
     db.session.commit()
 
@@ -558,9 +575,27 @@ def chat():
     return jsonify({
         'chat_output': chat_output,
         'conversation_id': conversation.id,
-        'conversation_title': conversation.title
-        # Token count or other metrics can be added here if needed
+        'conversation_title': conversation.title,
+        'usage': {
+            'prompt_tokens': prompt_tokens,
+            'completion_tokens': completion_tokens,
+            'total_tokens': total_tokens
+        }
     })
+
+def count_tokens(model_name, messages):
+    if model_name.startswith("gpt-"):
+        encoding = tiktoken.encoding_for_model(model_name)
+    elif model_name.startswith("claude-"):
+        encoding = tiktoken.get_encoding("cl100k_base")  # Use the cl100k_base encoding for Anthropic models
+    else:
+        raise ValueError(f"Unsupported model: {model_name}")
+    
+    num_tokens = 0
+    for message in messages:
+        num_tokens += len(encoding.encode(message['content']))
+    
+    return num_tokens
 
 
 
