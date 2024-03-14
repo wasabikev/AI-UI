@@ -1,16 +1,4 @@
-2024-03-10 13:06:27,152 - app - ERROR - Exception on /c/image.jpg [GET]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-
-The above exception was the direct cause of the following exception:
-
+2024-03-13 20:07:16,349 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -27,88 +15,120 @@ Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 320, in show_conversation
-    conversation = Conversation.query.get(conversation_id)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<string>", line 2, in get
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\util\deprecations.py", line 386, in warned
-    return fn(*args, **kwargs)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1130, in get
-    return self._get_impl(ident, loading.load_on_pk_identity)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1139, in _get_impl
-    return self.session._get_impl(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3684, in _get_impl
-    return db_load_fn(
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 511, in chat
+    chat_output = get_response_from_model(model, messages, temperature)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 474, in get_response_from_model
+    response = client.messages.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_utils\_utils.py", line 275, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\resources\messages.py", line 658, in create
+    return self._post(
            ^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 666, in load_on_pk_identity
-    session.execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_base_client.py", line 1208, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_base_client.py", line 897, in request
+    return self._request(
+           ^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\anthropic\_base_client.py", line 988, in _request
+    raise self._make_status_error_from_response(err.response) from None
+anthropic.BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'messages: first message must use the "user" role'}}
+2024-03-13 20:09:01,028 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-13 20:09:01,029 - app - INFO - Received temperature: 0.7
+2024-03-13 20:09:05,744 - app - INFO - Response from model: Here is a test sentence for you:
 
-[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
-FROM conversation 
-WHERE conversation.id = %(pk_1)s]
-[parameters: {'pk_1': 'image.jpg'}]
-(Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-03-10 13:09:01,700 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-10 13:09:01,701 - app - INFO - Received temperature: 0.7
-2024-03-10 13:09:06,905 - app - INFO - Response from model: That's great to hear! I'm excited to interact with you through your custom Flask app. Please let me know if you have any questions or if there's anything I can assist with. I'll do my best to provide helpful information and engage in productive conversation through your UI.
-2024-03-10 13:09:06,905 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app. Greetings!  I was finally able to get my Flask app running (with help from the Claude console).  It seems that we can now interact directly using my personal UI That's great to hear! I'm excited to interact with you through your custom Flask app. Please let me know if you have any questions or if there's anything I can assist with. I'll do my best to provide helpful information and engage in productive conversation through your UI."}], 'max_tokens': 10}
-2024-03-10 13:09:07,826 - app - INFO - Response from OpenAI for summary: {
+The quick brown fox jumps over the lazy dog.
+
+This sentence is often used for testing purposes because it contains all 26 letters of the English alphabet. It is a pangram, which is a sentence that uses every letter of the alphabet at least once.
+2024-03-13 20:09:05,746 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is often used for testing purposes because it contains all 26 letters of the English alphabet. It is a pangram, which is a sentence that uses every letter of the alphabet at least once.'}], 'max_tokens': 10}
+2024-03-13 20:09:06,384 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Flask App Interaction",
+        "content": "Stored System Message Test - apple",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710101345,
-  "id": "chatcmpl-91JlhiH5onNSMKXGh25h4NFrB6Cz1",
+  "created": 1710385746,
+  "id": "chatcmpl-92VkocSG0yhE24GCjDqvWNxxgMeuW",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_2b778c6b35",
+  "system_fingerprint": "fp_4f0b692a78",
   "usage": {
-    "completion_tokens": 4,
-    "prompt_tokens": 124,
-    "total_tokens": 128
+    "completion_tokens": 6,
+    "prompt_tokens": 116,
+    "total_tokens": 122
   }
 }
-2024-03-10 13:09:07,832 - app - INFO - Generated conversation summary: Flask App Interaction
-2024-03-10 13:09:07,836 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.'}, {'role': 'user', 'content': 'Greetings!  I was finally able to get my Flask app running (with help from the Claude console).  It seems that we can now interact directly using my personal UI'}, {'role': 'assistant', 'content': "That's great to hear! I'm excited to interact with you through your custom Flask app. Please let me know if you have any questions or if there's anything I can assist with. I'll do my best to provide helpful information and engage in productive conversation through your UI."}]
+2024-03-13 20:09:06,400 - app - INFO - Generated conversation summary: Stored System Message Test - apple
+2024-03-13 20:09:06,408 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.\n\nThis sentence is often used for testing purposes because it contains all 26 letters of the English alphabet. It is a pangram, which is a sentence that uses every letter of the alphabet at least once.'}]
+2024-03-13 20:16:48,034 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-13 20:16:48,035 - app - INFO - Received temperature: 0.7
+2024-03-13 20:16:50,218 - app - INFO - Response from model: Here is a test sentence for you:
+
+The quick brown fox jumps over the lazy dog.
+2024-03-13 20:16:50,219 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.'}], 'max_tokens': 10}
+2024-03-13 20:16:51,146 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Stored Message Test ",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710386210,
+  "id": "chatcmpl-92VsIgIk44sOKrEx91tIU2AVIljG1",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_4f0b692a78",
+  "usage": {
+    "completion_tokens": 4,
+    "prompt_tokens": 75,
+    "total_tokens": 79
+  }
+}
+2024-03-13 20:16:51,152 - app - INFO - Generated conversation summary: Stored Message Test
+2024-03-13 20:16:51,159 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you:\n\nThe quick brown fox jumps over the lazy dog.'}]
+2024-03-13 20:25:12,788 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-13 20:25:12,789 - app - INFO - Received temperature: 0.7
+2024-03-13 20:25:15,500 - app - INFO - Response from model: Here is a test sentence for you. apple
+2024-03-13 20:25:15,502 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you. apple'}], 'max_tokens': 10}
+2024-03-13 20:25:16,520 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Flask app system message apple",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710386716,
+  "id": "chatcmpl-92W0SmoGIyc9Vs3jIjntpX6tmXbYh",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_4f0b692a78",
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 66,
+    "total_tokens": 72
+  }
+}
+2024-03-13 20:25:16,538 - app - INFO - Generated conversation summary: Flask app system message apple
+2024-03-13 20:25:16,545 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you. apple'}]
