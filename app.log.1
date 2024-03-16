@@ -1,70 +1,67 @@
-2024-03-14 07:07:46,948 - app - INFO - Response from model: "The early bird catches the worm" is a common adage that suggests being prompt and proactive leads to success. While this saying highlights the potential benefits of taking initiative, it oversimplifies the complexities of achievement. Success often involves a multitude of factors, including skill, opportunity, persistence, and even luck, beyond just being first or early. Additionally, the phrase fails to consider the value of strategic planning, collaboration, and adaptability in attaining goals. As with any generalization, this adage should be viewed as a simplified perspective rather than an absolute truth.
-2024-03-14 07:07:46,952 - app - INFO - Prompt tokens: 13
-2024-03-14 07:07:46,960 - app - INFO - Completion tokens: 113
-2024-03-14 07:07:46,961 - app - INFO - Total tokens: 126
-2024-03-14 07:07:46,969 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'A test sentence please', 'role': 'user'}, {'content': 'I do not have a specific test sentence prepared. However, I am ready to engage in critical thinking and analysis on any topic or question you would like to discuss. Please feel free to present a subject, argument, or piece of information that you would like me to examine and provide my analytical perspective on.', 'role': 'assistant'}, {'role': 'user', 'content': "Another please. Anything will do. It's a UI test."}, {'role': 'assistant', 'content': '"The early bird catches the worm" is a common adage that suggests being prompt and proactive leads to success. While this saying highlights the potential benefits of taking initiative, it oversimplifies the complexities of achievement. Success often involves a multitude of factors, including skill, opportunity, persistence, and even luck, beyond just being first or early. Additionally, the phrase fails to consider the value of strategic planning, collaboration, and adaptability in attaining goals. As with any generalization, this adage should be viewed as a simplified perspective rather than an absolute truth.'}]
-2024-03-14 07:10:33,981 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-14 07:10:33,982 - app - INFO - Received temperature: 0.7
-2024-03-14 07:10:33,984 - app - INFO - Using existing conversation with id 319.
-2024-03-14 07:10:44,068 - app - INFO - Response from model: "All that glitters is not gold" is a well-known saying that cautions against being deceived by superficial appearances. This adage encourages critical thinking and deeper analysis, as it suggests that things that appear attractive or valuable on the surface may not necessarily be so. It highlights the importance of looking beyond first impressions and conducting thorough evaluations before making judgments or decisions. However, the saying may also lead to excessive skepticism or cynicism if applied indiscriminately. While it is crucial to be discerning, it is equally important to recognize genuine value and not dismiss everything based on initial perceptions. Striking a balance between healthy skepticism and open-mindedness is key to effective critical thinking.
-2024-03-14 07:10:44,071 - app - INFO - Prompt tokens: 4
-2024-03-14 07:10:44,071 - app - INFO - Completion tokens: 134
-2024-03-14 07:10:44,071 - app - INFO - Total tokens: 138
-2024-03-14 07:10:44,081 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'A test sentence please', 'role': 'user'}, {'content': 'I do not have a specific test sentence prepared. However, I am ready to engage in critical thinking and analysis on any topic or question you would like to discuss. Please feel free to present a subject, argument, or piece of information that you would like me to examine and provide my analytical perspective on.', 'role': 'assistant'}, {'role': 'user', 'content': "Another please. Anything will do. It's a UI test."}, {'role': 'assistant', 'content': '"The early bird catches the worm" is a common adage that suggests being prompt and proactive leads to success. While this saying highlights the potential benefits of taking initiative, it oversimplifies the complexities of achievement. Success often involves a multitude of factors, including skill, opportunity, persistence, and even luck, beyond just being first or early. Additionally, the phrase fails to consider the value of strategic planning, collaboration, and adaptability in attaining goals. As with any generalization, this adage should be viewed as a simplified perspective rather than an absolute truth.'}, {'role': 'user', 'content': 'One more time please'}, {'role': 'assistant', 'content': '"All that glitters is not gold" is a well-known saying that cautions against being deceived by superficial appearances. This adage encourages critical thinking and deeper analysis, as it suggests that things that appear attractive or valuable on the surface may not necessarily be so. It highlights the importance of looking beyond first impressions and conducting thorough evaluations before making judgments or decisions. However, the saying may also lead to excessive skepticism or cynicism if applied indiscriminately. While it is crucial to be discerning, it is equally important to recognize genuine value and not dismiss everything based on initial perceptions. Striking a balance between healthy skepticism and open-mindedness is key to effective critical thinking.'}]
-2024-03-14 07:25:32,016 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-14 07:25:32,017 - app - INFO - Received temperature: 0.7
-2024-03-14 07:25:32,020 - app - INFO - Using existing conversation with id 319.
-2024-03-14 07:25:32,021 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 524, in chat
-    prompt_tokens = count_tokens(model_name, messages)
-                           ^^^^^^^^^^
-UnboundLocalError: cannot access local variable 'model_name' where it is not associated with a value
-2024-03-14 07:26:51,974 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-14 07:26:51,975 - app - INFO - Received temperature: 0.7
-2024-03-14 07:26:51,977 - app - INFO - Using existing conversation with id 319.
-2024-03-14 07:26:51,978 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 524, in chat
-    prompt_tokens = count_tokens(model_name, messages)
-                           ^^^^^^^^^^
-UnboundLocalError: cannot access local variable 'model_name' where it is not associated with a value
-2024-03-14 07:30:12,379 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-14 07:30:12,380 - app - INFO - Received temperature: 0.7
-2024-03-14 07:30:12,382 - app - INFO - Using existing conversation with id 319.
+2024-03-16 09:17:17,513 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-16 09:17:17,514 - app - INFO - Received temperature: 0.3
+2024-03-16 09:17:17,516 - app - INFO - Using existing conversation with id 322.
+2024-03-16 09:17:42,470 - app - INFO - Response from model: Certainly! Below is a sample JavaScript code snippet designed to work with the CSS for the notification badge you've implemented. This example demonstrates how to dynamically update the notification badge count based on user actions or events, such as receiving a new message or notification. The script includes functions for adding, updating, and clearing the notification count, providing a basic framework for interaction with the badge element in your UI.
+
+```javascript
+// JavaScript for Notification Badge Interaction
+
+// Function to add a notification badge with a specific count
+function addNotificationBadge(count) {
+    // Check if the badge already exists
+    var badge = document.querySelector('.notification-badge');
+    if (!badge) {
+        // If not, create it and append it to the icon
+        var iconBell = document.querySelector('.icon-bell');
+        badge = document.createElement('span');
+        badge.classList.add('notification-badge');
+        iconBell.appendChild(badge);
+    }
+    // Update the badge count
+    badge.textContent = count;
+}
+
+// Function to update the notification badge count
+function updateNotificationBadge(newCount) {
+    var badge = document.querySelector('.notification-badge');
+    if (badge) {
+        // If the badge exists, update its count
+        badge.textContent = newCount;
+    } else {
+        // If no badge exists, add one with the new count
+        addNotificationBadge(newCount);
+    }
+}
+
+// Function to clear the notification badge
+function clearNotificationBadge() {
+    var badge = document.querySelector('.notification-badge');
+    if (badge) {
+        // If the badge exists, remove it
+        badge.remove();
+    }
+}
+
+// Example usage
+document.addEventListener('DOMContentLoaded', () => {
+    // Simulate adding a notification badge with an initial count of 5
+    addNotificationBadge(5);
+
+    // Example: Update the badge count after 5 seconds
+    setTimeout(() => {
+        updateNotificationBadge(10);
+    }, 5000);
+
+    // Example: Clear the badge after 10 seconds
+    setTimeout(() => {
+        clearNotificationBadge();
+    }, 10000);
+});
+```
+
+This script starts by checking if a notification badge already exists within the specified icon container (`.icon-bell` in this case). If not, it creates a new badge, sets the initial count, and appends it to the icon. The `updateNotificationBadge` function allows you to change the count displayed on the badge dynamically, which is useful for real-time applications where the number of notifications can change frequently. Finally, the `clearNotificationBadge` function provides a way to remove the badge entirely, which could be tied to user actions like viewing all notifications.
+
+This example demonstrates basic DOM manipulation techniques in JavaScript, such as creating elements, modifying their content, and appending or removing them from the document. It's designed to be easily integrated into event handlers or callbacks that respond to real-time events in your application.
+2024-03-16 09:17:42,489 - app - INFO - Prompt tokens: 2219
+2024-03-16 09:17:42,489 - app - INFO - Completion tokens: 584
+2024-03-16 09:17:42,489 - app - INFO - Total tokens: 2803
