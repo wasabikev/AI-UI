@@ -1157,7 +1157,6 @@ function loadConversation(conversationId) {
         });
 }
 
-// Helper function to fetch and process system messages
 function createMessageElement(message) {
     // Handle the system message differently to include the model name and temperature
     if (message.role === 'system') {
@@ -1172,8 +1171,14 @@ function createMessageElement(message) {
     } else {
         const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
         const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
-        let processedContent = renderOpenAI(message.content);
-        processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
+        let processedContent;
+        if (message.role === 'user') {
+            // Escape HTML entities in user input to prevent rendering
+            processedContent = escapeHtml(message.content);
+        } else {
+            processedContent = renderOpenAI(message.content);
+            processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
+        }
         const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
         return $(messageHTML);
     }
@@ -1275,23 +1280,6 @@ $('#chat-form').on('submit', function (e) {
         document.getElementById('loading').style.display = 'none';
     });
 });
-
-
-// "New Chat" Button Click Event
-document.getElementById("new-chat-btn").addEventListener("click", function() {
-    fetch('/reset-conversation', {
-        method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data.message);
-        window.location.href = '/'; // Redirect to the base URL
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
-});
-
 
 
 
