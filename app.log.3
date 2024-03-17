@@ -1,4 +1,4 @@
-2024-03-16 09:14:03,762 - app - ERROR - Exception on /c/image.jpg [GET]
+2024-03-17 09:30:51,570 - app - ERROR - Exception on /c/image.jpg [GET]
 Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
     self.dialect.do_execute(
@@ -83,49 +83,35 @@ FROM conversation
 WHERE conversation.id = %(pk_1)s]
 [parameters: {'pk_1': 'image.jpg'}]
 (Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-03-16 09:16:32,094 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-16 09:16:32,095 - app - INFO - Received temperature: 0.3
-2024-03-16 09:16:51,578 - app - INFO - Response from model: Certainly! Here's a sample CSS code block that aligns with the structure and styling conventions you've provided. This example demonstrates how to style a simple notification badge that could be used in various parts of your UI, such as indicating new messages or notifications next to user profile icons or menu items. This badge style is designed to be visually appealing and easily integrated with the existing UI elements you've described.
-
-```css
-/* Notification Badge Style */
-.notification-badge {
-    position: relative;
-    display: inline-block;
-    padding: 5px 10px;
-    background-color: #FF4136; /* Bright red to catch attention */
-    color: #FFFFFF; /* White text for contrast */
-    font-size: 0.75rem; /* Smaller font size for badge text */
-    font-weight: bold;
-    border-radius: 15px; /* Rounded corners for a pill shape */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
-    margin-left: 10px; /* Space from the preceding element */
-    vertical-align: top; /* Aligns badge with text or icons it's next to */
-    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+2024-03-17 09:31:17,072 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-17 09:31:17,073 - app - INFO - Received temperature: 0.3
+2024-03-17 09:31:18,452 - app - INFO - Response from model: Certainly! Here's a test sentence for you: "The quick brown fox jumps over the lazy dog."
+2024-03-17 09:31:18,651 - app - INFO - Prompt tokens: 17
+2024-03-17 09:31:18,664 - app - INFO - Completion tokens: 21
+2024-03-17 09:31:18,664 - app - INFO - Total tokens: 38
+2024-03-17 09:31:18,664 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-03-17 09:31:19,531 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Critical thinking skills.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710693076,
+  "id": "chatcmpl-93nhkwvQmfDXj0imXAr7YBfOgCczv",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_4f2ebda25a",
+  "usage": {
+    "completion_tokens": 4,
+    "prompt_tokens": 63,
+    "total_tokens": 67
+  }
 }
-
-.notification-badge:hover {
-    background-color: #E81123; /* Slightly darker red on hover for interaction feedback */
-}
-
-/* Example usage with an icon (assuming you have an icon with class 'icon-bell') */
-.icon-bell {
-    position: relative;
-    display: inline-block;
-    /* Icon styling goes here */
-}
-
-.icon-bell .notification-badge {
-    position: absolute;
-    top: -5px; /* Adjust based on the icon size */
-    right: -5px; /* Adjust based on the icon size */
-    /* This positions the badge on the top-right corner of the icon */
-}
-```
-
-This CSS block includes a `.notification-badge` class for creating a small, attention-grabbing badge, typically used to indicate new or unread items. The badge is styled with a bright red background, white text, and a subtle shadow for depth. It's designed to be versatile, working well in various contexts, whether next to text, icons, or within buttons. The hover effect provides a simple interaction feedback by darkening the badge's background color.
-
-The `.icon-bell .notification-badge` example demonstrates how to position the badge relative to an icon, making it a practical addition to your UI for alerting users to new notifications or messages. This approach ensures the badge maintains its position even if the icon is moved or resized.
-2024-03-16 09:16:51,592 - app - INFO - Prompt tokens: 1664
-2024-03-16 09:16:51,593 - app - INFO - Completion tokens: 544
-2024-03-16 09:16:51,593 - app - INFO - Total tokens: 2208
+2024-03-17 09:31:19,534 - app - INFO - Generated conversation summary: Critical thinking skills.
+2024-03-17 09:31:19,546 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]

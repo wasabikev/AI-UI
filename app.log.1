@@ -1,67 +1,116 @@
-2024-03-16 09:17:17,513 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-16 09:17:17,514 - app - INFO - Received temperature: 0.3
-2024-03-16 09:17:17,516 - app - INFO - Using existing conversation with id 322.
-2024-03-16 09:17:42,470 - app - INFO - Response from model: Certainly! Below is a sample JavaScript code snippet designed to work with the CSS for the notification badge you've implemented. This example demonstrates how to dynamically update the notification badge count based on user actions or events, such as receiving a new message or notification. The script includes functions for adding, updating, and clearing the notification count, providing a basic framework for interaction with the badge element in your UI.
+2024-03-17 09:44:11,440 - app - ERROR - Exception on /c/image.jpg [GET]
+Traceback (most recent call last):
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "image.jpg"
+LINE 3: WHERE conversation.id = 'image.jpg'
+                                ^
 
-```javascript
-// JavaScript for Notification Badge Interaction
 
-// Function to add a notification badge with a specific count
-function addNotificationBadge(count) {
-    // Check if the badge already exists
-    var badge = document.querySelector('.notification-badge');
-    if (!badge) {
-        // If not, create it and append it to the icon
-        var iconBell = document.querySelector('.icon-bell');
-        badge = document.createElement('span');
-        badge.classList.add('notification-badge');
-        iconBell.appendChild(badge);
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 321, in show_conversation
+    conversation = Conversation.query.get(conversation_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in get
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\util\deprecations.py", line 386, in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1130, in get
+    return self._get_impl(ident, loading.load_on_pk_identity)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1139, in _get_impl
+    return self.session._get_impl(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3684, in _get_impl
+    return db_load_fn(
+           ^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 666, in load_on_pk_identity
+    session.execute(
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "image.jpg"
+LINE 3: WHERE conversation.id = 'image.jpg'
+                                ^
+
+[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
+FROM conversation 
+WHERE conversation.id = %(pk_1)s]
+[parameters: {'pk_1': 'image.jpg'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2024-03-17 09:51:59,074 - app - INFO - Received model: gpt-4-1106-preview
+2024-03-17 09:51:59,075 - app - INFO - Received temperature: 0.3
+2024-03-17 09:52:01,410 - app - INFO - Response from model: Hello there! It looks like you're testing the waters to see how I can assist you with math. Whether you're just getting started or looking to tackle a specific problem, I'm here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let's make math a fun and rewarding experience together!
+2024-03-17 09:52:01,643 - app - INFO - Prompt tokens: 122
+2024-03-17 09:52:01,643 - app - INFO - Completion tokens: 75
+2024-03-17 09:52:01,643 - app - INFO - Total tokens: 197
+2024-03-17 09:52:01,643 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.\n a test message please Hello there! It looks like you\'re testing the waters to see how I can assist you with math. Whether you\'re just getting started or looking to tackle a specific problem, I\'m here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let\'s make math a fun and rewarding experience together!'}], 'max_tokens': 10}
+2024-03-17 09:52:02,094 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Math Mentor Support",
+        "role": "assistant"
+      }
     }
-    // Update the badge count
-    badge.textContent = count;
+  ],
+  "created": 1710694319,
+  "id": "chatcmpl-93o1nfgDjDj6pyzbZHlVFbFLyUxnP",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_4f2ebda25a",
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 222,
+    "total_tokens": 225
+  }
 }
-
-// Function to update the notification badge count
-function updateNotificationBadge(newCount) {
-    var badge = document.querySelector('.notification-badge');
-    if (badge) {
-        // If the badge exists, update its count
-        badge.textContent = newCount;
-    } else {
-        // If no badge exists, add one with the new count
-        addNotificationBadge(newCount);
-    }
-}
-
-// Function to clear the notification badge
-function clearNotificationBadge() {
-    var badge = document.querySelector('.notification-badge');
-    if (badge) {
-        // If the badge exists, remove it
-        badge.remove();
-    }
-}
-
-// Example usage
-document.addEventListener('DOMContentLoaded', () => {
-    // Simulate adding a notification badge with an initial count of 5
-    addNotificationBadge(5);
-
-    // Example: Update the badge count after 5 seconds
-    setTimeout(() => {
-        updateNotificationBadge(10);
-    }, 5000);
-
-    // Example: Clear the badge after 10 seconds
-    setTimeout(() => {
-        clearNotificationBadge();
-    }, 10000);
-});
-```
-
-This script starts by checking if a notification badge already exists within the specified icon container (`.icon-bell` in this case). If not, it creates a new badge, sets the initial count, and appends it to the icon. The `updateNotificationBadge` function allows you to change the count displayed on the badge dynamically, which is useful for real-time applications where the number of notifications can change frequently. Finally, the `clearNotificationBadge` function provides a way to remove the badge entirely, which could be tied to user actions like viewing all notifications.
-
-This example demonstrates basic DOM manipulation techniques in JavaScript, such as creating elements, modifying their content, and appending or removing them from the document. It's designed to be easily integrated into event handlers or callbacks that respond to real-time events in your application.
-2024-03-16 09:17:42,489 - app - INFO - Prompt tokens: 2219
-2024-03-16 09:17:42,489 - app - INFO - Completion tokens: 584
-2024-03-16 09:17:42,489 - app - INFO - Total tokens: 2803
+2024-03-17 09:52:02,113 - app - INFO - Generated conversation summary: Math Mentor Support

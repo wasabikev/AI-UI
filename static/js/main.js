@@ -465,18 +465,22 @@ function updateTemperatureDisplay() {
 }
 
 function displaySystemMessage(systemMessage) {
+    // Remove existing system messages
+    $('.chat-entry.system.system-message').remove();
+
     // Update the UI with the system message description, model name, and temperature
     let systemMessageButton = createSystemMessageButton();
     const modelDisplayName = modelNameMapping(systemMessage.model_name); // Get the user-friendly model name
     const temperatureDisplay = systemMessage.temperature;
     const descriptionContent = renderOpenAI(systemMessage.description);
     const renderedContent = `
-        <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
-        <strong>Model:</strong> ${modelDisplayName}, <strong>Temperature:</strong> ${temperatureDisplay}°
-    `;
+        <div class="chat-entry system system-message">
+            <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
+            <strong>Model:</strong> ${modelDisplayName}, <strong>Temperature:</strong> ${temperatureDisplay}°
+        </div>`;
 
     // Update the UI
-    document.getElementById('system-message-selection').innerHTML = '<div class="system-message">' + renderedContent + '</div>';
+    $('#chat').prepend(renderedContent);
 
     // Update the message in the 'messages' array with the content
     if (messages.length > 0 && messages[0].role === "system") {
@@ -1312,7 +1316,6 @@ function checkActiveConversation() {
 }
 
 
-
 $(document).ready(function() {  // Document Ready (initialization)
     console.log("Document ready."); // Debug
 
@@ -1329,11 +1332,6 @@ $(document).ready(function() {  // Document Ready (initialization)
         });
     }
 
-    // Call this function to start the process
-    fetchAndProcessSystemMessages().then(() => {
-        // The rest of your initialization code
-    });
-
     // Fetch the current model_name from the backend and initialize the application
     $.ajax({
         url: '/get-current-model',
@@ -1347,6 +1345,47 @@ $(document).ready(function() {  // Document Ready (initialization)
         error: function(error) {
             console.error('Error fetching current model:', error);
         }
+    });
+
+    // Add click event handler for the "+ New" button
+    $('#new-chat-btn').click(function() {
+        // Clear the chat area
+        $('#chat').empty();
+
+        // Clear the conversation title
+        $('#conversation-title').text('');
+
+        // Reset the messages array
+        messages = [];
+
+        // Reset the active conversation ID
+        activeConversationId = null;
+
+        // Update the URL to reflect the new conversation
+        window.history.pushState({}, '', '/');
+
+        // Hide the conversation controls
+        $('#conversation-title, #edit-title-btn, #delete-conversation-btn').hide();
+
+        // Update the conversation list
+        updateConversationList();
+
+        // Display the default system message
+        const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
+        if (defaultSystemMessage) {
+            displaySystemMessage(defaultSystemMessage);
+        } else if (systemMessages.length > 0) {
+            // If there's no "Default System Message", display the first one in the list
+            displaySystemMessage(systemMessages[0]);
+        }
+
+        // Reset the header to the default app name and show it
+        $("#conversation-title").html("AI &infin; UI").show();
+
+        // Clear the token counter values while keeping the labels and matching the spacing from chat.html
+        $("#prompt-tokens").html('Prompt Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+        $("#completion-tokens").html('Completion Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+        $("#total-tokens").html('Total Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
     });
 });
     
