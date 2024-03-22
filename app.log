@@ -1,64 +1,89 @@
-2024-03-17 09:52:02,121 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.\n'}, {'role': 'user', 'content': 'a test message please'}, {'role': 'assistant', 'content': "Hello there! It looks like you're testing the waters to see how I can assist you with math. Whether you're just getting started or looking to tackle a specific problem, I'm here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let's make math a fun and rewarding experience together!"}]
-2024-03-17 10:00:36,268 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-03-17 10:00:36,270 - app - INFO - Received temperature: 1.5
-2024-03-17 10:00:37,455 - app - INFO - Response from model: Sure, here's a test sentence: Please provide the necessary input data to initialize the API. Apple.
-2024-03-17 10:00:37,457 - app - INFO - Prompt tokens: 31
-2024-03-17 10:00:37,458 - app - INFO - Completion tokens: 21
-2024-03-17 10:00:37,458 - app - INFO - Total tokens: 52
-2024-03-17 10:00:37,459 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple". A test sentence please Sure, here\'s a test sentence: Please provide the necessary input data to initialize the API. Apple.'}], 'max_tokens': 10}
-2024-03-17 10:00:37,879 - app - INFO - Response from OpenAI for summary: {
+2024-03-20 15:50:32,997 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "API interface development. Apple.",
+        "content": "Analyzing dog behavior",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710694835,
-  "id": "chatcmpl-93oA7iFNP7etsrHRMXLQNNFf2kNCK",
+  "created": 1710975031,
+  "id": "chatcmpl-94z3PqalkPmG7QEIZ3EKiBo9NPFx2",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_4f2ebda25a",
+  "system_fingerprint": "fp_4f0b692a78",
   "usage": {
-    "completion_tokens": 6,
-    "prompt_tokens": 77,
-    "total_tokens": 83
+    "completion_tokens": 4,
+    "prompt_tokens": 72,
+    "total_tokens": 76
   }
 }
-2024-03-17 10:00:37,879 - app - INFO - Generated conversation summary: API interface development. Apple.
-2024-03-17 10:00:37,879 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': "Sure, here's a test sentence: Please provide the necessary input data to initialize the API. Apple."}]
-2024-03-17 10:04:34,850 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-17 10:04:34,851 - app - INFO - Received temperature: 0.3
-2024-03-17 10:04:36,836 - app - INFO - Response from model: Certainly! Here's a test sentence that you might find useful in the context of developing user interfaces for AI systems:
-
-"Implementing intuitive navigation and clear feedback mechanisms enhances user engagement and satisfaction in AI-powered conversational interfaces."
-2024-03-17 10:04:37,037 - app - INFO - Prompt tokens: 553
-2024-03-17 10:04:37,037 - app - INFO - Completion tokens: 44
-2024-03-17 10:04:37,037 - app - INFO - Total tokens: 597
-2024-03-17 10:04:37,537 - app - INFO - Response from OpenAI for summary: {
+2024-03-20 15:50:33,007 - app - INFO - Generated conversation summary: Analyzing dog behavior
+2024-03-20 15:50:33,013 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence with "Dog" please'}, {'role': 'assistant', 'content': '"During the sunny afternoon, the dog joyfully chased its tail in the park, embodying the essence of carefree happiness."'}]
+2024-03-20 15:50:53,777 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:50:53,778 - app - INFO - Received temperature: 0.7
+2024-03-20 15:50:55,761 - app - INFO - Response from model: Sure, here's a sentence: "The bird perched quietly on the branch, its feathers ruffling gently in the breeze."
+2024-03-20 15:50:55,762 - app - INFO - Prompt tokens: 21
+2024-03-20 15:50:55,762 - app - INFO - Completion tokens: 26
+2024-03-20 15:50:55,762 - app - INFO - Total tokens: 47
+2024-03-20 15:50:55,763 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence with "bird" please Sure, here\'s a sentence: "The bird perched quietly on the branch, its feathers ruffling gently in the breeze."'}], 'max_tokens': 10}
+2024-03-20 15:50:56,305 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "AI \u221e UI Development",
+        "content": "Bird on branch.",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710695074,
-  "id": "chatcmpl-93oDyAo8JRLR3NSb9bcWeSv7zvKzl",
+  "created": 1710975055,
+  "id": "chatcmpl-94z3nyv81522iHoR8JPzK1Kc6PJ5b",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_4f2ebda25a",
+  "system_fingerprint": "fp_fa89f7a861",
   "usage": {
-    "completion_tokens": 5,
-    "prompt_tokens": 622,
-    "total_tokens": 627
+    "completion_tokens": 4,
+    "prompt_tokens": 72,
+    "total_tokens": 76
   }
 }
+2024-03-20 15:50:56,309 - app - INFO - Generated conversation summary: Bird on branch.
+2024-03-20 15:50:56,313 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence with "bird" please'}, {'role': 'assistant', 'content': 'Sure, here\'s a sentence: "The bird perched quietly on the branch, its feathers ruffling gently in the breeze."'}]
+2024-03-20 15:59:12,892 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:59:12,892 - app - INFO - Received temperature: 0.7
+2024-03-20 15:59:14,967 - app - INFO - Response from model: Certainly! "The rapid advancement in computer technology has significantly transformed our daily lives and work."
+2024-03-20 15:59:14,968 - app - INFO - Prompt tokens: 23
+2024-03-20 15:59:14,969 - app - INFO - Completion tokens: 18
+2024-03-20 15:59:14,969 - app - INFO - Total tokens: 41
+2024-03-20 15:59:14,970 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence with the word "Computer" please Certainly! "The rapid advancement in computer technology has significantly transformed our daily lives and work."'}], 'max_tokens': 10}
+2024-03-20 15:59:15,474 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Impact of Computers",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710975554,
+  "id": "chatcmpl-94zBqe7bt1P5VTLTlr7jl3ViZvssz",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_4f0b692a78",
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 66,
+    "total_tokens": 69
+  }
+}
+2024-03-20 15:59:15,477 - app - INFO - Generated conversation summary: Impact of Computers
+2024-03-20 15:59:15,481 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence with the word "Computer" please'}, {'role': 'assistant', 'content': 'Certainly! "The rapid advancement in computer technology has significantly transformed our daily lives and work."'}]
