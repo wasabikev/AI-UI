@@ -1,4 +1,4 @@
-2024-03-17 09:30:51,570 - app - ERROR - Exception on /c/image.jpg [GET]
+2024-03-17 09:44:11,440 - app - ERROR - Exception on /c/image.jpg [GET]
 Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
     self.dialect.do_execute(
@@ -83,35 +83,34 @@ FROM conversation
 WHERE conversation.id = %(pk_1)s]
 [parameters: {'pk_1': 'image.jpg'}]
 (Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-03-17 09:31:17,072 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-17 09:31:17,073 - app - INFO - Received temperature: 0.3
-2024-03-17 09:31:18,452 - app - INFO - Response from model: Certainly! Here's a test sentence for you: "The quick brown fox jumps over the lazy dog."
-2024-03-17 09:31:18,651 - app - INFO - Prompt tokens: 17
-2024-03-17 09:31:18,664 - app - INFO - Completion tokens: 21
-2024-03-17 09:31:18,664 - app - INFO - Total tokens: 38
-2024-03-17 09:31:18,664 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
-2024-03-17 09:31:19,531 - app - INFO - Response from OpenAI for summary: {
+2024-03-17 09:51:59,074 - app - INFO - Received model: gpt-4-1106-preview
+2024-03-17 09:51:59,075 - app - INFO - Received temperature: 0.3
+2024-03-17 09:52:01,410 - app - INFO - Response from model: Hello there! It looks like you're testing the waters to see how I can assist you with math. Whether you're just getting started or looking to tackle a specific problem, I'm here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let's make math a fun and rewarding experience together!
+2024-03-17 09:52:01,643 - app - INFO - Prompt tokens: 122
+2024-03-17 09:52:01,643 - app - INFO - Completion tokens: 75
+2024-03-17 09:52:01,643 - app - INFO - Total tokens: 197
+2024-03-17 09:52:01,643 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.\n a test message please Hello there! It looks like you\'re testing the waters to see how I can assist you with math. Whether you\'re just getting started or looking to tackle a specific problem, I\'m here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let\'s make math a fun and rewarding experience together!'}], 'max_tokens': 10}
+2024-03-17 09:52:02,094 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Critical thinking skills.",
+        "content": "Math Mentor Support",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710693076,
-  "id": "chatcmpl-93nhkwvQmfDXj0imXAr7YBfOgCczv",
+  "created": 1710694319,
+  "id": "chatcmpl-93o1nfgDjDj6pyzbZHlVFbFLyUxnP",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_4f2ebda25a",
   "usage": {
-    "completion_tokens": 4,
-    "prompt_tokens": 63,
-    "total_tokens": 67
+    "completion_tokens": 3,
+    "prompt_tokens": 222,
+    "total_tokens": 225
   }
 }
-2024-03-17 09:31:19,534 - app - INFO - Generated conversation summary: Critical thinking skills.
-2024-03-17 09:31:19,546 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]
+2024-03-17 09:52:02,113 - app - INFO - Generated conversation summary: Math Mentor Support
