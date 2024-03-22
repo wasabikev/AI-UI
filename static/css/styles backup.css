@@ -12,41 +12,57 @@ body, html {
     z-index: 1060; /* Default z-index for modals is 1050 */
 }
 
-.modal-dialog.systemMessage-modal-lg {
-    max-height: 90vh;
-    max-width: 1100px;
-    width: 90%; /* Add this line to set the width to 90% of the viewport */
-    display: flex;
-    overflow: hidden;
+
+/* Ensure that modals on screens with a max height of 1080px are styled properly */
+@media (max-height: 1080px) {
+    .modal-dialog.systemMessage-modal-lg {
+        max-height: 90vh; /* 90% of the viewport height to account for any margins */
+        max-width: 1100px; /* Adjust based on your needs, ensuring it's wide enough */
+        display: flex; /* This ensures the modal stretches to accommodate the sidebar */
+        overflow: hidden; /* Prevents external scrollbars */
+    }
+
+    .modal-content {
+        display: flex;
+       /* flex-direction: vertical;  Change to row for horizontal layout */
+        height: auto;
+    }
+
+    .modal-main {
+        flex-grow: 1; /* Allows the main content to fill the rest of the space */
+        /* overflow-y: auto;  Adds a scrollbar to the main content if the content is too tall */
+        /* max-height: 80vh;  Adjust if necessary */
+        display: flex;
+        flex-direction: column; /* Keeps the internal layout vertical */
+    }
+
+    .modal-body {
+        overflow-y: auto; /*  Adds a scrollbar to the modal body if the content is too tall */
+    }
+
+    /* Make sure the header and footer do not shrink */
+    .modal-header, .modal-footer {
+        flex-shrink: 0;
+    }
+
+    .modal-sidebar {
+        background-color: #3F484B; /* Or any color that matches your design */
+        color: #fff;
+        padding: 20px 20px 10px 20px;
+        width: 300px; /* Adjust based on your preference */
+        overflow-y: auto; /* Allows scrolling within the sidebar if needed */
+        scrollbar-color: #7F898B #3F484B;
+        scrollbar-width: thin;
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+    }
+
+    .modal-flex-container {
+        display: flex; /* Enables flex layout */
+        flex-direction: horizontal; /* Change to row for horizontal layout */
+        width: 100%; /* Ensures the container fills the modal width */
+    }
 }
-
-.modal-content {
-    display: flex;
-    flex-direction: row; /* Change to row for horizontal layout */
-    height: auto;
-}
-
-.modal-main {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto; /* Add scrollbar to the main content if it exceeds the height */
-}
-
-.modal-sidebar {
-    background-color: #3F484B;
-    color: #fff;
-    padding: 20px 20px 10px 20px;
-    width: 300px;
-    min-width: 300px; /* Add this line to set a minimum width for the sidebar */
-    overflow-y: auto;
-    scrollbar-color: #7F898B #3F484B;
-    scrollbar-width: thin;
-    border-top-left-radius: 4px;
-    border-bottom-left-radius: 4px;
-}
-
-
 
 
 /* Adjust the font size and color of the code type text in the header */
@@ -193,35 +209,6 @@ pre code {
 
 #systemMessageModal .modal-footer {
     border-top: none; /* Remove the default top border */
-}
-
-
-#systemMessageModal .modal-dialog {
-    min-width: 600px; /* Adjust the value as needed */
-}
-
-#systemMessageModal .modal-content {
-    display: flex;
-    flex-direction: column;
-}
-
-#systemMessageModal .modal-body {
-    flex: 1;
-}
-
-#systemMessageModal .modal-sidebar {
-    min-width: 200px; /* Adjust the value as needed */
-}
-
-#systemMessageModal .modal-header .btn-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-#systemMessageModal .modal-header .btn-group .btn {
-    flex: 1;
-    margin: 5px;
 }
 
 #systemMessageContent {

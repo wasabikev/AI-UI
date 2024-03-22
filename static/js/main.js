@@ -1351,41 +1351,18 @@ $(document).ready(function() {  // Document Ready (initialization)
     $('#new-chat-btn').click(function() {
         // Clear the chat area
         $('#chat').empty();
-
+    
         // Clear the conversation title
         $('#conversation-title').text('');
-
+    
         // Reset the messages array
         messages = [];
-
+    
         // Reset the active conversation ID
         activeConversationId = null;
-
-        // Update the URL to reflect the new conversation
-        window.history.pushState({}, '', '/');
-
-        // Hide the conversation controls
-        $('#conversation-title, #edit-title-btn, #delete-conversation-btn').hide();
-
-        // Update the conversation list
-        updateConversationList();
-
-        // Display the default system message
-        const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
-        if (defaultSystemMessage) {
-            displaySystemMessage(defaultSystemMessage);
-        } else if (systemMessages.length > 0) {
-            // If there's no "Default System Message", display the first one in the list
-            displaySystemMessage(systemMessages[0]);
-        }
-
-        // Reset the header to the default app name and show it
-        $("#conversation-title").html("AI &infin; UI").show();
-
-        // Clear the token counter values while keeping the labels and matching the spacing from chat.html
-        $("#prompt-tokens").html('Prompt Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
-        $("#completion-tokens").html('Completion Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
-        $("#total-tokens").html('Total Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+    
+        // Navigate to the root URL
+        window.location.href = '/';
     });
 });
     

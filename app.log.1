@@ -1,16 +1,88 @@
-2024-03-17 09:44:11,440 - app - ERROR - Exception on /c/image.jpg [GET]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-
-The above exception was the direct cause of the following exception:
-
+2024-03-20 15:21:02,701 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:21:02,703 - app - INFO - Received temperature: 0.3
+2024-03-20 15:21:02,706 - app - INFO - Using existing conversation with id 328.
+2024-03-20 15:21:04,322 - app - INFO - Response from model: The sun cast a warm, golden glow over the landscape, transforming the scene into a breathtaking spectacle.
+2024-03-20 15:21:04,323 - app - INFO - Prompt tokens: 24
+2024-03-20 15:21:04,324 - app - INFO - Completion tokens: 20
+2024-03-20 15:21:04,325 - app - INFO - Total tokens: 44
+2024-03-20 15:21:04,328 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'I need a test sentence with the word "sun"'}, {'role': 'assistant', 'content': 'The sun cast a warm, golden glow over the landscape, transforming the scene into a breathtaking spectacle.'}]
+2024-03-20 15:46:31,552 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:46:31,553 - app - INFO - Received temperature: 0.3
+2024-03-20 15:46:31,555 - app - INFO - Using existing conversation with id 328.
+2024-03-20 15:46:33,121 - app - INFO - Response from model: The cat gracefully leaped onto the windowsill, its eyes intently following the fluttering birds outside.
+2024-03-20 15:46:33,317 - app - INFO - Prompt tokens: 55
+2024-03-20 15:46:33,318 - app - INFO - Completion tokens: 21
+2024-03-20 15:46:33,318 - app - INFO - Total tokens: 76
+2024-03-20 15:46:33,325 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'I need a test sentence with the word "sun"', 'role': 'user'}, {'content': 'The sun cast a warm, golden glow over the landscape, transforming the scene into a breathtaking spectacle.', 'role': 'assistant'}, {'role': 'user', 'content': 'I need a test sentnce with "Cat" please'}, {'role': 'assistant', 'content': 'The cat gracefully leaped onto the windowsill, its eyes intently following the fluttering birds outside.'}]
+2024-03-20 15:46:47,448 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:46:47,449 - app - INFO - Received temperature: 0.7
+2024-03-20 15:46:49,196 - app - INFO - Response from model: A dog barked loudly outside, signaling the arrival of an unexpected visitor.
+2024-03-20 15:46:49,196 - app - INFO - Prompt tokens: 23
+2024-03-20 15:46:49,197 - app - INFO - Completion tokens: 15
+2024-03-20 15:46:49,197 - app - INFO - Total tokens: 38
+2024-03-20 15:46:49,198 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. I need a test sentence with "Dog" please A dog barked loudly outside, signaling the arrival of an unexpected visitor.'}], 'max_tokens': 10}
+2024-03-20 15:46:49,719 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Surprise Visitor Signaled",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710974808,
+  "id": "chatcmpl-94yzos4jeOjQOYR9hSlSBExjMN0rY",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_4f0b692a78",
+  "usage": {
+    "completion_tokens": 5,
+    "prompt_tokens": 63,
+    "total_tokens": 68
+  }
+}
+2024-03-20 15:46:49,723 - app - INFO - Generated conversation summary: Surprise Visitor Signaled
+2024-03-20 15:46:49,730 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'I need a test sentence with "Dog" please'}, {'role': 'assistant', 'content': 'A dog barked loudly outside, signaling the arrival of an unexpected visitor.'}]
+2024-03-20 15:47:57,187 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:47:57,188 - app - INFO - Received temperature: 0.7
+2024-03-20 15:48:00,162 - app - INFO - Response from model: Sure, here's a test sentence for you: "The colorful bird perched quietly on the branch, observing its surroundings with keen interest."
+2024-03-20 15:48:00,163 - app - INFO - Prompt tokens: 23
+2024-03-20 15:48:00,164 - app - INFO - Completion tokens: 28
+2024-03-20 15:48:00,164 - app - INFO - Total tokens: 51
+2024-03-20 15:48:00,165 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. I need a test sentence with "bird" please Sure, here\'s a test sentence for you: "The colorful bird perched quietly on the branch, observing its surroundings with keen interest."'}], 'max_tokens': 10}
+2024-03-20 15:48:00,714 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "length",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Test sentence with \"bird\": Colorful bird per",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710974879,
+  "id": "chatcmpl-94z0xjjpuUf0U8eZalNBtx5MzSd3W",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_fa89f7a861",
+  "usage": {
+    "completion_tokens": 10,
+    "prompt_tokens": 76,
+    "total_tokens": 86
+  }
+}
+2024-03-20 15:48:00,720 - app - INFO - Generated conversation summary: Test sentence with "bird": Colorful bird per
+2024-03-20 15:48:00,725 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'I need a test sentence with "bird" please'}, {'role': 'assistant', 'content': 'Sure, here\'s a test sentence for you: "The colorful bird perched quietly on the branch, observing its surroundings with keen interest."'}]
+2024-03-20 15:50:04,567 - app - INFO - Received model: None
+2024-03-20 15:50:04,568 - app - INFO - Received temperature: 0.7
+2024-03-20 15:50:04,570 - app - INFO - Using existing conversation with id 330.
+2024-03-20 15:50:04,570 - app - INFO - Response from model: Sorry, the selected model is not supported yet.
+2024-03-20 15:50:04,572 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -27,90 +99,20 @@ Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 321, in show_conversation
-    conversation = Conversation.query.get(conversation_id)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<string>", line 2, in get
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\util\deprecations.py", line 386, in warned
-    return fn(*args, **kwargs)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1130, in get
-    return self._get_impl(ident, loading.load_on_pk_identity)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1139, in _get_impl
-    return self.session._get_impl(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3684, in _get_impl
-    return db_load_fn(
-           ^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 666, in load_on_pk_identity
-    session.execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
-FROM conversation 
-WHERE conversation.id = %(pk_1)s]
-[parameters: {'pk_1': 'image.jpg'}]
-(Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-03-17 09:51:59,074 - app - INFO - Received model: gpt-4-1106-preview
-2024-03-17 09:51:59,075 - app - INFO - Received temperature: 0.3
-2024-03-17 09:52:01,410 - app - INFO - Response from model: Hello there! It looks like you're testing the waters to see how I can assist you with math. Whether you're just getting started or looking to tackle a specific problem, I'm here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let's make math a fun and rewarding experience together!
-2024-03-17 09:52:01,643 - app - INFO - Prompt tokens: 122
-2024-03-17 09:52:01,643 - app - INFO - Completion tokens: 75
-2024-03-17 09:52:01,643 - app - INFO - Total tokens: 197
-2024-03-17 09:52:01,643 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.\n a test message please Hello there! It looks like you\'re testing the waters to see how I can assist you with math. Whether you\'re just getting started or looking to tackle a specific problem, I\'m here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let\'s make math a fun and rewarding experience together!'}], 'max_tokens': 10}
-2024-03-17 09:52:02,094 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Math Mentor Support",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1710694319,
-  "id": "chatcmpl-93o1nfgDjDj6pyzbZHlVFbFLyUxnP",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_4f2ebda25a",
-  "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 222,
-    "total_tokens": 225
-  }
-}
-2024-03-17 09:52:02,113 - app - INFO - Generated conversation summary: Math Mentor Support
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 528, in chat
+    prompt_tokens = count_tokens(model_name, messages)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 587, in count_tokens
+    if model_name.startswith("gpt-"):
+       ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'startswith'
+2024-03-20 15:50:29,472 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:50:29,473 - app - INFO - Received temperature: 0.7
+2024-03-20 15:50:32,121 - app - INFO - Response from model: "During the sunny afternoon, the dog joyfully chased its tail in the park, embodying the essence of carefree happiness."
+2024-03-20 15:50:32,296 - app - INFO - Prompt tokens: 21
+2024-03-20 15:50:32,298 - app - INFO - Completion tokens: 26
+2024-03-20 15:50:32,298 - app - INFO - Total tokens: 47
+2024-03-20 15:50:32,300 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence with "Dog" please "During the sunny afternoon, the dog joyfully chased its tail in the park, embodying the essence of carefree happiness."'}], 'max_tokens': 10}

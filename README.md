@@ -67,6 +67,43 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - Use Modals for User Input: Whenever the application requires input from the user, whether it's form submission, settings configuration, or any other input-driven task, use a modal window. This includes actions like adding or editing data, confirming decisions, or any interaction that benefits from focused attention.
 - For future iterations and feature implementations, we strongly encourage maintaining the modal-based approach for user interfaces. This consistency is key to providing an intuitive and pleasant user experience across our application.
 
+## Feature Roadmap
+
+### TriFusion Query
+
+Status: Under development
+
+Objective: Enhance the chatbot's capability to provide insightful and contextually relevant responses by leveraging a unique combination of three distinct database methodologies: relational, vector, and graph databases. This feature, named "TriFusion Query," aims to unify structured data querying, semantic search, and relationship exploration into a single, powerful query mechanism.
+
+Functional Spec:
+
+Relational Database Integration: Utilize a relational database (e.g., PostgreSQL) to store and manage structured data extracted from targeted websites. This will support complex queries, ensuring data integrity and transactional support for retrieving specific facts and structured information.
+
+Vector Database Incorporation: Implement a vector database to store text content from websites as vector representations, enabling efficient semantic search and similarity-based retrieval. This will allow the chatbot to provide contextually relevant responses based on the semantic similarity of user queries to stored data.
+
+Graph Database Utilization: Employ a graph database to represent the relationships between different entities extracted from websites, such as articles, authors, and categories. This will enable the exploration of interconnected data, uncovering hidden patterns and recommending related content based on the relational context.
+
+Query Fusion Mechanism: Develop a sophisticated query fusion mechanism that, upon receiving a user query, simultaneously leverages the relational, vector, and graph databases. This mechanism will parse the query, identify relevant keywords and entities, and retrieve data from all three databases. The aggregated data will then be used to generate comprehensive, accurate, and insightful responses.
+
+System Prompt Integration: Ensure that the "TriFusion Query" feature is seamlessly integrated into the system prompt, allowing for dynamic adjustment of query parameters, including targeted system prompts and temperature settings. This will enable the customization of chatbot responses to achieve the desired level of creativity, specificity, and relevance.
+
+Anticipated Benefits:
+
+- Enhanced accuracy and relevance of chatbot responses through semantic search capabilities and structured data retrieval.
+- Improved user experience by providing comprehensive answers that leverage interconnected data and insights.
+- Increased flexibility and adaptability of the chatbot in addressing a wide range of user queries with contextually rich responses.
+
+Development Milestones:
+
+- Relational Database Schema Design: Define and implement the schema for storing structured data from websites.
+- Vector Representation Processing: Select and integrate natural language processing (NLP) models for generating vector representations of text content.
+- Graph Database Structure Implementation: Design and create the graph database structure to represent the relationships between extracted entities.
+- Query Fusion Mechanism Development: Develop the core logic for the query fusion mechanism that combines data retrieval from all three databases.
+- Integration and Testing: Integrate the "TriFusion Query" feature into the existing system, followed by thorough testing to ensure accuracy and efficiency.
+
+Target Completion Date: TBD
+
+
 ## Setting up API Keys
 1. Create a new file called `.env` in the project's root directory.
 2. Add the following line to the `.env` file, replacing `<your_api_key_here>` with your actual API key:
@@ -78,10 +115,6 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 3. Initialize the database: `flask db upgrade`
 4. Start the Flask server: `flask run`
 5. Access the application at `http://localhost:5000/`
-
-## Contributing
-
-Contributions are welcome! Please read the CONTRIBUTING.md file for details on how to submit pull requests.
 
 ## License
 
