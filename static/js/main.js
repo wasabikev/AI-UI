@@ -224,11 +224,13 @@ document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
 
 
 $('#systemMessageModal').on('hide.bs.modal', function (event) {
+    // Check if the changes were not saved
     if (!isSaved) {
+        // Revert temperature only if not saved
         selectedTemperature = initialTemperature;
         console.log("Modal closed without saving. Restoring temperature to:", initialTemperature);
 
-        // Reset the system message in the modal to the active system message
+        // Revert UI changes here (if any were made)
         if (activeSystemMessageId) {
             const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
             if (activeSystemMessage) {
@@ -236,16 +238,23 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
                 document.getElementById('systemMessageDescription').value = activeSystemMessage.description;
                 document.getElementById('systemMessageContent').value = activeSystemMessage.content;
                 document.getElementById('modalModelDropdownButton').dataset.apiName = activeSystemMessage.model_name;
-                // Update dropdown button text to reflect the active system message
                 document.getElementById('systemMessageDropdown').textContent = activeSystemMessage.name;
-
-                // Log the reset
+                updateTemperatureSelectionInModal(activeSystemMessage.temperature); // Ensure the UI reflects the reverted temperature
                 console.log("Modal content reset to active system message:", activeSystemMessage.name);
             }
         }
+    } else {
+        // Optionally, handle any tasks that should occur when the modal is closed after saving changes
+        console.log("Changes were saved, no need to revert the temperature.");
     }
+
+    // Reset the isSaved flag back to false for the next time the modal is opened
+    isSaved = false;
+
+    // Any other cleanup actions can go here
     $(this).find('.modal-dialog').css('height', 'auto');
 });
+
 
 
 
@@ -298,10 +307,13 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
                 description: messageDescription,
                 content: messageContent,
                 model_name: modelName,
-                temperature: temperature
+                temperature: selectedTemperature
             }),
             success: function(response) {
                 console.log('System message updated successfully:', response);
+
+                // Set the isSaved flag to true here to indicate changes were saved
+                isSaved = true;
 
                 // Set the activeSystemMessageId to the ID of the system message that was just saved
                 activeSystemMessageId = messageId;
@@ -587,11 +599,18 @@ $(window).on('load', function () {
 
 
 $('.dropdown-item').on('click', function(event){
-        event.preventDefault();  // Prevent the # appearing in the URL
-        $('#dropdownMenuButton').text($(this).text());
-        model = $(this).attr('data-model'); // Update the model variable here
-        console.log("Dropdown item clicked. Model is now: " + model);
+    event.preventDefault();  // Prevent the # appearing in the URL
+    var selectedModelText = $(this).text();
+    var selectedModel = $(this).attr('data-model'); // Extract model identifier
+
+    $('#dropdownMenuButton').text(selectedModelText); // Update dropdown button text
+    model = selectedModel; // Update the global model variable
+
+    console.log("Dropdown item clicked. Model is now: " + model);
+
 });
+
+
 
 
 document.querySelectorAll('input[name="temperatureOptions"]').forEach((radioButton) => {
@@ -1115,7 +1134,7 @@ function loadConversation(conversationId) {
             model = modelName;
 
             // Retrieve and handle the temperature setting
-            selectedTemperature = data.temperature ?? 0.7; // Use the temperature from the data, or default to 0.7 if it's null/undefined
+            selectedTemperature = data.temperature || 0.3; // Use the temperature from the data, or default to 0.3 if it's null/undefined
 
             // Update the token data in the UI for restored conversations
             const tokens = {

@@ -1,88 +1,39 @@
-2024-03-20 15:21:02,701 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-20 15:21:02,703 - app - INFO - Received temperature: 0.3
-2024-03-20 15:21:02,706 - app - INFO - Using existing conversation with id 328.
-2024-03-20 15:21:04,322 - app - INFO - Response from model: The sun cast a warm, golden glow over the landscape, transforming the scene into a breathtaking spectacle.
-2024-03-20 15:21:04,323 - app - INFO - Prompt tokens: 24
-2024-03-20 15:21:04,324 - app - INFO - Completion tokens: 20
-2024-03-20 15:21:04,325 - app - INFO - Total tokens: 44
-2024-03-20 15:21:04,328 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'I need a test sentence with the word "sun"'}, {'role': 'assistant', 'content': 'The sun cast a warm, golden glow over the landscape, transforming the scene into a breathtaking spectacle.'}]
-2024-03-20 15:46:31,552 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-20 15:46:31,553 - app - INFO - Received temperature: 0.3
-2024-03-20 15:46:31,555 - app - INFO - Using existing conversation with id 328.
-2024-03-20 15:46:33,121 - app - INFO - Response from model: The cat gracefully leaped onto the windowsill, its eyes intently following the fluttering birds outside.
-2024-03-20 15:46:33,317 - app - INFO - Prompt tokens: 55
-2024-03-20 15:46:33,318 - app - INFO - Completion tokens: 21
-2024-03-20 15:46:33,318 - app - INFO - Total tokens: 76
-2024-03-20 15:46:33,325 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'I need a test sentence with the word "sun"', 'role': 'user'}, {'content': 'The sun cast a warm, golden glow over the landscape, transforming the scene into a breathtaking spectacle.', 'role': 'assistant'}, {'role': 'user', 'content': 'I need a test sentnce with "Cat" please'}, {'role': 'assistant', 'content': 'The cat gracefully leaped onto the windowsill, its eyes intently following the fluttering birds outside.'}]
-2024-03-20 15:46:47,448 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-20 15:46:47,449 - app - INFO - Received temperature: 0.7
-2024-03-20 15:46:49,196 - app - INFO - Response from model: A dog barked loudly outside, signaling the arrival of an unexpected visitor.
-2024-03-20 15:46:49,196 - app - INFO - Prompt tokens: 23
-2024-03-20 15:46:49,197 - app - INFO - Completion tokens: 15
-2024-03-20 15:46:49,197 - app - INFO - Total tokens: 38
-2024-03-20 15:46:49,198 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. I need a test sentence with "Dog" please A dog barked loudly outside, signaling the arrival of an unexpected visitor.'}], 'max_tokens': 10}
-2024-03-20 15:46:49,719 - app - INFO - Response from OpenAI for summary: {
+2024-03-24 11:06:14,342 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for analysis: "The rapid advancement of technology in the 21st century has significantly impacted human communication patterns."'}]
+2024-03-24 11:13:21,683 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-24 11:13:21,684 - app - INFO - Received temperature: 0
+2024-03-24 11:13:26,421 - app - INFO - Response from model: Certainly! Here's a test sentence for you: "The quick brown fox jumps over the lazy dog."
+2024-03-24 11:13:26,620 - app - INFO - Prompt tokens: 17
+2024-03-24 11:13:26,622 - app - INFO - Completion tokens: 21
+2024-03-24 11:13:26,622 - app - INFO - Total tokens: 38
+2024-03-24 11:13:26,622 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-03-24 11:13:27,942 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Surprise Visitor Signaled",
+        "content": "Title: Critical Thinking Assistant",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710974808,
-  "id": "chatcmpl-94yzos4jeOjQOYR9hSlSBExjMN0rY",
+  "created": 1711304004,
+  "id": "chatcmpl-96MdQyGHMPUMJ3w8JLb8PaZN7WVRR",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_4f0b692a78",
+  "system_fingerprint": "fp_3bc1b5746c",
   "usage": {
     "completion_tokens": 5,
     "prompt_tokens": 63,
     "total_tokens": 68
   }
 }
-2024-03-20 15:46:49,723 - app - INFO - Generated conversation summary: Surprise Visitor Signaled
-2024-03-20 15:46:49,730 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'I need a test sentence with "Dog" please'}, {'role': 'assistant', 'content': 'A dog barked loudly outside, signaling the arrival of an unexpected visitor.'}]
-2024-03-20 15:47:57,187 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-20 15:47:57,188 - app - INFO - Received temperature: 0.7
-2024-03-20 15:48:00,162 - app - INFO - Response from model: Sure, here's a test sentence for you: "The colorful bird perched quietly on the branch, observing its surroundings with keen interest."
-2024-03-20 15:48:00,163 - app - INFO - Prompt tokens: 23
-2024-03-20 15:48:00,164 - app - INFO - Completion tokens: 28
-2024-03-20 15:48:00,164 - app - INFO - Total tokens: 51
-2024-03-20 15:48:00,165 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. I need a test sentence with "bird" please Sure, here\'s a test sentence for you: "The colorful bird perched quietly on the branch, observing its surroundings with keen interest."'}], 'max_tokens': 10}
-2024-03-20 15:48:00,714 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "length",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Test sentence with \"bird\": Colorful bird per",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1710974879,
-  "id": "chatcmpl-94z0xjjpuUf0U8eZalNBtx5MzSd3W",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_fa89f7a861",
-  "usage": {
-    "completion_tokens": 10,
-    "prompt_tokens": 76,
-    "total_tokens": 86
-  }
-}
-2024-03-20 15:48:00,720 - app - INFO - Generated conversation summary: Test sentence with "bird": Colorful bird per
-2024-03-20 15:48:00,725 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'I need a test sentence with "bird" please'}, {'role': 'assistant', 'content': 'Sure, here\'s a test sentence for you: "The colorful bird perched quietly on the branch, observing its surroundings with keen interest."'}]
-2024-03-20 15:50:04,567 - app - INFO - Received model: None
-2024-03-20 15:50:04,568 - app - INFO - Received temperature: 0.7
-2024-03-20 15:50:04,570 - app - INFO - Using existing conversation with id 330.
-2024-03-20 15:50:04,570 - app - INFO - Response from model: Sorry, the selected model is not supported yet.
-2024-03-20 15:50:04,572 - app - ERROR - Exception on /chat [POST]
+2024-03-24 11:13:27,947 - app - INFO - Generated conversation summary: Title: Critical Thinking Assistant
+2024-03-24 11:13:27,953 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]
+2024-03-24 11:14:19,999 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-24 11:14:20,001 - app - INFO - Received temperature: 1.5
+2024-03-24 11:14:46,458 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -102,17 +53,62 @@ Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 528, in chat
-    prompt_tokens = count_tokens(model_name, messages)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 587, in count_tokens
-    if model_name.startswith("gpt-"):
-       ^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'NoneType' object has no attribute 'startswith'
-2024-03-20 15:50:29,472 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-20 15:50:29,473 - app - INFO - Received temperature: 0.7
-2024-03-20 15:50:32,121 - app - INFO - Response from model: "During the sunny afternoon, the dog joyfully chased its tail in the park, embodying the essence of carefree happiness."
-2024-03-20 15:50:32,296 - app - INFO - Prompt tokens: 21
-2024-03-20 15:50:32,298 - app - INFO - Completion tokens: 26
-2024-03-20 15:50:32,298 - app - INFO - Total tokens: 47
-2024-03-20 15:50:32,300 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence with "Dog" please "During the sunny afternoon, the dog joyfully chased its tail in the park, embodying the essence of carefree happiness."'}], 'max_tokens': 10}
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 524, in chat
+    chat_output, model_name = get_response_from_model(model, messages, temperature)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 458, in get_response_from_model
+    response = openai.ChatCompletion.create(**payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
+    return super().create(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
+    response, _, api_key = requestor.request(
+                           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_requestor.py", line 230, in request
+    resp, got_stream = self._interpret_response(result, stream)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
+    self._interpret_response_line(
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
+    raise self.handle_error_response(
+openai.error.APIError: Failed to create completion as the model generated invalid Unicode output. Unfortunately, this can happen in rare situations. Consider reviewing your prompt or reducing the temperature of your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. (Please include the request ID req_e28f227a0127d4bfa9c708a82a2bc801 in your message.) {
+  "error": {
+    "message": "Failed to create completion as the model generated invalid Unicode output. Unfortunately, this can happen in rare situations. Consider reviewing your prompt or reducing the temperature of your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. (Please include the request ID req_e28f227a0127d4bfa9c708a82a2bc801 in your message.)",
+    "type": "server_error",
+    "param": null,
+    "code": "invalid_model_output"
+  }
+}
+ 500 {'error': {'message': 'Failed to create completion as the model generated invalid Unicode output. Unfortunately, this can happen in rare situations. Consider reviewing your prompt or reducing the temperature of your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. (Please include the request ID req_e28f227a0127d4bfa9c708a82a2bc801 in your message.)', 'type': 'server_error', 'param': None, 'code': 'invalid_model_output'}} {'Date': 'Sun, 24 Mar 2024 18:14:43 GMT', 'Content-Type': 'application/json', 'Content-Length': '517', 'Connection': 'keep-alive', 'access-control-allow-origin': '*', 'openai-model': 'gpt-4-0125-preview', 'openai-organization': 'user-5zduamkbxa8lanprr9asbtsx', 'openai-processing-ms': '24585', 'openai-version': '2020-10-01', 'strict-transport-security': 'max-age=15724800; includeSubDomains', 'x-ratelimit-limit-requests': '5000', 'x-ratelimit-limit-tokens': '600000', 'x-ratelimit-remaining-requests': '4999', 'x-ratelimit-remaining-tokens': '599955', 'x-ratelimit-reset-requests': '12ms', 'x-ratelimit-reset-tokens': '4ms', 'x-request-id': 'req_e28f227a0127d4bfa9c708a82a2bc801', 'CF-Cache-Status': 'DYNAMIC', 'Set-Cookie': '__cf_bm=YpZukyjUJzbDB3CXNjJcgNVBSQfBbmbOdfrYm4JzQYc-1711304083-1.0.1.1-eneqPshB9kI9cGd1l7V9b77Gf9wsaRIdojQWrx0.nU8YfQ3PYt6xiWqgbcLe7YNDhCIs49CE766mejfNxYdWDg; path=/; expires=Sun, 24-Mar-24 18:44:43 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=.KdfYQ.S1tU8YfHWnwDsVbsPY1ygSTr9DP6j_qqkYQM-1711304083324-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None', 'Server': 'cloudflare', 'CF-RAY': '8698a3ddbc01c725-SEA', 'alt-svc': 'h3=":443"; ma=86400'}
+2024-03-24 11:15:22,976 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-24 11:15:22,978 - app - INFO - Received temperature: 0.7
+2024-03-24 11:15:26,026 - app - INFO - Response from model: Certainly! "The quick brown fox jumps over the lazy dog." How may I assist you further with this sentence or any analysis you need?
+2024-03-24 11:15:26,026 - app - INFO - Prompt tokens: 17
+2024-03-24 11:15:26,026 - app - INFO - Completion tokens: 28
+2024-03-24 11:15:26,026 - app - INFO - Total tokens: 45
+2024-03-24 11:15:26,026 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! "The quick brown fox jumps over the lazy dog." How may I assist you further with this sentence or any analysis you need?'}], 'max_tokens': 10}
+2024-03-24 11:15:27,359 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Analytical Assistant",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1711304124,
+  "id": "chatcmpl-96MfMuIDl3kxjVDtcrsl1em9hUtJJ",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3bc1b5746c",
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 70,
+    "total_tokens": 73
+  }
+}
+2024-03-24 11:15:27,359 - app - INFO - Generated conversation summary: Analytical Assistant
