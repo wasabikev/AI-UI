@@ -1,116 +1,160 @@
-2024-03-17 09:44:11,440 - app - ERROR - Exception on /c/image.jpg [GET]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 321, in show_conversation
-    conversation = Conversation.query.get(conversation_id)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<string>", line 2, in get
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\util\deprecations.py", line 386, in warned
-    return fn(*args, **kwargs)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1130, in get
-    return self._get_impl(ident, loading.load_on_pk_identity)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1139, in _get_impl
-    return self.session._get_impl(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3684, in _get_impl
-    return db_load_fn(
-           ^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 666, in load_on_pk_identity
-    session.execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
-FROM conversation 
-WHERE conversation.id = %(pk_1)s]
-[parameters: {'pk_1': 'image.jpg'}]
-(Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-03-17 09:51:59,074 - app - INFO - Received model: gpt-4-1106-preview
-2024-03-17 09:51:59,075 - app - INFO - Received temperature: 0.3
-2024-03-17 09:52:01,410 - app - INFO - Response from model: Hello there! It looks like you're testing the waters to see how I can assist you with math. Whether you're just getting started or looking to tackle a specific problem, I'm here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let's make math a fun and rewarding experience together!
-2024-03-17 09:52:01,643 - app - INFO - Prompt tokens: 122
-2024-03-17 09:52:01,643 - app - INFO - Completion tokens: 75
-2024-03-17 09:52:01,643 - app - INFO - Total tokens: 197
-2024-03-17 09:52:01,643 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are "Math Mentor", designed to be a supportive and patient math tutor Math Applications & Reasoning, Please adopt a conversational and friendly tone, offering clear explanations of fundamental concepts and guiding through practical problem-solving in various topics like quantitative information, dimensional analysis, proportional reasoning, mathematical models, and more. Please be sensitive to the needs of learners who require extra guidance, patiently breaking down complex ideas into more understandable parts, and always focusing on ensuring a deep understanding of both theory and application. Avoid providing direct answers without explanations, aim to build confidence and comprehension in a supportive, engaging manner.\n a test message please Hello there! It looks like you\'re testing the waters to see how I can assist you with math. Whether you\'re just getting started or looking to tackle a specific problem, I\'m here to help guide you through the process. If you have any questions or need explanations on math concepts, feel free to ask away. Let\'s make math a fun and rewarding experience together!'}], 'max_tokens': 10}
-2024-03-17 09:52:02,094 - app - INFO - Response from OpenAI for summary: {
+2024-03-20 15:50:32,997 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Math Mentor Support",
+        "content": "Analyzing dog behavior",
         "role": "assistant"
       }
     }
   ],
-  "created": 1710694319,
-  "id": "chatcmpl-93o1nfgDjDj6pyzbZHlVFbFLyUxnP",
+  "created": 1710975031,
+  "id": "chatcmpl-94z3PqalkPmG7QEIZ3EKiBo9NPFx2",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_4f2ebda25a",
+  "system_fingerprint": "fp_4f0b692a78",
   "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 222,
-    "total_tokens": 225
+    "completion_tokens": 4,
+    "prompt_tokens": 72,
+    "total_tokens": 76
   }
 }
-2024-03-17 09:52:02,113 - app - INFO - Generated conversation summary: Math Mentor Support
+2024-03-20 15:50:33,007 - app - INFO - Generated conversation summary: Analyzing dog behavior
+2024-03-20 15:50:33,013 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence with "Dog" please'}, {'role': 'assistant', 'content': '"During the sunny afternoon, the dog joyfully chased its tail in the park, embodying the essence of carefree happiness."'}]
+2024-03-20 15:50:53,777 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:50:53,778 - app - INFO - Received temperature: 0.7
+2024-03-20 15:50:55,761 - app - INFO - Response from model: Sure, here's a sentence: "The bird perched quietly on the branch, its feathers ruffling gently in the breeze."
+2024-03-20 15:50:55,762 - app - INFO - Prompt tokens: 21
+2024-03-20 15:50:55,762 - app - INFO - Completion tokens: 26
+2024-03-20 15:50:55,762 - app - INFO - Total tokens: 47
+2024-03-20 15:50:55,763 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence with "bird" please Sure, here\'s a sentence: "The bird perched quietly on the branch, its feathers ruffling gently in the breeze."'}], 'max_tokens': 10}
+2024-03-20 15:50:56,305 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Bird on branch.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710975055,
+  "id": "chatcmpl-94z3nyv81522iHoR8JPzK1Kc6PJ5b",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_fa89f7a861",
+  "usage": {
+    "completion_tokens": 4,
+    "prompt_tokens": 72,
+    "total_tokens": 76
+  }
+}
+2024-03-20 15:50:56,309 - app - INFO - Generated conversation summary: Bird on branch.
+2024-03-20 15:50:56,313 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence with "bird" please'}, {'role': 'assistant', 'content': 'Sure, here\'s a sentence: "The bird perched quietly on the branch, its feathers ruffling gently in the breeze."'}]
+2024-03-20 15:59:12,892 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-20 15:59:12,892 - app - INFO - Received temperature: 0.7
+2024-03-20 15:59:14,967 - app - INFO - Response from model: Certainly! "The rapid advancement in computer technology has significantly transformed our daily lives and work."
+2024-03-20 15:59:14,968 - app - INFO - Prompt tokens: 23
+2024-03-20 15:59:14,969 - app - INFO - Completion tokens: 18
+2024-03-20 15:59:14,969 - app - INFO - Total tokens: 41
+2024-03-20 15:59:14,970 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence with the word "Computer" please Certainly! "The rapid advancement in computer technology has significantly transformed our daily lives and work."'}], 'max_tokens': 10}
+2024-03-20 15:59:15,474 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Impact of Computers",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1710975554,
+  "id": "chatcmpl-94zBqe7bt1P5VTLTlr7jl3ViZvssz",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_4f0b692a78",
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 66,
+    "total_tokens": 69
+  }
+}
+2024-03-20 15:59:15,477 - app - INFO - Generated conversation summary: Impact of Computers
+2024-03-20 15:59:15,481 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence with the word "Computer" please'}, {'role': 'assistant', 'content': 'Certainly! "The rapid advancement in computer technology has significantly transformed our daily lives and work."'}]
+2024-03-23 09:27:40,669 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-23 09:27:40,670 - app - INFO - Received temperature: 0.3
+2024-03-23 09:27:40,673 - app - INFO - Using existing conversation with id 322.
+2024-03-23 09:28:08,650 - app - INFO - Response from model: Based on the HTML and CSS you've provided, the issue with the "Admin Dashboard" button getting bumped to a new line on smaller screens might be due to a combination of factors including the cumulative width of the buttons, padding, and possibly other CSS properties affecting layout such as margins and the `min-width` of the sidebar.
+
+To address the issue, you can try a few approaches:
+
+1. **Adjust Button Margins and Padding**: Since there seems to be enough space, but the button is still getting pushed down, it might be worth reducing the left margin (`ml-2` class in Bootstrap) or the padding of the buttons slightly to ensure they fit within the sidebar without wrapping.
+
+2. **Use Media Queries for Responsive Design**: If the issue persists on smaller screens, you can use media queries to adjust the styling of these elements based on the viewport width. This can include reducing font sizes, padding, or even changing the layout for smaller screens.
+
+3. **Flexbox for Button Container**: Another approach is to ensure that the container holding the buttons (in this case, the `<aside>` element) uses a flex layout with wrap enabled, allowing buttons to adjust more gracefully to available space.
+
+Here's how you might implement these suggestions:
+
+### Adjust Button Padding and Margin
+
+First, try to reduce the margin and padding slightly for smaller screens or in general, if the layout allows:
+
+```css
+/* Adjust the margin and padding slightly for all buttons in the sidebar */
+.sidebar button {
+    margin-bottom: 8px; /* Slightly reduced from 10px */
+    padding: 5px 10px; /* Adjust padding if possible */
+}
+
+/* Specific adjustment for smaller screens */
+@media (max-width: 768px) {
+    .sidebar button {
+        margin-left: 0; /* Remove additional left margin on smaller screens */
+        padding: 4px 8px; /* Even smaller padding for smaller screens */
+    }
+}
+```
+
+### Use Flexbox for Button Container
+
+Ensure the sidebar uses a flex layout to better manage the space for buttons:
+
+```css
+/* Ensure the sidebar uses a flex layout */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: start; /* Align items to the start to keep buttons aligned left */
+    gap: 10px; /* Space between items */
+}
+```
+
+### Example Media Query for Responsive Adjustments
+
+Here's how you might use a media query to adjust the layout for smaller screens:
+
+```css
+@media (max-width: 768px) {
+    .sidebar {
+        padding: 15px 10px; /* Reduce padding on smaller screens */
+    }
+
+    .sidebar button {
+        font-size: 0.9rem; /* Reduce font size to save space */
+        padding: 4px 8px; /* Reduce padding */
+        margin-bottom: 8px; /* Adjust spacing between buttons */
+    }
+}
+```
+
+These adjustments aim to ensure that the buttons fit within the sidebar without getting pushed to a new line, enhancing the responsiveness of your UI. Remember, the exact values for margins, padding, and font sizes might need further tweaking based on your specific UI and design requirements.
+2024-03-23 09:28:14,237 - app - INFO - Prompt tokens: 3256
+2024-03-23 09:28:14,238 - app - INFO - Completion tokens: 647
+2024-03-23 09:28:14,238 - app - INFO - Total tokens: 3903

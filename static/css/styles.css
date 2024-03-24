@@ -388,6 +388,20 @@ code {
     box-sizing: border-box;
 }
 
+/* Larger screens */
+@media (min-width: 2560px) {
+    .chat-container {
+        height: 75vh; /* Adjusted height based on viewport height */
+    }
+}
+
+/* Smaller screens */
+@media (max-width: 1366px) {
+    .chat-container {
+        height: 55vh; /* Adjusted height based on viewport height, smaller screens might need less height */
+    }
+}
+
 .chat-entry {
     margin-bottom: 0px;
 }
@@ -534,8 +548,8 @@ h2 {
 .sidebar {
     background-color: #3F484B;
     color: #fff;
-    flex: 0 0 250px;
-    padding: 20px 20px 10px 20px;
+    flex: 0 0 350px;
+    padding: 20px 10px 10px 20px;
     overflow-y: auto; 
     height: 100vh;
     scrollbar-color: #7F898B #3F484B;

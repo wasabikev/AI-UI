@@ -465,18 +465,22 @@ function updateTemperatureDisplay() {
 }
 
 function displaySystemMessage(systemMessage) {
+    // Remove existing system messages
+    $('.chat-entry.system.system-message').remove();
+
     // Update the UI with the system message description, model name, and temperature
     let systemMessageButton = createSystemMessageButton();
     const modelDisplayName = modelNameMapping(systemMessage.model_name); // Get the user-friendly model name
     const temperatureDisplay = systemMessage.temperature;
     const descriptionContent = renderOpenAI(systemMessage.description);
     const renderedContent = `
-        <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
-        <strong>Model:</strong> ${modelDisplayName}, <strong>Temperature:</strong> ${temperatureDisplay}°
-    `;
+        <div class="chat-entry system system-message">
+            <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
+            <strong>Model:</strong> ${modelDisplayName}, <strong>Temperature:</strong> ${temperatureDisplay}°
+        </div>`;
 
     // Update the UI
-    document.getElementById('system-message-selection').innerHTML = '<div class="system-message">' + renderedContent + '</div>';
+    $('#chat').prepend(renderedContent);
 
     // Update the message in the 'messages' array with the content
     if (messages.length > 0 && messages[0].role === "system") {
@@ -583,10 +587,22 @@ $(window).on('load', function () {
 
 
 $('.dropdown-item').on('click', function(event){
-        event.preventDefault();  // Prevent the # appearing in the URL
-        $('#dropdownMenuButton').text($(this).text());
-        model = $(this).attr('data-model'); // Update the model variable here
-        console.log("Dropdown item clicked. Model is now: " + model);
+    event.preventDefault(); // Prevent default anchor behavior
+    let selectedModelId = $(this).attr('data-model'); // Get the model identifier
+    model = selectedModelId; // Update the global 'model' variable
+    let modelDisplayName = modelNameMapping(model); // Get user-friendly model name
+
+    // Update the dropdown button text (or any other UI element) to show the selected model name
+    $('#dropdownMenuButton').text(modelDisplayName);
+
+    // If there's a specific element in your UI dedicated to showing the selected model, update that too
+    // For example, if you have a <span id="currentModelDisplay"></span> somewhere in your UI:
+    $('#currentModelDisplay').text(modelDisplayName);
+
+    console.log("Model changed to: " + modelDisplayName);
+
+    // Optionally, if you need to immediately reflect this change in a system message or similar,
+    // you might manually trigger such an update here, similar to what was suggested previously.
 });
 
 
@@ -608,13 +624,18 @@ const temperatureDescriptions = {
 
 // Helper function to map model names to their display values
 function modelNameMapping(modelName) {
+    console.log("Input model name:", modelName);
+    let mappedName;
     switch(modelName) {
-        case "gpt-3.5-turbo-0613": return "GPT-3.5";
-        case "gpt-4-0613": return "GPT-4 (8k)";
-        case "gpt-4-1106-preview": return "GPT-4 (1106)"; 
-        case "gpt-4-0125-preview": return "GPT-4 (Turbo)";
-        default: return "Unknown Model"; // Handle any unexpected values
+        case "gpt-3.5-turbo-0613": mappedName = "GPT-3.5"; break;
+        case "gpt-4-0613": mappedName = "GPT-4 (8k)"; break;
+        case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
+        case "gpt-4-0125-preview": mappedName = "GPT-4 (Turbo)"; break;
+        case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
+        default: mappedName = "Unknown Model"; break;
     }
+    console.log("Mapped model name:", mappedName);
+    return mappedName;
 }
 
 // Function to populate the model dropdown in the modal
@@ -630,7 +651,8 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview"]; 
+    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview","claude-3-opus-20240229"];
+    console.log("Available models:", models);
 
     // Add each model to the dropdown
     models.forEach((modelItem) => {
@@ -1152,33 +1174,31 @@ function loadConversation(conversationId) {
 }
 
 function createMessageElement(message) {
-    let contentElement;
+    // Handle the system message differently to include the model name and temperature
     if (message.role === 'system') {
-        // Process system message content as before
         let systemMessageContent = renderOpenAI(message.content);
-        contentElement = `
+        // Prepare the display content for system message
+        const systemMessageHTML = `
             <div class="chat-entry system system-message">
                 <strong>System:</strong> ${systemMessageContent}<br>
                 <strong>Model:</strong> ${modelNameMapping(model)}, <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
             </div>`;
-    } else if (message.role === 'user') {
-        // Wrap user inputs in <pre><code> to display as plain text
-        let escapedContent = escapeHtml(message.content);
-        contentElement = `
-            <div class="chat-entry user user-message">
-                <i class="far fa-user"></i> <pre><code>${escapedContent}</code></pre>
-            </div>`;
+        return $(systemMessageHTML);
     } else {
-        // Handle bot messages, potentially also wrapping in <pre><code> if needed
-        let botMessageContent = renderOpenAI(message.content);
-        contentElement = `
-            <div class="chat-entry bot bot-message">
-                <i class="fas fa-robot"></i> ${botMessageContent}
-            </div>`;
+        const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+        const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
+        let processedContent;
+        if (message.role === 'user') {
+            // Escape HTML entities in user input to prevent rendering
+            processedContent = escapeHtml(message.content);
+        } else {
+            processedContent = renderOpenAI(message.content);
+            processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
+        }
+        const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
+        return $(messageHTML);
     }
-    return $(contentElement);
 }
-
 
 
 //Record the default height 
@@ -1260,7 +1280,11 @@ $('#chat-form').on('submit', function (e) {
 
         if (data.conversation_title) {
             console.log("Received conversation_title from server:", data.conversation_title);
-            showConversationControls(data.conversation_title, data.usage);
+            // Log the token usage data
+            console.log("Token usage data:", data.usage);
+            // Update token data in the UI
+            const tokens = data.usage;
+            showConversationControls(data.conversation_title, tokens);
         } else {
             console.log("No conversation_title from server. Showing default.");
             showConversationControls();
@@ -1272,23 +1296,6 @@ $('#chat-form').on('submit', function (e) {
         document.getElementById('loading').style.display = 'none';
     });
 });
-
-
-// "New Chat" Button Click Event
-document.getElementById("new-chat-btn").addEventListener("click", function() {
-    fetch('/reset-conversation', {
-        method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data.message);
-        window.location.href = '/'; // Redirect to the base URL
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
-});
-
 
 
 
@@ -1321,7 +1328,6 @@ function checkActiveConversation() {
 }
 
 
-
 $(document).ready(function() {  // Document Ready (initialization)
     console.log("Document ready."); // Debug
 
@@ -1338,11 +1344,6 @@ $(document).ready(function() {  // Document Ready (initialization)
         });
     }
 
-    // Call this function to start the process
-    fetchAndProcessSystemMessages().then(() => {
-        // The rest of your initialization code
-    });
-
     // Fetch the current model_name from the backend and initialize the application
     $.ajax({
         url: '/get-current-model',
@@ -1356,6 +1357,24 @@ $(document).ready(function() {  // Document Ready (initialization)
         error: function(error) {
             console.error('Error fetching current model:', error);
         }
+    });
+
+    // Add click event handler for the "+ New" button
+    $('#new-chat-btn').click(function() {
+        // Clear the chat area
+        $('#chat').empty();
+    
+        // Clear the conversation title
+        $('#conversation-title').text('');
+    
+        // Reset the messages array
+        messages = [];
+    
+        // Reset the active conversation ID
+        activeConversationId = null;
+    
+        // Navigate to the root URL
+        window.location.href = '/';
     });
 });
     
