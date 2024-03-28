@@ -461,6 +461,10 @@ function populateSystemMessageModal() {
             // Set the temperature to the default system message's temperature
             initialTemperature = defaultSystemMessage.temperature;
             updateTemperatureSelectionInModal(initialTemperature);
+
+            // Update the model variable and display the system message
+            model = defaultSystemMessage.model_name;
+            displaySystemMessage(defaultSystemMessage);
         }
     }    
 }
@@ -482,13 +486,13 @@ function displaySystemMessage(systemMessage) {
 
     // Update the UI with the system message description, model name, and temperature
     let systemMessageButton = createSystemMessageButton();
-    const modelDisplayName = modelNameMapping(systemMessage.model_name); // Get the user-friendly model name
+    const modelDisplayName = modelNameMapping(model);
     const temperatureDisplay = systemMessage.temperature;
     const descriptionContent = renderOpenAI(systemMessage.description);
     const renderedContent = `
         <div class="chat-entry system system-message">
             <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
-            <strong>Model:</strong> ${modelDisplayName}, <strong>Temperature:</strong> ${temperatureDisplay}°
+            <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
         </div>`;
 
     // Update the UI
@@ -598,16 +602,14 @@ $(window).on('load', function () {
 });
 
 
-$('.dropdown-item').on('click', function(event){
-    event.preventDefault();  // Prevent the # appearing in the URL
-    var selectedModelText = $(this).text();
-    var selectedModel = $(this).attr('data-model'); // Extract model identifier
-
-    $('#dropdownMenuButton').text(selectedModelText); // Update dropdown button text
-    model = selectedModel; // Update the global model variable
-
+$('.dropdown-item').on('click', function(event) {
+    event.preventDefault(); // Prevent the # appearing in the URL
+    $('#dropdownMenuButton').text($(this).text());
+    model = $(this).attr('data-model'); // Update the model variable here
     console.log("Dropdown item clicked. Model is now: " + model);
 
+    // Update the displayed model name in the system message section
+    $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
 });
 
 
@@ -1188,7 +1190,7 @@ function createMessageElement(message) {
         const systemMessageHTML = `
             <div class="chat-entry system system-message">
                 <strong>System:</strong> ${systemMessageContent}<br>
-                <strong>Model:</strong> ${modelNameMapping(model)}, <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
+                <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
             </div>`;
         return $(systemMessageHTML);
     } else {
