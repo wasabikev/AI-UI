@@ -1,133 +1,153 @@
-2024-03-23 11:08:18,878 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-23 11:08:18,879 - app - INFO - Received temperature: 0.7
-2024-03-23 11:08:24,878 - app - INFO - Response from model: Hello! I'm Claude, an AI assistant.
-
-As an AI system specializing in critical thinking and analysis, my role is to carefully examine information, ideas and arguments in order to reach well-reasoned conclusions. I strive to be objective, logical and evidence-based in my analysis. 
-
-Please let me know if you have any questions or topics you'd like me to critically analyze. I'm happy to share my knowledge and analytical capabilities to the best of my abilities. Looking forward to an engaging discussion!
-2024-03-23 11:08:25,080 - app - INFO - Prompt tokens: 17
-2024-03-23 11:08:25,080 - app - INFO - Completion tokens: 100
-2024-03-23 11:08:25,080 - app - INFO - Total tokens: 117
-2024-03-23 11:08:25,080 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test message please Hello! I'm Claude, an AI assistant.\n\nAs an AI system specializing in critical thinking and analysis, my role is to carefully examine information, ideas and arguments in order to reach well-reasoned conclusions. I strive to be objective, logical and evidence-based in my analysis. \n\nPlease let me know if you have any questions or topics you'd like me to critically analyze. I'm happy to share my knowledge and analytical capabilities to the best of my abilities. Looking forward to an engaging discussion!"}], 'max_tokens': 10}
-2024-03-23 11:08:25,854 - app - INFO - Response from OpenAI for summary: {
+2024-03-27 09:02:00,503 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please I do not have a specific test sentence prepared, as I am an AI language model designed to engage in open-ended conversations and provide information on a wide range of topics. However, I can certainly help you with critical thinking and analysis. If you have a particular topic, question, or argument you'd like me to examine, please feel free to present it, and I will do my best to provide a thoughtful and well-reasoned response."}], 'max_tokens': 10}
+2024-03-27 09:02:01,479 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Analytical AI Assistant",
+        "content": "Critical Analysis Expert",
         "role": "assistant"
       }
     }
   ],
-  "created": 1711217304,
-  "id": "chatcmpl-96052NUDVLtcsUc60rQqGz5t3WavT",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3bc1b5746c",
-  "usage": {
-    "completion_tokens": 4,
-    "prompt_tokens": 142,
-    "total_tokens": 146
-  }
-}
-2024-03-23 11:08:25,859 - app - INFO - Generated conversation summary: Analytical AI Assistant
-2024-03-23 11:08:25,869 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test message please'}, {'role': 'assistant', 'content': "Hello! I'm Claude, an AI assistant.\n\nAs an AI system specializing in critical thinking and analysis, my role is to carefully examine information, ideas and arguments in order to reach well-reasoned conclusions. I strive to be objective, logical and evidence-based in my analysis. \n\nPlease let me know if you have any questions or topics you'd like me to critically analyze. I'm happy to share my knowledge and analytical capabilities to the best of my abilities. Looking forward to an engaging discussion!"}]
-2024-03-24 10:24:19,631 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-24 10:24:19,631 - app - INFO - Received temperature: 0.7
-2024-03-24 10:24:22,702 - app - INFO - Response from model: Certainly! Here's a test sentence for you: "The quick brown fox jumps over the lazy dog."
-2024-03-24 10:24:22,837 - app - INFO - Prompt tokens: 17
-2024-03-24 10:24:22,837 - app - INFO - Completion tokens: 21
-2024-03-24 10:24:22,837 - app - INFO - Total tokens: 38
-2024-03-24 10:24:22,837 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
-2024-03-24 10:24:23,854 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Critical Thinking Expert",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1711301061,
-  "id": "chatcmpl-96Lrxe2DrU1CaiGYXvV1agnWQ9zfy",
+  "created": 1711555321,
+  "id": "chatcmpl-97Q0vNQ2txnNM1GNzXgIJElyui1i1",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_3bc1b5746c",
   "usage": {
     "completion_tokens": 3,
-    "prompt_tokens": 63,
-    "total_tokens": 66
+    "prompt_tokens": 131,
+    "total_tokens": 134
   }
 }
-2024-03-24 10:24:23,854 - app - INFO - Generated conversation summary: Critical Thinking Expert
-2024-03-24 10:24:23,854 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]
-2024-03-24 10:27:16,028 - app - INFO - Received model: gpt-4-1106-preview
-2024-03-24 10:27:16,029 - app - INFO - Received temperature: 1
-2024-03-24 10:27:19,453 - app - INFO - Response from model: Certainly! Here's a test sentence designed to exhibit critical thinking and analysis:
-
-"Even though the proposal promises significant cost savings in the long term, a thorough critical assessment reveals several overlooked risks and limitations, such as potential regulatory hurdles and technological dependencies, that could undermine its feasibility and anticipated benefits."
-2024-03-24 10:27:19,456 - app - INFO - Prompt tokens: 17
-2024-03-24 10:27:19,457 - app - INFO - Completion tokens: 58
-2024-03-24 10:27:19,459 - app - INFO - Total tokens: 75
-2024-03-24 10:27:19,460 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence designed to exhibit critical thinking and analysis:\n\n"Even though the proposal promises significant cost savings in the long term, a thorough critical assessment reveals several overlooked risks and limitations, such as potential regulatory hurdles and technological dependencies, that could undermine its feasibility and anticipated benefits."'}], 'max_tokens': 10}
-2024-03-24 10:27:20,262 - app - INFO - Response from OpenAI for summary: {
+2024-03-27 09:02:01,481 - app - INFO - Generated conversation summary: Critical Analysis Expert
+2024-03-27 09:02:01,485 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': "I do not have a specific test sentence prepared, as I am an AI language model designed to engage in open-ended conversations and provide information on a wide range of topics. However, I can certainly help you with critical thinking and analysis. If you have a particular topic, question, or argument you'd like me to examine, please feel free to present it, and I will do my best to provide a thoughtful and well-reasoned response."}]
+2024-03-27 09:02:40,130 - app - INFO - Received model: gpt-4-0613
+2024-03-27 09:02:40,131 - app - INFO - Received temperature: 0
+2024-03-27 09:02:42,958 - app - INFO - Response from model: "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."
+2024-03-27 09:02:42,960 - app - INFO - Prompt tokens: 17
+2024-03-27 09:02:42,961 - app - INFO - Completion tokens: 26
+2024-03-27 09:02:42,962 - app - INFO - Total tokens: 43
+2024-03-27 09:02:42,964 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}], 'max_tokens': 10}
+2024-03-27 09:02:43,605 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Proposal Evaluation",
+        "content": "Multitasking Hinders Efficiency",
         "role": "assistant"
       }
     }
   ],
-  "created": 1711301237,
-  "id": "chatcmpl-96Lung1Pbw6Xv36t35B07chhRMEDM",
+  "created": 1711555363,
+  "id": "chatcmpl-97Q1bpfACGETM9YXqMUBKu1a1w5RR",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_3bc1b5746c",
   "usage": {
-    "completion_tokens": 2,
-    "prompt_tokens": 100,
-    "total_tokens": 102
+    "completion_tokens": 6,
+    "prompt_tokens": 68,
+    "total_tokens": 74
   }
 }
-2024-03-24 10:27:20,267 - app - INFO - Generated conversation summary: Proposal Evaluation
-2024-03-24 10:27:20,273 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence designed to exhibit critical thinking and analysis:\n\n"Even though the proposal promises significant cost savings in the long term, a thorough critical assessment reveals several overlooked risks and limitations, such as potential regulatory hurdles and technological dependencies, that could undermine its feasibility and anticipated benefits."'}]
-2024-03-24 11:06:09,288 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-24 11:06:09,288 - app - INFO - Received temperature: 0.3
-2024-03-24 11:06:12,172 - app - INFO - Response from model: Certainly! Here's a test sentence for analysis: "The rapid advancement of technology in the 21st century has significantly impacted human communication patterns."
-2024-03-24 11:06:12,394 - app - INFO - Prompt tokens: 17
-2024-03-24 11:06:12,395 - app - INFO - Completion tokens: 29
-2024-03-24 11:06:12,396 - app - INFO - Total tokens: 46
-2024-03-24 11:06:12,396 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for analysis: "The rapid advancement of technology in the 21st century has significantly impacted human communication patterns."'}], 'max_tokens': 10}
-2024-03-24 11:06:14,329 - app - INFO - Response from OpenAI for summary: {
+2024-03-27 09:02:43,605 - app - INFO - Generated conversation summary: Multitasking Hinders Efficiency
+2024-03-27 09:02:43,624 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}]
+2024-03-27 09:10:36,400 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-03-27 09:10:36,401 - app - INFO - Received temperature: 0
+2024-03-27 09:10:37,233 - app - INFO - Response from model: Sure! Here's a test sentence for you: "The sun is shining brightly in the clear blue sky."
+2024-03-27 09:10:37,234 - app - INFO - Prompt tokens: 17
+2024-03-27 09:10:37,235 - app - INFO - Completion tokens: 22
+2024-03-27 09:10:37,236 - app - INFO - Total tokens: 39
+2024-03-27 09:10:37,236 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Sure! Here\'s a test sentence for you: "The sun is shining brightly in the clear blue sky."'}], 'max_tokens': 10}
+2024-03-27 09:10:37,888 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Impact of technology on communication",
+        "content": "Critical Thinking Skills",
         "role": "assistant"
       }
     }
   ],
-  "created": 1711303570,
-  "id": "chatcmpl-96MWQWMYyZh0zoyPYK4GLhRgxbptj",
+  "created": 1711555837,
+  "id": "chatcmpl-97Q9FdoBPpXgrpcRq0znRRemM6Pyu",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3bc1b5746c",
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 64,
+    "total_tokens": 67
+  }
+}
+2024-03-27 09:10:37,888 - app - INFO - Generated conversation summary: Critical Thinking Skills
+2024-03-27 09:10:37,906 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure! Here\'s a test sentence for you: "The sun is shining brightly in the clear blue sky."'}]
+2024-03-27 11:06:21,609 - app - INFO - Received model: gpt-4-0613
+2024-03-27 11:06:21,610 - app - INFO - Received temperature: 0
+2024-03-27 11:06:24,369 - app - INFO - Response from model: "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."
+2024-03-27 11:06:24,587 - app - INFO - Prompt tokens: 17
+2024-03-27 11:06:24,588 - app - INFO - Completion tokens: 26
+2024-03-27 11:06:24,589 - app - INFO - Total tokens: 43
+2024-03-27 11:06:24,590 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}], 'max_tokens': 10}
+2024-03-27 11:06:25,073 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Multitasking Limitations",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1711562784,
+  "id": "chatcmpl-97RxIVlBjND8Auk3kyxaPy8sENOo5",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_3bc1b5746c",
   "usage": {
     "completion_tokens": 5,
-    "prompt_tokens": 71,
-    "total_tokens": 76
+    "prompt_tokens": 68,
+    "total_tokens": 73
   }
 }
-2024-03-24 11:06:14,334 - app - INFO - Generated conversation summary: Impact of technology on communication
+2024-03-27 11:06:25,078 - app - INFO - Generated conversation summary: Multitasking Limitations
+2024-03-27 11:06:25,085 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}]
+2024-03-27 11:09:50,069 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-27 11:09:50,070 - app - INFO - Received temperature: 0.3
+2024-03-27 11:09:52,023 - app - INFO - Response from model: Here is a test sentence for you. apple
+2024-03-27 11:09:52,160 - app - INFO - Prompt tokens: 32
+2024-03-27 11:09:52,161 - app - INFO - Completion tokens: 9
+2024-03-27 11:09:52,161 - app - INFO - Total tokens: 41
+2024-03-27 11:09:52,162 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you. apple'}], 'max_tokens': 10}
+2024-03-27 11:09:52,660 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Flask App Message Test apple",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1711562992,
+  "id": "chatcmpl-97S0eqvVsOmwkrDKDg02IvHTJ7FxY",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3bc1b5746c",
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 66,
+    "total_tokens": 72
+  }
+}
+2024-03-27 11:09:52,660 - app - INFO - Generated conversation summary: Flask App Message Test apple
