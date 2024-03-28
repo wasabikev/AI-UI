@@ -1,114 +1,93 @@
-2024-03-24 11:06:14,342 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for analysis: "The rapid advancement of technology in the 21st century has significantly impacted human communication patterns."'}]
-2024-03-24 11:13:21,683 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-24 11:13:21,684 - app - INFO - Received temperature: 0
-2024-03-24 11:13:26,421 - app - INFO - Response from model: Certainly! Here's a test sentence for you: "The quick brown fox jumps over the lazy dog."
-2024-03-24 11:13:26,620 - app - INFO - Prompt tokens: 17
-2024-03-24 11:13:26,622 - app - INFO - Completion tokens: 21
-2024-03-24 11:13:26,622 - app - INFO - Total tokens: 38
-2024-03-24 11:13:26,622 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
-2024-03-24 11:13:27,942 - app - INFO - Response from OpenAI for summary: {
+2024-03-27 11:09:52,676 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple".'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Here is a test sentence for you. apple'}]
+2024-03-27 20:13:03,373 - app - INFO - Received model: gpt-4-0613
+2024-03-27 20:13:03,374 - app - INFO - Received temperature: 0
+2024-03-27 20:13:05,029 - app - INFO - Response from model: "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."
+2024-03-27 20:13:05,208 - app - INFO - Prompt tokens: 17
+2024-03-27 20:13:05,208 - app - INFO - Completion tokens: 26
+2024-03-27 20:13:05,222 - app - INFO - Total tokens: 43
+2024-03-27 20:13:05,222 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}], 'max_tokens': 10}
+2024-03-27 20:13:05,777 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Title: Critical Thinking Assistant",
+        "content": "Multitasking Hazards",
         "role": "assistant"
       }
     }
   ],
-  "created": 1711304004,
-  "id": "chatcmpl-96MdQyGHMPUMJ3w8JLb8PaZN7WVRR",
+  "created": 1711595585,
+  "id": "chatcmpl-97aULmEb3SJ37pp3LANlkFovUnCUI",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_3bc1b5746c",
   "usage": {
     "completion_tokens": 5,
-    "prompt_tokens": 63,
-    "total_tokens": 68
+    "prompt_tokens": 68,
+    "total_tokens": 73
   }
 }
-2024-03-24 11:13:27,947 - app - INFO - Generated conversation summary: Title: Critical Thinking Assistant
-2024-03-24 11:13:27,953 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]
-2024-03-24 11:14:19,999 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-24 11:14:20,001 - app - INFO - Received temperature: 1.5
-2024-03-24 11:14:46,458 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 524, in chat
-    chat_output, model_name = get_response_from_model(model, messages, temperature)
-                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 458, in get_response_from_model
-    response = openai.ChatCompletion.create(**payload)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_resources\chat_completion.py", line 25, in create
-    return super().create(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_resources\abstract\engine_api_resource.py", line 153, in create
-    response, _, api_key = requestor.request(
-                           ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_requestor.py", line 230, in request
-    resp, got_stream = self._interpret_response(result, stream)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_requestor.py", line 624, in _interpret_response
-    self._interpret_response_line(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\openai\api_requestor.py", line 687, in _interpret_response_line
-    raise self.handle_error_response(
-openai.error.APIError: Failed to create completion as the model generated invalid Unicode output. Unfortunately, this can happen in rare situations. Consider reviewing your prompt or reducing the temperature of your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. (Please include the request ID req_e28f227a0127d4bfa9c708a82a2bc801 in your message.) {
-  "error": {
-    "message": "Failed to create completion as the model generated invalid Unicode output. Unfortunately, this can happen in rare situations. Consider reviewing your prompt or reducing the temperature of your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. (Please include the request ID req_e28f227a0127d4bfa9c708a82a2bc801 in your message.)",
-    "type": "server_error",
-    "param": null,
-    "code": "invalid_model_output"
-  }
-}
- 500 {'error': {'message': 'Failed to create completion as the model generated invalid Unicode output. Unfortunately, this can happen in rare situations. Consider reviewing your prompt or reducing the temperature of your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. (Please include the request ID req_e28f227a0127d4bfa9c708a82a2bc801 in your message.)', 'type': 'server_error', 'param': None, 'code': 'invalid_model_output'}} {'Date': 'Sun, 24 Mar 2024 18:14:43 GMT', 'Content-Type': 'application/json', 'Content-Length': '517', 'Connection': 'keep-alive', 'access-control-allow-origin': '*', 'openai-model': 'gpt-4-0125-preview', 'openai-organization': 'user-5zduamkbxa8lanprr9asbtsx', 'openai-processing-ms': '24585', 'openai-version': '2020-10-01', 'strict-transport-security': 'max-age=15724800; includeSubDomains', 'x-ratelimit-limit-requests': '5000', 'x-ratelimit-limit-tokens': '600000', 'x-ratelimit-remaining-requests': '4999', 'x-ratelimit-remaining-tokens': '599955', 'x-ratelimit-reset-requests': '12ms', 'x-ratelimit-reset-tokens': '4ms', 'x-request-id': 'req_e28f227a0127d4bfa9c708a82a2bc801', 'CF-Cache-Status': 'DYNAMIC', 'Set-Cookie': '__cf_bm=YpZukyjUJzbDB3CXNjJcgNVBSQfBbmbOdfrYm4JzQYc-1711304083-1.0.1.1-eneqPshB9kI9cGd1l7V9b77Gf9wsaRIdojQWrx0.nU8YfQ3PYt6xiWqgbcLe7YNDhCIs49CE766mejfNxYdWDg; path=/; expires=Sun, 24-Mar-24 18:44:43 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=.KdfYQ.S1tU8YfHWnwDsVbsPY1ygSTr9DP6j_qqkYQM-1711304083324-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None', 'Server': 'cloudflare', 'CF-RAY': '8698a3ddbc01c725-SEA', 'alt-svc': 'h3=":443"; ma=86400'}
-2024-03-24 11:15:22,976 - app - INFO - Received model: gpt-4-0125-preview
-2024-03-24 11:15:22,978 - app - INFO - Received temperature: 0.7
-2024-03-24 11:15:26,026 - app - INFO - Response from model: Certainly! "The quick brown fox jumps over the lazy dog." How may I assist you further with this sentence or any analysis you need?
-2024-03-24 11:15:26,026 - app - INFO - Prompt tokens: 17
-2024-03-24 11:15:26,026 - app - INFO - Completion tokens: 28
-2024-03-24 11:15:26,026 - app - INFO - Total tokens: 45
-2024-03-24 11:15:26,026 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! "The quick brown fox jumps over the lazy dog." How may I assist you further with this sentence or any analysis you need?'}], 'max_tokens': 10}
-2024-03-24 11:15:27,359 - app - INFO - Response from OpenAI for summary: {
+2024-03-27 20:13:05,777 - app - INFO - Generated conversation summary: Multitasking Hazards
+2024-03-27 20:13:05,796 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}]
+2024-03-27 20:13:21,890 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-27 20:13:21,891 - app - INFO - Received temperature: 0
+2024-03-27 20:13:21,895 - app - INFO - Using existing conversation with id 348.
+2024-03-27 20:13:25,708 - app - INFO - Response from model: "The rise of social media has revolutionized communication and information sharing, but it has also raised concerns about privacy, mental health, and the spread of misinformation."
+2024-03-27 20:13:25,710 - app - INFO - Prompt tokens: 47
+2024-03-27 20:13:25,711 - app - INFO - Completion tokens: 31
+2024-03-27 20:13:25,712 - app - INFO - Total tokens: 78
+2024-03-27 20:13:25,718 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}, {'role': 'user', 'content': 'Another test sentence please'}, {'role': 'assistant', 'content': '"The rise of social media has revolutionized communication and information sharing, but it has also raised concerns about privacy, mental health, and the spread of misinformation."'}]
+2024-03-27 20:13:50,281 - app - INFO - Received model: gpt-4-0125-preview
+2024-03-27 20:13:50,282 - app - INFO - Received temperature: 0
+2024-03-27 20:13:50,284 - app - INFO - Using existing conversation with id 348.
+2024-03-27 20:13:51,929 - app - INFO - Response from model: "Climate change poses a significant threat to global ecosystems, yet it also presents an opportunity for innovation in renewable energy and sustainable practices."
+2024-03-27 20:13:51,942 - app - INFO - Prompt tokens: 82
+2024-03-27 20:13:51,944 - app - INFO - Completion tokens: 26
+2024-03-27 20:13:51,945 - app - INFO - Total tokens: 108
+2024-03-27 20:13:51,951 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}, {'role': 'user', 'content': 'Another test sentence please'}, {'role': 'assistant', 'content': '"The rise of social media has revolutionized communication and information sharing, but it has also raised concerns about privacy, mental health, and the spread of misinformation."'}, {'role': 'user', 'content': 'Another test sentence please'}, {'role': 'assistant', 'content': '"Climate change poses a significant threat to global ecosystems, yet it also presents an opportunity for innovation in renewable energy and sustainable practices."'}]
+2024-03-27 20:15:09,913 - app - INFO - Received model: gpt-4-0613
+2024-03-27 20:15:09,914 - app - INFO - Received temperature: 0.3
+2024-03-27 20:15:12,289 - app - INFO - Response from model: "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and quality of work due to the brain's inability to fully focus on multiple tasks simultaneously."
+2024-03-27 20:15:12,290 - app - INFO - Prompt tokens: 17
+2024-03-27 20:15:12,292 - app - INFO - Completion tokens: 37
+2024-03-27 20:15:12,292 - app - INFO - Total tokens: 54
+2024-03-27 20:15:12,293 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and quality of work due to the brain\'s inability to fully focus on multiple tasks simultaneously."'}], 'max_tokens': 10}
+2024-03-27 20:15:12,879 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Analytical Assistant",
+        "content": "Multitasking Efficiency detriment",
         "role": "assistant"
       }
     }
   ],
-  "created": 1711304124,
-  "id": "chatcmpl-96MfMuIDl3kxjVDtcrsl1em9hUtJJ",
+  "created": 1711595712,
+  "id": "chatcmpl-97aWOf9EM9nb0938kp71yZPkoFH2W",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": "fp_3bc1b5746c",
   "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 70,
-    "total_tokens": 73
+    "completion_tokens": 5,
+    "prompt_tokens": 79,
+    "total_tokens": 84
   }
 }
-2024-03-24 11:15:27,359 - app - INFO - Generated conversation summary: Analytical Assistant
+2024-03-27 20:15:12,879 - app - INFO - Generated conversation summary: Multitasking Efficiency detriment
+2024-03-27 20:15:12,897 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and quality of work due to the brain\'s inability to fully focus on multiple tasks simultaneously."'}]
+2024-03-27 20:15:37,139 - app - INFO - Received model: claude-3-opus-20240229
+2024-03-27 20:15:37,139 - app - INFO - Received temperature: 0.3
+2024-03-27 20:15:37,140 - app - INFO - Using existing conversation with id 349.
+2024-03-27 20:15:41,749 - app - INFO - Response from model: "The rise of social media has revolutionized communication and information sharing, but it has also raised concerns about privacy, mental health, and the spread of misinformation, necessitating a critical examination of its impact on individuals and society as a whole."
+2024-03-27 20:15:41,751 - app - INFO - Prompt tokens: 58
+2024-03-27 20:15:41,753 - app - INFO - Completion tokens: 47
+2024-03-27 20:15:41,754 - app - INFO - Total tokens: 105
+2024-03-27 20:15:41,757 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and quality of work due to the brain\'s inability to fully focus on multiple tasks simultaneously."'}, {'role': 'user', 'content': 'Another test sentence please'}, {'role': 'assistant', 'content': '"The rise of social media has revolutionized communication and information sharing, but it has also raised concerns about privacy, mental health, and the spread of misinformation, necessitating a critical examination of its impact on individuals and society as a whole."'}]
+2024-03-27 20:16:13,154 - app - INFO - Received model: gpt-4-1106-preview
+2024-03-27 20:16:13,154 - app - INFO - Received temperature: 0.3
+2024-03-27 20:16:13,156 - app - INFO - Using existing conversation with id 349.
+2024-03-27 20:16:17,104 - app - INFO - Response from model: "Although artificial intelligence has the potential to transform industries and solve complex problems, its ethical implications and the risk of automating jobs must be carefully considered to ensure that its integration into society benefits the majority and aligns with human values."
