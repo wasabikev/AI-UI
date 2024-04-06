@@ -1,153 +1,25 @@
-2024-03-27 09:02:00,503 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please I do not have a specific test sentence prepared, as I am an AI language model designed to engage in open-ended conversations and provide information on a wide range of topics. However, I can certainly help you with critical thinking and analysis. If you have a particular topic, question, or argument you'd like me to examine, please feel free to present it, and I will do my best to provide a thoughtful and well-reasoned response."}], 'max_tokens': 10}
-2024-03-27 09:02:01,479 - app - INFO - Response from OpenAI for summary: {
+2024-04-04 06:43:30,249 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Critical Analysis Expert",
+        "content": "Outlook 0x80040115 Error",
         "role": "assistant"
       }
     }
   ],
-  "created": 1711555321,
-  "id": "chatcmpl-97Q0vNQ2txnNM1GNzXgIJElyui1i1",
+  "created": 1712238208,
+  "id": "chatcmpl-9AHfEjzVzCPZdNd6R4JeK6eO9T4fB",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_3bc1b5746c",
+  "system_fingerprint": "fp_b28b39ffa8",
   "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 131,
-    "total_tokens": 134
+    "completion_tokens": 9,
+    "prompt_tokens": 829,
+    "total_tokens": 838
   }
 }
-2024-03-27 09:02:01,481 - app - INFO - Generated conversation summary: Critical Analysis Expert
-2024-03-27 09:02:01,485 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': "I do not have a specific test sentence prepared, as I am an AI language model designed to engage in open-ended conversations and provide information on a wide range of topics. However, I can certainly help you with critical thinking and analysis. If you have a particular topic, question, or argument you'd like me to examine, please feel free to present it, and I will do my best to provide a thoughtful and well-reasoned response."}]
-2024-03-27 09:02:40,130 - app - INFO - Received model: gpt-4-0613
-2024-03-27 09:02:40,131 - app - INFO - Received temperature: 0
-2024-03-27 09:02:42,958 - app - INFO - Response from model: "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."
-2024-03-27 09:02:42,960 - app - INFO - Prompt tokens: 17
-2024-03-27 09:02:42,961 - app - INFO - Completion tokens: 26
-2024-03-27 09:02:42,962 - app - INFO - Total tokens: 43
-2024-03-27 09:02:42,964 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}], 'max_tokens': 10}
-2024-03-27 09:02:43,605 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Multitasking Hinders Efficiency",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1711555363,
-  "id": "chatcmpl-97Q1bpfACGETM9YXqMUBKu1a1w5RR",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3bc1b5746c",
-  "usage": {
-    "completion_tokens": 6,
-    "prompt_tokens": 68,
-    "total_tokens": 74
-  }
-}
-2024-03-27 09:02:43,605 - app - INFO - Generated conversation summary: Multitasking Hinders Efficiency
-2024-03-27 09:02:43,624 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}]
-2024-03-27 09:10:36,400 - app - INFO - Received model: gpt-3.5-turbo-0613
-2024-03-27 09:10:36,401 - app - INFO - Received temperature: 0
-2024-03-27 09:10:37,233 - app - INFO - Response from model: Sure! Here's a test sentence for you: "The sun is shining brightly in the clear blue sky."
-2024-03-27 09:10:37,234 - app - INFO - Prompt tokens: 17
-2024-03-27 09:10:37,235 - app - INFO - Completion tokens: 22
-2024-03-27 09:10:37,236 - app - INFO - Total tokens: 39
-2024-03-27 09:10:37,236 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Sure! Here\'s a test sentence for you: "The sun is shining brightly in the clear blue sky."'}], 'max_tokens': 10}
-2024-03-27 09:10:37,888 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Critical Thinking Skills",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1711555837,
-  "id": "chatcmpl-97Q9FdoBPpXgrpcRq0znRRemM6Pyu",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3bc1b5746c",
-  "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 64,
-    "total_tokens": 67
-  }
-}
-2024-03-27 09:10:37,888 - app - INFO - Generated conversation summary: Critical Thinking Skills
-2024-03-27 09:10:37,906 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure! Here\'s a test sentence for you: "The sun is shining brightly in the clear blue sky."'}]
-2024-03-27 11:06:21,609 - app - INFO - Received model: gpt-4-0613
-2024-03-27 11:06:21,610 - app - INFO - Received temperature: 0
-2024-03-27 11:06:24,369 - app - INFO - Response from model: "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."
-2024-03-27 11:06:24,587 - app - INFO - Prompt tokens: 17
-2024-03-27 11:06:24,588 - app - INFO - Completion tokens: 26
-2024-03-27 11:06:24,589 - app - INFO - Total tokens: 43
-2024-03-27 11:06:24,590 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please "Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}], 'max_tokens': 10}
-2024-03-27 11:06:25,073 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Multitasking Limitations",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1711562784,
-  "id": "chatcmpl-97RxIVlBjND8Auk3kyxaPy8sENOo5",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3bc1b5746c",
-  "usage": {
-    "completion_tokens": 5,
-    "prompt_tokens": 68,
-    "total_tokens": 73
-  }
-}
-2024-03-27 11:06:25,078 - app - INFO - Generated conversation summary: Multitasking Limitations
-2024-03-27 11:06:25,085 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Despite the widespread belief that multitasking enhances productivity, research suggests that it actually hinders efficiency and may lead to increased errors."'}]
-2024-03-27 11:09:50,069 - app - INFO - Received model: claude-3-opus-20240229
-2024-03-27 11:09:50,070 - app - INFO - Received temperature: 0.3
-2024-03-27 11:09:52,023 - app - INFO - Response from model: Here is a test sentence for you. apple
-2024-03-27 11:09:52,160 - app - INFO - Prompt tokens: 32
-2024-03-27 11:09:52,161 - app - INFO - Completion tokens: 9
-2024-03-27 11:09:52,161 - app - INFO - Total tokens: 41
-2024-03-27 11:09:52,162 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are helping develop a Flask app.  This is a stored system message test.  Please end any response with the word "apple". A test sentence please Here is a test sentence for you. apple'}], 'max_tokens': 10}
-2024-03-27 11:09:52,660 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Flask App Message Test apple",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1711562992,
-  "id": "chatcmpl-97S0eqvVsOmwkrDKDg02IvHTJ7FxY",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": "fp_3bc1b5746c",
-  "usage": {
-    "completion_tokens": 6,
-    "prompt_tokens": 66,
-    "total_tokens": 72
-  }
-}
-2024-03-27 11:09:52,660 - app - INFO - Generated conversation summary: Flask App Message Test apple
+2024-04-04 06:43:30,266 - app - INFO - Generated conversation summary: Outlook 0x80040115 Error
+2024-04-04 06:43:30,296 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'I\'ve got a user that is having some connectivity issues with thier Outlook. They are getting the following: "Task {user email address here} - Sending reported error (0x80040115) : \'We can\'t complete this because we can\'t contact the server right now. Please try again later.\''}, {'role': 'assistant', 'content': 'When a user encounters the error message "0x80040115" in Outlook, it indicates a connectivity issue that prevents Outlook from contacting the server. This problem can be frustrating, but it\'s usually solvable with a systematic approach. Here\'s how you can analyze and address the issue:\n\n### Immediate Checks and Simple Solutions\n\n1. **Internet Connectivity**: Ensure the user\'s device is connected to the internet. Ask them to open a web browser and visit any website to confirm internet access.\n\n2. **Restart Outlook**: Sometimes, simply closing and reopening Outlook can resolve temporary glitches or connectivity issues.\n\n3. **Restart Computer**: Advise the user to restart their computer. This can help resolve any underlying issues with network connections or system resources that Outlook relies on.\n\n### Deeper Analysis and Solutions\n\nIf the above steps do not resolve the issue, you may need to delve deeper:\n\n1. **Check for Outlook Updates**: Ensure the user\'s Outlook is updated to the latest version. Microsoft frequently releases updates to improve functionality and fix known issues.\n\n2. **Repair Outlook Account**: Outlook has a built-in repair tool for email accounts that can fix various issues.\n   - Go to File > Account Settings > Account Settings.\n   - Highlight the affected account and click "Repair." Follow the prompts to complete the repair process.\n\n3. **Disable Add-ins**: Sometimes, Outlook add-ins can cause conflicts or connectivity issues.\n   - Start Outlook in Safe Mode (you can do this by holding the Ctrl key while opening Outlook or by typing `outlook.exe /safe` in the Run dialog).\n   - If the issue doesn\'t occur in Safe Mode, disable add-ins one by one to identify the culprit.\n     - Go to File > Options > Add-Ins. At the bottom, next to Manage, choose COM Add-ins and click Go. Uncheck add-ins to disable them.\n\n4. **Check Firewall and Antivirus Settings**: Ensure that the firewall or antivirus software isn\'t blocking Outlook or its connection to the internet. You may need to add Outlook as an exception in these programs.\n\n5. **Network Issues**: The error might be related to the user\'s network. If they are on a corporate network, it could be a problem with the Exchange server or network policies. Advise them to contact their IT department. For home users, restarting the router or switching to a different network (e.g., from Wi-Fi to a mobile hotspot) can help identify if the issue is network-related.\n\n6. **Use Microsoft Support and Recovery Assistant**: Microsoft offers a tool called the Support and Recovery Assistant for Office 365 that can diagnose and fix several Outlook issues. It\'s worth running this tool to see if it can resolve the problem.\n\n### If the Problem Persists\n\nIf none of the above solutions work, there might be a deeper issue with the user\'s Outlook profile, or there could be a server-side problem that needs to be addressed by their email provider or IT department. In such cases:\n\n- **Create a New Outlook Profile**: This can help if the current profile is corrupted. However, it\'s a more technical solution and might require assistance from IT support.\n- **Contact IT Support or Email Provider**: If the user is part of a larger organization, their IT department might need to investigate server logs or other configurations. For personal email accounts, contacting the email service provider\'s support might unearth service-wide issues or specific settings that need adjustment.\n\nIn summary, resolving the "0x80040115" error in Outlook usually starts with basic connectivity checks and can involve more in-depth troubleshooting depending on the user\'s specific situation and environment.'}]

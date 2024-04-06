@@ -224,11 +224,13 @@ document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
 
 
 $('#systemMessageModal').on('hide.bs.modal', function (event) {
+    // Check if the changes were not saved
     if (!isSaved) {
+        // Revert temperature only if not saved
         selectedTemperature = initialTemperature;
         console.log("Modal closed without saving. Restoring temperature to:", initialTemperature);
 
-        // Reset the system message in the modal to the active system message
+        // Revert UI changes here (if any were made)
         if (activeSystemMessageId) {
             const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
             if (activeSystemMessage) {
@@ -236,16 +238,23 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
                 document.getElementById('systemMessageDescription').value = activeSystemMessage.description;
                 document.getElementById('systemMessageContent').value = activeSystemMessage.content;
                 document.getElementById('modalModelDropdownButton').dataset.apiName = activeSystemMessage.model_name;
-                // Update dropdown button text to reflect the active system message
                 document.getElementById('systemMessageDropdown').textContent = activeSystemMessage.name;
-
-                // Log the reset
+                updateTemperatureSelectionInModal(activeSystemMessage.temperature); // Ensure the UI reflects the reverted temperature
                 console.log("Modal content reset to active system message:", activeSystemMessage.name);
             }
         }
+    } else {
+        // Optionally, handle any tasks that should occur when the modal is closed after saving changes
+        console.log("Changes were saved, no need to revert the temperature.");
     }
+
+    // Reset the isSaved flag back to false for the next time the modal is opened
+    isSaved = false;
+
+    // Any other cleanup actions can go here
     $(this).find('.modal-dialog').css('height', 'auto');
 });
+
 
 
 
@@ -298,10 +307,13 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
                 description: messageDescription,
                 content: messageContent,
                 model_name: modelName,
-                temperature: temperature
+                temperature: selectedTemperature
             }),
             success: function(response) {
                 console.log('System message updated successfully:', response);
+
+                // Set the isSaved flag to true here to indicate changes were saved
+                isSaved = true;
 
                 // Set the activeSystemMessageId to the ID of the system message that was just saved
                 activeSystemMessageId = messageId;
@@ -449,6 +461,10 @@ function populateSystemMessageModal() {
             // Set the temperature to the default system message's temperature
             initialTemperature = defaultSystemMessage.temperature;
             updateTemperatureSelectionInModal(initialTemperature);
+
+            // Update the model variable and display the system message
+            model = defaultSystemMessage.model_name;
+            displaySystemMessage(defaultSystemMessage);
         }
     }    
 }
@@ -470,13 +486,13 @@ function displaySystemMessage(systemMessage) {
 
     // Update the UI with the system message description, model name, and temperature
     let systemMessageButton = createSystemMessageButton();
-    const modelDisplayName = modelNameMapping(systemMessage.model_name); // Get the user-friendly model name
+    const modelDisplayName = modelNameMapping(model);
     const temperatureDisplay = systemMessage.temperature;
     const descriptionContent = renderOpenAI(systemMessage.description);
     const renderedContent = `
         <div class="chat-entry system system-message">
             <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
-            <strong>Model:</strong> ${modelDisplayName}, <strong>Temperature:</strong> ${temperatureDisplay}°
+            <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
         </div>`;
 
     // Update the UI
@@ -586,24 +602,17 @@ $(window).on('load', function () {
 });
 
 
-$('.dropdown-item').on('click', function(event){
-    event.preventDefault(); // Prevent default anchor behavior
-    let selectedModelId = $(this).attr('data-model'); // Get the model identifier
-    model = selectedModelId; // Update the global 'model' variable
-    let modelDisplayName = modelNameMapping(model); // Get user-friendly model name
+$('.dropdown-item').on('click', function(event) {
+    event.preventDefault(); // Prevent the # appearing in the URL
+    $('#dropdownMenuButton').text($(this).text());
+    model = $(this).attr('data-model'); // Update the model variable here
+    console.log("Dropdown item clicked. Model is now: " + model);
 
-    // Update the dropdown button text (or any other UI element) to show the selected model name
-    $('#dropdownMenuButton').text(modelDisplayName);
-
-    // If there's a specific element in your UI dedicated to showing the selected model, update that too
-    // For example, if you have a <span id="currentModelDisplay"></span> somewhere in your UI:
-    $('#currentModelDisplay').text(modelDisplayName);
-
-    console.log("Model changed to: " + modelDisplayName);
-
-    // Optionally, if you need to immediately reflect this change in a system message or similar,
-    // you might manually trigger such an update here, similar to what was suggested previously.
+    // Update the displayed model name in the system message section
+    $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
 });
+
+
 
 
 document.querySelectorAll('input[name="temperatureOptions"]').forEach((radioButton) => {
@@ -866,7 +875,35 @@ function copyCodeToClipboard(button) {
 }
 
 
+// Assuming marked and Prism are already included in your project
+function renderMarkdownAndCode(content) {
+    console.log('renderMarkdownAndCode called with content:', content);
+
+    // First, escape HTML to ensure safety
+    let safeContent = escapeHtml(content);
+
+    // Process Markdown using marked
+    let processedMarkdown = marked.parse(safeContent);
+
+    // Now handle code blocks with syntax highlighting
+    processedMarkdown = processedMarkdown.replace(/```(\w+)?\n?([\s\S]+?)```/g, (match, lang, code) => {
+        if (!code) return ''; // Avoid processing empty code blocks
+
+        const escapedCode = escapeHtml(code.trim());
+        const languageClass = lang ? `language-${lang}` : 'language-plaintext';
+        Prism.highlightAllUnder(document.querySelector(languageClass)); // This assumes Prism is loaded and ready
+
+        // Create a highlighted code block using Prism
+        return `<pre><code class="${languageClass}">${Prism.highlight(escapedCode, Prism.languages[lang] || Prism.languages.plaintext, lang)}</code></pre>`;
+    });
+
+    console.log('Processed content with Markdown and code:', processedMarkdown);
+    return processedMarkdown;
+}
+
+
 function detectAndRenderMarkdown(content) {
+    console.log('detectAndRenderMarkdown called with content:', content);
     const markdownPatterns = [
         /^# .+/gm,       // Headers
         /^\* .+/gm,      // Unordered lists
@@ -881,11 +918,13 @@ function detectAndRenderMarkdown(content) {
     for (let pattern of markdownPatterns) {
         if (pattern.test(content)) {
             containsMarkdown = true;
+            console.log('Markdown detected with pattern:', pattern);
             break;
         }
     }
 
     if (containsMarkdown) {
+        console.log('Processing Markdown...');
         const codeBlockRegex = /```[\s\S]*?```/g;
         const codeBlocks = [...content.matchAll(codeBlockRegex)];
         content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%');
@@ -894,6 +933,9 @@ function detectAndRenderMarkdown(content) {
         content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
             return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
         });
+        console.log('Processed Markdown:', content);
+    } else {
+        console.log('No Markdown detected');
     }
 
     return content;
@@ -913,12 +955,8 @@ function escapeHtml(html) {
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
 
-    // Process the content to handle markdown
-    content = detectAndRenderMarkdown(content);
-
-    // Process lists and handle code snippets securely
-    content = handleListsAndCode(content);
-    const processedContent = processCodeSnippets(content);
+    // Directly process the content with the new function
+    const processedContent = renderMarkdownAndCode(content);
 
     console.log('Final processed content:', processedContent);
     return processedContent;
@@ -1127,7 +1165,7 @@ function loadConversation(conversationId) {
             model = modelName;
 
             // Retrieve and handle the temperature setting
-            selectedTemperature = data.temperature ?? 0.7; // Use the temperature from the data, or default to 0.7 if it's null/undefined
+            selectedTemperature = data.temperature || 0.3; // Use the temperature from the data, or default to 0.3 if it's null/undefined
 
             // Update the token data in the UI for restored conversations
             const tokens = {
@@ -1173,15 +1211,15 @@ function loadConversation(conversationId) {
         });
 }
 
-function createMessageElement(message) {
+function createMessageElement(message, model, selectedTemperature) { 
     // Handle the system message differently to include the model name and temperature
     if (message.role === 'system') {
-        let systemMessageContent = renderOpenAI(message.content);
+        let systemMessageContent = renderOpenAI(message.content); // Process the system message content
         // Prepare the display content for system message
         const systemMessageHTML = `
             <div class="chat-entry system system-message">
                 <strong>System:</strong> ${systemMessageContent}<br>
-                <strong>Model:</strong> ${modelNameMapping(model)}, <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
+                <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
             </div>`;
         return $(systemMessageHTML);
     } else {
@@ -1192,8 +1230,8 @@ function createMessageElement(message) {
             // Escape HTML entities in user input to prevent rendering
             processedContent = escapeHtml(message.content);
         } else {
+            // Process the both responses using the renderOpenAI function
             processedContent = renderOpenAI(message.content);
-            processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
         }
         const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
         return $(messageHTML);
