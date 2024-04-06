@@ -879,10 +879,10 @@ function copyCodeToClipboard(button) {
 function renderMarkdownAndCode(content) {
     console.log('renderMarkdownAndCode called with content:', content);
 
-    // Correctly identify and temporarily replace code blocks with placeholders
+    // Step 1: Correctly identify and temporarily replace code blocks with placeholders
     let codeBlockCounter = 0;
     const codeBlocks = [];
-    const codeBlockRegex = /```(\w*)\n([\s\S]+?)```/g;
+    const codeBlockRegex = /```(\w*)\n([\s\S]+?)\n```/g;
 
     // Replace code blocks with placeholders and store their content in an array
     let safeContent = content.replace(codeBlockRegex, function(match, lang, code) {
@@ -891,10 +891,10 @@ function renderMarkdownAndCode(content) {
         return `%%%CODE_BLOCK_${index}%%%`;
     });
 
-    // Process Markdown using marked on content outside of code blocks
+    // Step 2: Process Markdown using marked on content outside of code blocks
     safeContent = marked.parse(safeContent);
 
-    // Re-insert code blocks into the processed Markdown content
+    // Step 3: Re-insert code blocks into the processed Markdown content
     safeContent = safeContent.replace(/%%%CODE_BLOCK_(\d+)%%%/g, function(match, index) {
         const { lang, code } = codeBlocks[index];
         return processCodeSnippet(lang, code);
