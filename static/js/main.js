@@ -875,37 +875,52 @@ function copyCodeToClipboard(button) {
 }
 
 
-function detectAndRenderMarkdown(content) {
-    const markdownPatterns = [
-        /^# .+/gm,       // Headers
-        /^\* .+/gm,      // Unordered lists
-        /^\d+\. .+/gm,   // Ordered lists
-        /\[.+\]\(.+\)/g, // Links
-        /\*\*(.+)\*\*/g, // Bold
-        /\*(.+)\*/g,     // Italics
-        /^> .+/gm        // Blockquotes
-    ];
+// Assuming marked and Prism are already included in your project
+function renderMarkdownAndCode(content) {
+    console.log('renderMarkdownAndCode called with content:', content);
 
-    let containsMarkdown = false;
-    for (let pattern of markdownPatterns) {
-        if (pattern.test(content)) {
-            containsMarkdown = true;
-            break;
-        }
-    }
+    // Correctly identify and temporarily replace code blocks with placeholders
+    let codeBlockCounter = 0;
+    const codeBlocks = [];
+    const codeBlockRegex = /```(\w*)\n([\s\S]+?)```/g;
 
-    if (containsMarkdown) {
-        const codeBlockRegex = /```[\s\S]*?```/g;
-        const codeBlocks = [...content.matchAll(codeBlockRegex)];
-        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%');
-        content = marked.parse(content);
-        let blockIndex = 0;
-        content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
-            return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
-        });
-    }
+    // Replace code blocks with placeholders and store their content in an array
+    let safeContent = content.replace(codeBlockRegex, function(match, lang, code) {
+        const index = codeBlockCounter++;
+        codeBlocks[index] = { lang, code };
+        return `%%%CODE_BLOCK_${index}%%%`;
+    });
 
-    return content;
+    // Process Markdown using marked on content outside of code blocks
+    safeContent = marked.parse(safeContent);
+
+    // Re-insert code blocks into the processed Markdown content
+    safeContent = safeContent.replace(/%%%CODE_BLOCK_(\d+)%%%/g, function(match, index) {
+        const { lang, code } = codeBlocks[index];
+        return processCodeSnippet(lang, code);
+    });
+
+    console.log('Processed content with Markdown and code:', safeContent);
+    return safeContent;
+}
+
+function processCodeSnippet(lang, code) {
+    // Ensure HTML is escaped to prevent XSS attacks
+    const escapedCode = escapeHtml(code.trim());
+
+    // Define the language class for syntax highlighting
+    const languageClass = lang ? `language-${lang}` : 'language-plaintext';
+
+    // Wrap the code with a div for styling and functionality
+    return `
+    <div class="code-block">
+        <div class="code-block-header">
+            <span class="code-type">${lang.toUpperCase() || "CODE"}</span>
+            <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
+        </div>
+        <pre><code class="${languageClass}">${escapedCode}</code></pre>
+    </div>
+    `;
 }
 
 
@@ -922,21 +937,21 @@ function escapeHtml(html) {
 function renderOpenAI(content) {
     console.log('renderOpenAI called with content:', content);
 
-    // Process the content to handle markdown
-    content = detectAndRenderMarkdown(content);
+    // Process the content to handle markdown and code
+    content = renderMarkdownAndCode(content);
 
-    // Process lists and handle code snippets securely
-    content = handleListsAndCode(content);
-    const processedContent = processCodeSnippets(content);
+    // Process lists
+    content = handleLists(content);
 
-    console.log('Final processed content:', processedContent);
-    return processedContent;
+    console.log('Final processed content:', content);
+    return content;
 }
 
-function handleListsAndCode(content) {
-    // Process list items
-    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<li>$1</li>');
-    content = content.replace(/(<li>[\s\S]+?<\/li>)/gm, function(match) {
+
+function handleLists(content) {
+    // Process unordered lists
+    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<ul><li>$1</li></ul>');
+    content = content.replace(/(<ul><li>[\s\S]+?<\/li>)/gm, function(match) {
         if (!/^\s*<\/?ul>/.test(match)) {
             return '<ul>' + match + '</ul>';
         }
@@ -944,47 +959,63 @@ function handleListsAndCode(content) {
     });
     content = content.replace(/<\/ul>\s*<ul>/g, '');
 
-    // Process numbered lists
-    let isFirstNumberedItem = true;
-    content = content.replace(/\n\n(\d+\. )/g, function(match, p1) {
-        if (isFirstNumberedItem) {
-            isFirstNumberedItem = false;
-            return '<br><br>\n\n' + p1;
+    // Process ordered lists
+    content = content.replace(/^(?:\s*)(\d+\.)\s+(.+)/gm, '<li>$2</li></ul>');
+    content = content.replace(/(<ul><li>[\s\S]+?<\/li>)/gm, function(match) {
+        if (!/^\s*<\/?ol>/.test(match)) {
+            return '<ol>' + match + '</ol>';
         }
         return match;
     });
-    content = content.replace(/(\n)(\d+\. )/g, '\n\n$2');
+    content = content.replace(/<\/ol>\s*<ol>/g, '');
 
-    return content; // Return the processed content for further processing
+    return content;
 }
 
-function processCodeSnippets(content) {
-    const regex = /```(\w+)?\n?([\s\S]+?)```/g; // Ensure greedy matching for content
 
-    const replacer = (match, lang, code) => {
-        if (!code) return ''; // Defensive: Avoid processing undefined code blocks
 
-        let escapedCode = escapeHtml(code.trim());
-        const languageClass = lang ? 'language-' + lang : 'language-plaintext';
-        const languageReadable = lang ? lang.toUpperCase() : 'CODE';
 
-        // Wrap the code with a div that includes a header and the Prism-formatted code block
-        const wrappedCode = `
-        <div class="code-block">
-            <div class="code-block-header">
-                <span class="code-type">${languageReadable}</span>
-                <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
-            </div>
-            <pre><code class="${languageClass}">${escapedCode}</code></pre>
-        </div>
-        `;
+function detectAndRenderMarkdown(content) {
+    console.log('detectAndRenderMarkdown called with content:', content);
+    const markdownPatterns = [
+        /^# .+/gm,       // Headers
+        /^\* .+/gm,      // Unordered lists
+        /^\d+\. .+/gm,   // Ordered lists
+        /\[.+\]\(.+\)/g, // Links
+        /\*\*(.+)\*\*/g, // Bold
+        /\*(.+)\*/g,     // Italics
+        /^> .+/gm        // Blockquotes
+    ];
 
-        return wrappedCode;
-    };
+    let containsMarkdown = false;
+    for (let pattern of markdownPatterns) {
+        if (pattern.test(content)) {
+            containsMarkdown = true;
+            console.log('Markdown detected with pattern:', pattern);
+            break;
+        }
+    }
 
-    // Replace all instances of code blocks with processed content
-    return content.replace(regex, replacer);
+    if (containsMarkdown) {
+        console.log('Processing Markdown...');
+        const codeBlockRegex = /```[\s\S]*?```/g;
+        const codeBlocks = [...content.matchAll(codeBlockRegex)];
+        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%');
+        content = marked.parse(content);
+        let blockIndex = 0;
+        content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
+            return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
+        });
+        console.log('Processed Markdown:', content);
+    } else {
+        console.log('No Markdown detected');
+    }
+
+    return content;
 }
+
+
+
 
 
 
