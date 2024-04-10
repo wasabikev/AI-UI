@@ -14,6 +14,7 @@ import openai
 import os
 import logging
 import anthropic
+import tiktoken 
 
 import requests
 import json
@@ -443,6 +444,59 @@ def reset_conversation():
 
 
 
+def get_response_from_model(model, messages, temperature):
+    """
+    Routes the request to the appropriate API based on the model selected.
+    """
+    if model in ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-0125-preview"]:
+        # OpenAI models
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature
+        }
+        response = openai.ChatCompletion.create(**payload)
+        chat_output = response['choices'][0]['message']['content']
+        model_name = response['model']  # Extract the model name from the API response
+    elif model == "claude-3-opus-20240229":
+        # Anthropic model
+        client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+        # Construct the conversation history for Messages API
+        anthropic_messages = []
+        system_message = None
+        for message in messages:
+            if message['role'] == 'system':
+                system_message = message['content']
+            elif message['role'] == 'user':
+                anthropic_messages.append({"role": "user", "content": message['content']})
+            elif message['role'] == 'assistant':
+                anthropic_messages.append({"role": "assistant", "content": message['content']})
+
+        # Prepend the system message to the user's first message
+        if system_message and anthropic_messages:
+            anthropic_messages[0]['content'] = f"{system_message}\n\nUser: {anthropic_messages[0]['content']}"
+
+        # Ensure the first message has the "user" role
+        if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
+            anthropic_messages.insert(0, {"role": "user", "content": ""})
+
+        # Send the conversation to the Anthropic Messages API
+        response = client.messages.create(
+            model=model,
+            messages=anthropic_messages,
+            max_tokens=2000,  # Specify the maximum number of tokens to generate
+            temperature=temperature
+        )
+        chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
+        model_name = model  # Use the provided model name for Anthropic
+    else:
+        chat_output = "Sorry, the selected model is not supported yet."
+        model_name = None  # Set model_name to None for unsupported models
+        
+    return chat_output, model_name
+
+
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
@@ -464,78 +518,84 @@ def chat():
             app.logger.info(f'Using existing conversation with id {conversation_id}.')
         else:
             app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
-            conversation = None  # Reset to ensure a new conversation is started
+            conversation = None
 
-    # Preparing the payload for the OpenAI API
-    api_request_payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature  
-    }
+    # Use the abstracted function to get a response from the appropriate model
+    chat_output, model_name = get_response_from_model(model, messages, temperature)
+    app.logger.info("Response from model: {}".format(chat_output))
 
-    # Log the request payload for debugging
-    app.logger.info(f"Sending request to OpenAI: {api_request_payload}")
+    # Count tokens in the entire conversation history
+    prompt_tokens = count_tokens(model_name, messages)
 
+    # Count tokens in the assistant's output
+    completion_tokens = count_tokens(model_name, [{"content": chat_output}])
 
-    # Generating a response from the selected model
-    response = openai.ChatCompletion.create(**api_request_payload)
-    chat_output = response['choices'][0]['message']['content']
-    app.logger.info("Response from OpenAI: {}".format(response))
+    # Calculate total tokens
+    total_tokens = prompt_tokens + completion_tokens
+
+    # Log the token counts
+    app.logger.info(f'Prompt tokens: {prompt_tokens}')
+    app.logger.info(f'Completion tokens: {completion_tokens}')
+    app.logger.info(f'Total tokens: {total_tokens}')
 
     new_message = {"role": "assistant", "content": chat_output}
     messages.append(new_message)  # Append AI's message to the list
 
     if not conversation:
-        # Create a new Conversation object with the temperature
+        # Create a new Conversation object with the temperature and token counts
         conversation = Conversation(history=json.dumps(messages), 
                                     temperature=temperature,
-                                    user_id=current_user.id
-                                    )
+                                    user_id=current_user.id,
+                                    token_count=total_tokens)
 
         # Generate the title for the conversation
-        conversation_title = generate_summary(messages)
+        conversation_title = generate_summary(messages)  # Uses GPT-3.5-turbo by default
 
         # Update the title of the conversation
         conversation.title = conversation_title
         
         db.session.add(conversation)
-        db.session.commit()
-
-        # Store conversation ID in session
-        session['conversation_id'] = conversation.id
     else:
         # Update existing conversation
         conversation.history = json.dumps(messages)
-        conversation.temperature = temperature  # Update the temperature here
+        conversation.temperature = temperature
+        conversation.token_count = conversation.token_count + total_tokens  # Update the token count
 
-        db.session.commit()
-
-    # Extract token data from OpenAI API's response
-    token_data = {
-        'prompt_tokens': response.get('usage', {}).get('prompt_tokens', 0),
-        'completion_tokens': response.get('usage', {}).get('completion_tokens', 0),
-        'total_tokens': response.get('usage', {}).get('total_tokens', 0)
-    }
-
-    # Update the model name and token count of the conversation
+    # Update the model name of the conversation
     conversation.model_name = model
-    conversation.token_count = token_data['total_tokens']
+
+    db.session.commit()
 
     # Log the messages to ensure they are received correctly
     app.logger.info(f'Received messages: {messages}')
                                           
-    # Commit changes made to the conversation object
-    db.session.commit()
-
-    # Update the session's conversation_id every time
+    # Store/update the conversation ID in session
     session['conversation_id'] = conversation.id
 
     return jsonify({
         'chat_output': chat_output,
         'conversation_id': conversation.id,
         'conversation_title': conversation.title,
-        'usage': token_data
+        'usage': {
+            'prompt_tokens': prompt_tokens,
+            'completion_tokens': completion_tokens,
+            'total_tokens': total_tokens
+        }
     })
+
+def count_tokens(model_name, messages):
+    if model_name.startswith("gpt-"):
+        encoding = tiktoken.encoding_for_model(model_name)
+    elif model_name.startswith("claude-"):
+        encoding = tiktoken.get_encoding("cl100k_base")  # Use the cl100k_base encoding for Anthropic models
+    else:
+        raise ValueError(f"Unsupported model: {model_name}")
+    
+    num_tokens = 0
+    for message in messages:
+        num_tokens += len(encoding.encode(message['content']))
+    
+    return num_tokens
 
 
 

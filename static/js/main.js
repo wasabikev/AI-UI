@@ -569,7 +569,7 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
 
     // Set the model to GPT-3.5
     document.getElementById('modalModelDropdownButton').textContent = 'GPT-3.5';
-    document.getElementById('modalModelDropdownButton').dataset.apiName = 'gpt-3.5-turbo-0613';
+    document.getElementById('modalModelDropdownButton').dataset.apiName = 'gpt-3.5-turbo';
 
     // Set the temperature to .07
     document.querySelector('input[name="temperatureOptions"][value="0.7"]').checked = true;
@@ -636,11 +636,12 @@ function modelNameMapping(modelName) {
     console.log("Input model name:", modelName);
     let mappedName;
     switch(modelName) {
-        case "gpt-3.5-turbo-0613": mappedName = "GPT-3.5"; break;
+        case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
         case "gpt-4-0613": mappedName = "GPT-4 (8k)"; break;
         case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
-        case "gpt-4-0125-preview": mappedName = "GPT-4 (Turbo)"; break;
+        case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
+        case "gemini-1.5-pro": mappedName = "Gemini 1.5 Pro"; break;
         default: mappedName = "Unknown Model"; break;
     }
     console.log("Mapped model name:", mappedName);
@@ -660,7 +661,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview","claude-3-opus-20240229"];
+    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-1.5-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown
