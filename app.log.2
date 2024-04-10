@@ -1,16 +1,4 @@
-2024-04-05 20:20:18,214 - app - ERROR - Exception on /c/image.jpg [GET]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-
-The above exception was the direct cause of the following exception:
-
+2024-04-10 09:01:48,043 - app - ERROR - Exception on /chat [POST]
 Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
     response = self.full_dispatch_request()
@@ -27,103 +15,80 @@ Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 321, in show_conversation
-    conversation = Conversation.query.get(conversation_id)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<string>", line 2, in get
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\util\deprecations.py", line 386, in warned
-    return fn(*args, **kwargs)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1130, in get
-    return self._get_impl(ident, loading.load_on_pk_identity)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1139, in _get_impl
-    return self.session._get_impl(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3684, in _get_impl
-    return db_load_fn(
-           ^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 666, in load_on_pk_identity
-    session.execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 541, in chat
+    chat_output, model_name = get_response_from_model(model, messages, temperature)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 499, in get_response_from_model
+    client = Completion.from_service_account_json(
+             ^^^^^^^^^^
+NameError: name 'Completion' is not defined
+2024-04-10 13:40:49,028 - app - INFO - Received model: gpt-3.5-turbo-0613
+2024-04-10 13:40:49,030 - app - INFO - Received temperature: 0.7
+2024-04-10 13:40:49,805 - app - INFO - Response from model: Sure! Here's a test sentence for you:
 
-[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
-FROM conversation 
-WHERE conversation.id = %(pk_1)s]
-[parameters: {'pk_1': 'image.jpg'}]
-(Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-04-05 21:12:36,187 - app - INFO - Received model: gpt-4-0125-preview
-2024-04-05 21:12:36,189 - app - INFO - Received temperature: 0.7
-2024-04-05 21:12:47,494 - app - INFO - Response from model: Certainly! Handling a combination of Markdown, regex, and then Markdown again in a UI can indeed be tricky, especially if the UI is designed to accommodate syntax highlighting, real-time preview, or formatting assistance. Below is a structured example that incorporates all three elements. This example could help in testing how well the UI manages the transitions between different types of content.
+"The quick brown fox jumps over the lazy dog."
+2024-04-10 13:40:49,813 - app - INFO - Prompt tokens: 30
+2024-04-10 13:40:49,814 - app - INFO - Completion tokens: 20
+2024-04-10 13:40:49,814 - app - INFO - Total tokens: 50
+2024-04-10 13:40:49,817 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. A test sentence please Sure! Here\'s a test sentence for you:\n\n"The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-04-10 13:40:50,239 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "UI Solution for Large Language Models",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1712781650,
+  "id": "chatcmpl-9CZ2QJYSY5N5RQ0OrCLHfC9YsJD1v",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_b28b39ffa8",
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 75,
+    "total_tokens": 81
+  }
+}
+2024-04-10 13:40:50,245 - app - INFO - Generated conversation summary: UI Solution for Large Language Models
+2024-04-10 13:40:50,258 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure! Here\'s a test sentence for you:\n\n"The quick brown fox jumps over the lazy dog."'}]
+2024-04-10 13:40:57,754 - app - INFO - Received model: gpt-4-0613
+2024-04-10 13:40:57,754 - app - INFO - Received temperature: 0.7
+2024-04-10 13:40:57,756 - app - INFO - Using existing conversation with id 357.
+2024-04-10 13:40:59,125 - app - INFO - Response from model: "Designing intuitive user interfaces is integral to creating an engaging user experience for large language model applications."
+2024-04-10 13:40:59,125 - app - INFO - Prompt tokens: 54
+2024-04-10 13:40:59,125 - app - INFO - Completion tokens: 20
+2024-04-10 13:40:59,141 - app - INFO - Total tokens: 74
+2024-04-10 13:40:59,158 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure! Here\'s a test sentence for you:\n\n"The quick brown fox jumps over the lazy dog."'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Designing intuitive user interfaces is integral to creating an engaging user experience for large language model applications."'}]
+2024-04-10 13:41:08,951 - app - INFO - Received model: gpt-4-1106-preview
+2024-04-10 13:41:08,951 - app - INFO - Received temperature: 0.7
+2024-04-10 13:41:08,951 - app - INFO - Using existing conversation with id 357.
+2024-04-10 13:41:11,325 - app - INFO - Response from model: Certainly! Here's another test sentence:
 
-### Sample 1: Markdown + Regex + Markdown
-
-#### Initial Markdown Content
-
-This is a simple Markdown guide to demonstrate how to include a regex pattern within a document.
-
-- **Bold Text:** Use double asterisks `**bold text**`.
-- **Italic Text:** Use single asterisks or underscores `*italic text*` or `_italic text_`.
-
-#### Regex Pattern
-
-Now, let's include a regex pattern that matches email addresses:
-
-```regex
-^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
-```
-
-This pattern is designed to match most common email formats, such as `example@domain.com`.
-
-#### Final Markdown Content
-
-After discussing regex, we can return to more Markdown features.
-
-1. **Lists:** To create a bulleted list, start lines with dashes `-`, plus signs `+`, or asterisks `*`.
-2. **Links:** To add a link, wrap the link text in brackets `[ ]`, and then the URL in parentheses `( )` like so: `[Google](https://www.google.com)`
-
-### Analysis
-
-When integrating this content into your UI, consider the following challenges:
-
-- **Syntax Highlighting:** Ensure that the UI can switch between highlighting Markdown syntax and regex patterns appropriately. This might require implementing separate syntax highlighting rules for the code block containing the regex.
-  
-- **Content Parsing:** The UI needs to accurately parse and display Markdown formatting (like bold or italic text) and properly render code blocks without applying Markdown formatting rules within them.
-  
-- **User Input Handling:** If users are meant to input Markdown and regex, the UI should ideally provide real-time feedback on both the raw input and the rendered output, helping users understand how their input will be displayed.
-
-By carefully considering these aspects, you can significantly enhance the user experience, making it easier for users to work with a mix of Markdown, regex, and other content types.
-2024-04-05 21:12:47,710 - app - INFO - Prompt tokens: 55
-2024-04-05 21:12:47,711 - app - INFO - Completion tokens: 468
-2024-04-05 21:12:47,712 - app - INFO - Total tokens: 523
+"Beneath the clear sky, the path wound through a verdant forest, alive with the melodies of chirping birds."
+2024-04-10 13:41:11,325 - app - INFO - Prompt tokens: 78
+2024-04-10 13:41:11,325 - app - INFO - Completion tokens: 33
+2024-04-10 13:41:11,325 - app - INFO - Total tokens: 111
+2024-04-10 13:41:11,345 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure! Here\'s a test sentence for you:\n\n"The quick brown fox jumps over the lazy dog."'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Designing intuitive user interfaces is integral to creating an engaging user experience for large language model applications."'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s another test sentence:\n\n"Beneath the clear sky, the path wound through a verdant forest, alive with the melodies of chirping birds."'}]
+2024-04-10 13:41:18,007 - app - INFO - Received model: gpt-4-0125-preview
+2024-04-10 13:41:18,008 - app - INFO - Received temperature: 0.7
+2024-04-10 13:41:18,010 - app - INFO - Using existing conversation with id 357.
+2024-04-10 13:41:19,392 - app - INFO - Response from model: "Efficient algorithms optimize the response time of large language models, enhancing user interaction and satisfaction."
+2024-04-10 13:41:19,392 - app - INFO - Prompt tokens: 115
+2024-04-10 13:41:19,392 - app - INFO - Completion tokens: 19
+2024-04-10 13:41:19,392 - app - INFO - Total tokens: 134
+2024-04-10 13:41:19,409 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure! Here\'s a test sentence for you:\n\n"The quick brown fox jumps over the lazy dog."'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Designing intuitive user interfaces is integral to creating an engaging user experience for large language model applications."'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s another test sentence:\n\n"Beneath the clear sky, the path wound through a verdant forest, alive with the melodies of chirping birds."'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': '"Efficient algorithms optimize the response time of large language models, enhancing user interaction and satisfaction."'}]
+2024-04-10 13:41:29,014 - app - INFO - Received model: claude-3-opus-20240229
+2024-04-10 13:41:29,014 - app - INFO - Received temperature: 0.7
+2024-04-10 13:41:29,016 - app - INFO - Using existing conversation with id 357.
+2024-04-10 13:41:31,692 - app - INFO - Response from model: "The shimmering light danced across the tranquil lake, casting an enchanting spell upon the serene landscape."
+2024-04-10 13:41:31,692 - app - INFO - Prompt tokens: 138
+2024-04-10 13:41:31,692 - app - INFO - Completion tokens: 20
+2024-04-10 13:41:31,692 - app - INFO - Total tokens: 158
