@@ -15,6 +15,7 @@ import os
 import logging
 import anthropic
 import tiktoken 
+import google.generativeai as genai
 
 import requests
 import json
@@ -61,6 +62,9 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# Configure authentication using your API key
+genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
+
 anthropic.api_key = os.environ.get('ANTHROPIC_API_KEY')
 if anthropic.api_key is None:
     raise ValueError("ANTHROPIC_API_KEY environment variable not set")
@@ -92,7 +96,7 @@ DEFAULT_SYSTEM_MESSAGE = {
     "name": "Default System Message",
     "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
     "description": "Default entry for database",
-    "model_name": "gpt-3.5-turbo-0613",
+    "model_name": "gpt-3.5-turbo",
     "temperature": 0.3
 }
 
@@ -448,7 +452,7 @@ def get_response_from_model(model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
     """
-    if model in ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-0125-preview"]:
+    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09"]:
         # OpenAI models
         payload = {
             "model": model,
@@ -490,6 +494,19 @@ def get_response_from_model(model, messages, temperature):
         )
         chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
         model_name = model  # Use the provided model name for Anthropic
+    elif model.startswith("gemini-"):
+        # Gemini models
+        client = Completion.from_service_account_json(
+            os.environ.get("GOOGLE_API_KEY")
+        )
+        response = client.generate_text(
+            model=model,
+            prompt="\n".join([m['content'] for m in messages]),
+            temperature=temperature,
+            max_output_tokens=2000
+        )
+        chat_output = response.result
+        model_name = model
     else:
         chat_output = "Sorry, the selected model is not supported yet."
         model_name = None  # Set model_name to None for unsupported models
