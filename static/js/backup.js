@@ -569,7 +569,7 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
 
     // Set the model to GPT-3.5
     document.getElementById('modalModelDropdownButton').textContent = 'GPT-3.5';
-    document.getElementById('modalModelDropdownButton').dataset.apiName = 'gpt-3.5-turbo-0613';
+    document.getElementById('modalModelDropdownButton').dataset.apiName = 'gpt-3.5-turbo';
 
     // Set the temperature to .07
     document.querySelector('input[name="temperatureOptions"][value="0.7"]').checked = true;
@@ -636,11 +636,12 @@ function modelNameMapping(modelName) {
     console.log("Input model name:", modelName);
     let mappedName;
     switch(modelName) {
-        case "gpt-3.5-turbo-0613": mappedName = "GPT-3.5"; break;
+        case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
         case "gpt-4-0613": mappedName = "GPT-4 (8k)"; break;
         case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
-        case "gpt-4-0125-preview": mappedName = "GPT-4 (Turbo)"; break;
+        case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
+        case "gemini-1.5-pro": mappedName = "Gemini 1.5 Pro"; break;
         default: mappedName = "Unknown Model"; break;
     }
     console.log("Mapped model name:", mappedName);
@@ -660,7 +661,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo-0613", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-0125-preview","claude-3-opus-20240229"];
+    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-1.5-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown
@@ -875,31 +876,104 @@ function copyCodeToClipboard(button) {
 }
 
 
-// Assuming marked and Prism are already included in your project
+// Function to render Markdown and code snippets
 function renderMarkdownAndCode(content) {
     console.log('renderMarkdownAndCode called with content:', content);
 
-    // First, escape HTML to ensure safety
-    let safeContent = escapeHtml(content);
+    // Step 1: Correctly identify and temporarily replace code blocks with placeholders
+    let codeBlockCounter = 0;
+    const codeBlocks = [];
+    const codeBlockRegex = /```(\w*)\n([\s\S]+?)\n```/g;
 
-    // Process Markdown using marked
-    let processedMarkdown = marked.parse(safeContent);
-
-    // Now handle code blocks with syntax highlighting
-    processedMarkdown = processedMarkdown.replace(/```(\w+)?\n?([\s\S]+?)```/g, (match, lang, code) => {
-        if (!code) return ''; // Avoid processing empty code blocks
-
-        const escapedCode = escapeHtml(code.trim());
-        const languageClass = lang ? `language-${lang}` : 'language-plaintext';
-        Prism.highlightAllUnder(document.querySelector(languageClass)); // This assumes Prism is loaded and ready
-
-        // Create a highlighted code block using Prism
-        return `<pre><code class="${languageClass}">${Prism.highlight(escapedCode, Prism.languages[lang] || Prism.languages.plaintext, lang)}</code></pre>`;
+    // Replace code blocks with placeholders and store their content in an array
+    let safeContent = content.replace(codeBlockRegex, function(match, lang, code) {
+        const index = codeBlockCounter++;
+        codeBlocks[index] = { lang, code };
+        return `%%%CODE_BLOCK_${index}%%%`;
     });
 
-    console.log('Processed content with Markdown and code:', processedMarkdown);
-    return processedMarkdown;
+    // Step 2: Process Markdown using marked on content outside of code blocks
+    safeContent = marked.parse(safeContent);
+
+    // Step 3: Re-insert code blocks into the processed Markdown content
+    safeContent = safeContent.replace(/%%%CODE_BLOCK_(\d+)%%%/g, function(match, index) {
+        const { lang, code } = codeBlocks[index];
+        return processCodeSnippet(lang, code);
+    });
+
+    console.log('Processed content with Markdown and code:', safeContent);
+    return safeContent;
 }
+
+function processCodeSnippet(lang, code) {
+    // Ensure HTML is escaped to prevent XSS attacks
+    const escapedCode = escapeHtml(code.trim());
+
+    // Define the language class for syntax highlighting
+    const languageClass = lang ? `language-${lang}` : 'language-plaintext';
+
+    // Wrap the code with a div for styling and functionality
+    return `
+    <div class="code-block">
+        <div class="code-block-header">
+            <span class="code-type">${lang.toUpperCase() || "CODE"}</span>
+            <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
+        </div>
+        <pre><code class="${languageClass}">${escapedCode}</code></pre>
+    </div>
+    `;
+}
+
+
+// Enhanced HTML escaping function
+function escapeHtml(html) {
+    return html
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function renderOpenAI(content) {
+    console.log('renderOpenAI called with content:', content);
+
+    // Process the content to handle markdown and code
+    content = renderMarkdownAndCode(content);
+
+    // Process lists
+    content = handleLists(content);
+
+    console.log('Final processed content:', content);
+    return content;
+}
+
+
+function handleLists(content) {
+    // Process unordered lists
+    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<ul><li>$1</li></ul>');
+    content = content.replace(/(<ul><li>[\s\S]+?<\/li>)/gm, function(match) {
+        if (!/^\s*<\/?ul>/.test(match)) {
+            return '<ul>' + match + '</ul>';
+        }
+        return match;
+    });
+    content = content.replace(/<\/ul>\s*<ul>/g, '');
+
+    // Process ordered lists
+    content = content.replace(/^(?:\s*)(\d+\.)\s+(.+)/gm, '<li>$2</li></ul>');
+    content = content.replace(/(<ul><li>[\s\S]+?<\/li>)/gm, function(match) {
+        if (!/^\s*<\/?ol>/.test(match)) {
+            return '<ol>' + match + '</ol>';
+        }
+        return match;
+    });
+    content = content.replace(/<\/ol>\s*<ol>/g, '');
+
+    return content;
+}
+
+
 
 
 function detectAndRenderMarkdown(content) {
@@ -942,78 +1016,7 @@ function detectAndRenderMarkdown(content) {
 }
 
 
-// Enhanced HTML escaping function
-function escapeHtml(html) {
-    return html
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
 
-function renderOpenAI(content) {
-    console.log('renderOpenAI called with content:', content);
-
-    // Directly process the content with the new function
-    const processedContent = renderMarkdownAndCode(content);
-
-    console.log('Final processed content:', processedContent);
-    return processedContent;
-}
-
-function handleListsAndCode(content) {
-    // Process list items
-    content = content.replace(/^(?:\s*)-\s+(.+)/gm, '<li>$1</li>');
-    content = content.replace(/(<li>[\s\S]+?<\/li>)/gm, function(match) {
-        if (!/^\s*<\/?ul>/.test(match)) {
-            return '<ul>' + match + '</ul>';
-        }
-        return match;
-    });
-    content = content.replace(/<\/ul>\s*<ul>/g, '');
-
-    // Process numbered lists
-    let isFirstNumberedItem = true;
-    content = content.replace(/\n\n(\d+\. )/g, function(match, p1) {
-        if (isFirstNumberedItem) {
-            isFirstNumberedItem = false;
-            return '<br><br>\n\n' + p1;
-        }
-        return match;
-    });
-    content = content.replace(/(\n)(\d+\. )/g, '\n\n$2');
-
-    return content; // Return the processed content for further processing
-}
-
-function processCodeSnippets(content) {
-    const regex = /```(\w+)?\n?([\s\S]+?)```/g; // Ensure greedy matching for content
-
-    const replacer = (match, lang, code) => {
-        if (!code) return ''; // Defensive: Avoid processing undefined code blocks
-
-        let escapedCode = escapeHtml(code.trim());
-        const languageClass = lang ? 'language-' + lang : 'language-plaintext';
-        const languageReadable = lang ? lang.toUpperCase() : 'CODE';
-
-        // Wrap the code with a div that includes a header and the Prism-formatted code block
-        const wrappedCode = `
-        <div class="code-block">
-            <div class="code-block-header">
-                <span class="code-type">${languageReadable}</span>
-                <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
-            </div>
-            <pre><code class="${languageClass}">${escapedCode}</code></pre>
-        </div>
-        `;
-
-        return wrappedCode;
-    };
-
-    // Replace all instances of code blocks with processed content
-    return content.replace(regex, replacer);
-}
 
 
 
@@ -1211,10 +1214,10 @@ function loadConversation(conversationId) {
         });
 }
 
-function createMessageElement(message, model, selectedTemperature) { 
+function createMessageElement(message) {
     // Handle the system message differently to include the model name and temperature
     if (message.role === 'system') {
-        let systemMessageContent = renderOpenAI(message.content); // Process the system message content
+        let systemMessageContent = renderOpenAI(message.content);
         // Prepare the display content for system message
         const systemMessageHTML = `
             <div class="chat-entry system system-message">
@@ -1230,8 +1233,8 @@ function createMessageElement(message, model, selectedTemperature) {
             // Escape HTML entities in user input to prevent rendering
             processedContent = escapeHtml(message.content);
         } else {
-            // Process the both responses using the renderOpenAI function
             processedContent = renderOpenAI(message.content);
+            processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
         }
         const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
         return $(messageHTML);
