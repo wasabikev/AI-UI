@@ -875,18 +875,48 @@ function copyCodeToClipboard(button) {
     window.getSelection().removeAllRanges(); // Clear selection
 }
 
+function createMessageElement(message) {
+    // Handle the system message differently to include the model name and temperature
+    if (message.role === 'system') {
+        let systemMessageContent = renderOpenAI(message.content);
+        // Prepare the display content for system message
+        const systemMessageHTML = `
+            <div class="chat-entry system system-message">
+                <strong>System:</strong> ${systemMessageContent}<br>
+                <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
+            </div>`;
+        return $(systemMessageHTML);
+    } else {
+        const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+        const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
+        let processedContent;
+        if (message.role === 'user') {
+            // Escape HTML entities in user input to prevent rendering
+            processedContent = escapeHtml(message.content);
+        } else {
+            // Use renderOpenAI to process both Markdown and code
+            processedContent = renderOpenAI(message.content);
+        }
+        const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
+        return $(messageHTML);
+    }
+}
 
-// Assuming marked and Prism are already included in your project
+// Function to render Markdown and code snippets
 function renderMarkdownAndCode(content) {
     console.log('renderMarkdownAndCode called with content:', content);
+
+    // Normalize newlines to ensure consistent handling across different environments
+    content = content.replace(/\r\n/g, '\n');
 
     // Step 1: Correctly identify and temporarily replace code blocks with placeholders
     let codeBlockCounter = 0;
     const codeBlocks = [];
-    const codeBlockRegex = /```(\w*)\n([\s\S]+?)\n```/g;
+    const codeBlockRegex = /```(\w*)\s*([\s\S]+?)\s*```/g;
 
     // Replace code blocks with placeholders and store their content in an array
     let safeContent = content.replace(codeBlockRegex, function(match, lang, code) {
+        console.log(`Code block found: Language: ${lang}, Code: ${code.substring(0, 30)}...`);
         const index = codeBlockCounter++;
         codeBlocks[index] = { lang, code };
         return `%%%CODE_BLOCK_${index}%%%`;
@@ -906,17 +936,14 @@ function renderMarkdownAndCode(content) {
 }
 
 function processCodeSnippet(lang, code) {
-    // Ensure HTML is escaped to prevent XSS attacks
+    const languageClass = lang ? `language-${lang}` : 'language-plaintext';
+    const displayLang = lang || "CODE";
     const escapedCode = escapeHtml(code.trim());
 
-    // Define the language class for syntax highlighting
-    const languageClass = lang ? `language-${lang}` : 'language-plaintext';
-
-    // Wrap the code with a div for styling and functionality
     return `
     <div class="code-block">
         <div class="code-block-header">
-            <span class="code-type">${lang.toUpperCase() || "CODE"}</span>
+            <span class="code-type">${displayLang.toUpperCase()}</span>
             <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
         </div>
         <pre><code class="${languageClass}">${escapedCode}</code></pre>
@@ -972,55 +999,6 @@ function handleLists(content) {
 
     return content;
 }
-
-
-
-
-function detectAndRenderMarkdown(content) {
-    console.log('detectAndRenderMarkdown called with content:', content);
-    const markdownPatterns = [
-        /^# .+/gm,       // Headers
-        /^\* .+/gm,      // Unordered lists
-        /^\d+\. .+/gm,   // Ordered lists
-        /\[.+\]\(.+\)/g, // Links
-        /\*\*(.+)\*\*/g, // Bold
-        /\*(.+)\*/g,     // Italics
-        /^> .+/gm        // Blockquotes
-    ];
-
-    let containsMarkdown = false;
-    for (let pattern of markdownPatterns) {
-        if (pattern.test(content)) {
-            containsMarkdown = true;
-            console.log('Markdown detected with pattern:', pattern);
-            break;
-        }
-    }
-
-    if (containsMarkdown) {
-        console.log('Processing Markdown...');
-        const codeBlockRegex = /```[\s\S]*?```/g;
-        const codeBlocks = [...content.matchAll(codeBlockRegex)];
-        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%');
-        content = marked.parse(content);
-        let blockIndex = 0;
-        content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
-            return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
-        });
-        console.log('Processed Markdown:', content);
-    } else {
-        console.log('No Markdown detected');
-    }
-
-    return content;
-}
-
-
-
-
-
-
-
 
 
 
@@ -1214,32 +1192,7 @@ function loadConversation(conversationId) {
         });
 }
 
-function createMessageElement(message) {
-    // Handle the system message differently to include the model name and temperature
-    if (message.role === 'system') {
-        let systemMessageContent = renderOpenAI(message.content);
-        // Prepare the display content for system message
-        const systemMessageHTML = `
-            <div class="chat-entry system system-message">
-                <strong>System:</strong> ${systemMessageContent}<br>
-                <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
-            </div>`;
-        return $(systemMessageHTML);
-    } else {
-        const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
-        const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
-        let processedContent;
-        if (message.role === 'user') {
-            // Escape HTML entities in user input to prevent rendering
-            processedContent = escapeHtml(message.content);
-        } else {
-            processedContent = renderOpenAI(message.content);
-            processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
-        }
-        const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
-        return $(messageHTML);
-    }
-}
+
 
 
 //Record the default height 
