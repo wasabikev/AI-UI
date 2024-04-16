@@ -11,7 +11,7 @@ let currentSystemMessageDescription; // Description of the current system messag
 let initialTemperature;
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
-
+let showTemperature = false;  // Tracks the visibility of the temperature settings
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -172,6 +172,29 @@ function checkAdminStatus(e) {
     }
 }
 
+// Function to open the modal and set the user ID and current status
+function openStatusModal(userId, currentStatus) {
+    // Set the action URL for the form
+    document.getElementById('statusUpdateForm').action = `/update-status/${userId}`;
+
+    // Check the radio button that matches the current status
+    if (currentStatus === 'Active') {
+        document.getElementById('statusActive').checked = true;
+    } else if (currentStatus === 'Pending') {
+        document.getElementById('statusPending').checked = true;
+    } else {
+        document.getElementById('statusNA').checked = true;
+    }
+
+    // Open the modal
+    $('#statusUpdateModal').modal('show');
+}
+
+// Function to submit the form
+function updateStatus() {
+    document.getElementById('statusUpdateForm').submit();
+}
+
 function fetchAndProcessSystemMessages() {
     return new Promise((resolve, reject) => {
         fetch('/api/system_messages')
@@ -255,24 +278,6 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
     $(this).find('.modal-dialog').css('height', 'auto');
 });
 
-
-
-
-function toggleTemperatureSettings() {
-    var temperatureLabel = document.getElementById('temperatureLabel');
-    var temperatureOptions = document.getElementById('temperatureOptions');
-    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-
-    if (temperatureOptions.style.display === 'none') {
-        temperatureLabel.style.display = 'block';
-        temperatureOptions.style.display = 'block';
-        systemMessageContentGroup.style.display = 'none';
-    } else {
-        temperatureLabel.style.display = 'none';
-        temperatureOptions.style.display = 'none';
-        systemMessageContentGroup.style.display = 'block';
-    }
-}
 
 
 
@@ -394,8 +399,6 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
 });
 
 
-
-
 function updateTemperatureSelectionInModal(temperature) {
     console.log("Updating temperature in modal to:", temperature);
     selectedTemperature = temperature;
@@ -509,10 +512,6 @@ function displaySystemMessage(systemMessage) {
         });
     }
 }
-
-
-
-
 
 
 
@@ -700,130 +699,96 @@ function updateModelDropdownInModal(modelName) {
 // Example usage when a system message is selected or modal is opened
 updateModelDropdownInModal('GPT-3.5'); // Update with the actual model name
 
-$('#systemMessageModal').on('show.bs.modal', function (event) {
-    isSaved = false; // Reset the isSaved flag whenever the modal is shown
-    // Check if there's an active system message
+$('#systemMessageModal').on('show.bs.modal', function () {
+    var shouldShowTemperature = $(this).data('showTemperature');
+    console.log("Modal show event - shouldShowTemperature:", shouldShowTemperature);
+    toggleTemperatureSettings(shouldShowTemperature);
+
+    // Load details of the active system message if available
     if (activeSystemMessageId) {
         const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
         if (activeSystemMessage) {
-            initialTemperature = activeSystemMessage.temperature; // Corrected variable name here
-            console.log("Modal opened. Initial temperature set to:", initialTemperature);
-            // Set the modal fields to the values of the active system message
             document.getElementById('systemMessageName').value = activeSystemMessage.name;
             document.getElementById('systemMessageDescription').value = activeSystemMessage.description;
             document.getElementById('systemMessageContent').value = activeSystemMessage.content;
             document.getElementById('modalModelDropdownButton').dataset.apiName = activeSystemMessage.model_name;
             selectedTemperature = activeSystemMessage.temperature;
-            console.log("System Message Modal shown. Current Temperature:", selectedTemperature);
 
-            // Update the model dropdown and the temperature display
             updateModelDropdownInModal(activeSystemMessage.model_name);
             updateTemperatureDisplay();
         }
     }
 
-    populateSystemMessageModal(); // Populate dropdown and set default description
-    populateModelDropdownInModal(); // Populate the model dropdown
+    populateSystemMessageModal();
+    populateModelDropdownInModal();
 });
 
 
-
-
-// Function to open the modal and set the user ID and current status
-function openStatusModal(userId, currentStatus) {
-    // Set the action URL for the form
-    document.getElementById('statusUpdateForm').action = `/update-status/${userId}`;
-
-    // Check the radio button that matches the current status
-    if (currentStatus === 'Active') {
-        document.getElementById('statusActive').checked = true;
-    } else if (currentStatus === 'Pending') {
-        document.getElementById('statusPending').checked = true;
-    } else {
-        document.getElementById('statusNA').checked = true;
-    }
-
-    // Open the modal
-    $('#statusUpdateModal').modal('show');
-}
-
-// Function to submit the form
-function updateStatus() {
-    document.getElementById('statusUpdateForm').submit();
-}
-
-// System message temperature adjust button
-document.getElementById("modalTemperatureAdjustBtn").addEventListener("click", function() {
-    $('#temperatureModal').modal('show');
-});
-
-// Function to toggle temperature settings visibility
-function toggleTemperatureSettings() {
-    var temperatureLabel = document.getElementById('temperatureLabel');
-    var temperatureOptions = document.getElementById('temperatureOptions');
-    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-    var descriptionLabel = document.getElementById('descriptionLabel'); // Label for the description
-    var descriptionInput = document.getElementById('systemMessageDescription'); // Input for the description
-
-    if (temperatureOptions.style.display === 'none') {
-        temperatureLabel.style.display = 'block';
-        temperatureOptions.style.display = 'block';
-        systemMessageContentGroup.style.display = 'none';
-        descriptionLabel.style.display = 'none'; // Hide the description label
-        descriptionInput.style.display = 'none'; // Hide the description input
-    } else {
-        temperatureLabel.style.display = 'none';
-        temperatureOptions.style.display = 'none';
-        systemMessageContentGroup.style.display = 'block';
-        descriptionLabel.style.display = 'block'; // Show the description label
-        descriptionInput.style.display = 'block'; // Show the description input
-    }
-}
-
-// Main temperature adjust button event listener
+// Main temperature adjust button in chat interface
 document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
-    $('#systemMessageModal').modal('show'); // Open the system message modal
-    toggleTemperatureSettings(); // Call the function to ensure the temperature options are visible
+    $('#systemMessageModal').data('showTemperature', true); // Set the flag
+    $('#systemMessageModal').modal('show');
 });
 
+// Event listener for modal temperature adjust button
+document.getElementById("modalTemperatureAdjustBtn").addEventListener("click", function() {
+    showTemperature = !showTemperature;  // Toggle the global state
+    toggleTemperatureSettings(showTemperature);  // Pass the updated state to the function
+});
+
+// Event listener for the system message button in the chat interface
+document.addEventListener('click', function(event) {
+    if (event.target && event.target.closest('#systemMessageButton')) {
+        var shouldShowTemperature = false; // Default to not showing temperature settings
+
+        // Set the data attribute and show the modal
+        $('#systemMessageModal').data('showTemperature', shouldShowTemperature);
+        $('#systemMessageModal').modal('show');
+    }
+});
+
+// Reset modal to default state on close
+$('#systemMessageModal').on('hidden.bs.modal', function () {
+    // Always reset to hide temperature settings by default when the modal is closed
+    isTemperatureVisible = false;
+    toggleTemperatureSettings();
+    $(this).data('showTemperature', false); // Reset the flag
+});
+
+function toggleTemperatureSettings(shouldShowTemperature) {
+    isTemperatureVisible = shouldShowTemperature;  // Set the state based on the passed parameter
+    console.log("toggleTemperatureSettings called with:", isTemperatureVisible);
+    var temperatureGroup = document.getElementById('temperatureGroup');
+    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
+
+    if (isTemperatureVisible) {
+        console.log("Showing temperature settings");
+        temperatureGroup.classList.remove('hidden');
+        temperatureGroup.classList.add('visible');
+        systemMessageContentGroup.classList.add('hidden');
+        systemMessageContentGroup.classList.remove('visible');
+    } else {
+        console.log("Hiding temperature settings");
+        temperatureGroup.classList.add('hidden');
+        temperatureGroup.classList.remove('visible');
+        systemMessageContentGroup.classList.remove('hidden');
+        systemMessageContentGroup.classList.add('visible');
+    }
+}
 
 // let selectedTemperature = 0.7; // Default temperature value
 let selectedTemperature;
-
-
-
-
 
 function createSystemMessageButton() {
     return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-solid fa-pencil"></i></button>`;
 }
 
-// Handle the click event on the system message button
 document.addEventListener('click', function(event) {
-    if (event.target && event.target.closest('#systemMessageButton')) {
-        $('#systemMessageModal').modal('show'); // Open the system message modal
-
-        // Function to toggle temperature settings visibility
-        function toggleTemperatureSettings(show) {
-            var temperatureLabel = document.getElementById('temperatureLabel');
-            var temperatureOptions = document.getElementById('temperatureOptions');
-            var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-
-            if (show) {
-                temperatureLabel.style.display = 'block';
-                temperatureOptions.style.display = 'block';
-                systemMessageContentGroup.style.display = 'none';
-            } else {
-                temperatureLabel.style.display = 'none';
-                temperatureOptions.style.display = 'none';
-                systemMessageContentGroup.style.display = 'block';
-            }
-        }
-
-        // Ensure the system message content is visible
-        toggleTemperatureSettings(false);
+    if (event.target && event.target.id === 'add-system-message-btn') {
+        // Logic to handle adding a new system message
     }
 });
+
 
 
 
@@ -839,8 +804,6 @@ document.addEventListener('change', function(event) {
     }
 });
 
-
-
 document.addEventListener('click', function(event) {
     if (event.target && event.target.id === 'add-system-message-btn') {
         // Logic to handle adding a new system message
@@ -850,11 +813,7 @@ document.addEventListener('click', function(event) {
 
 
 
-document.addEventListener('click', function(event) {
-    if (event.target && event.target.closest('#systemMessageButton')) {
-        $('#systemMessageModal').modal('show'); // Show the modal when the button is clicked
-    }
-});
+
 
 
 function copyCodeToClipboard(button) {

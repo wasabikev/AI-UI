@@ -145,199 +145,211 @@
         </div>  <!-- Closing for row full-height full-height-row -->
     </div> <!-- Closing for container-fluid full-height -->
 
-<!-- Add Website Modal -->
-<div class="modal fade modal-second-level" id="addWebsiteModal" tabindex="-1" role="dialog" aria-labelledby="addWebsiteModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addWebsiteModalLabel">Add Website</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form id="addWebsiteForm">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="websiteURL">Website URL</label>
-                        <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
+    <!-- Add Website Modal -->
+    <div class="modal fade modal-second-level" id="addWebsiteModal" tabindex="-1" role="dialog" aria-labelledby="addWebsiteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addWebsiteModalLabel">Add Website</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <form id="addWebsiteForm">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="websiteURL">Website URL</label>
+                            <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Website</button>
-                </div>
-            </form>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Website</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
 
-<!-- System Message Selection Modal -->
-<div class="modal fade" id="systemMessageModal" tabindex="-1" role="dialog" aria-labelledby="systemMessageModalLabel" aria-hidden="true">
-    <div class="modal-dialog systemMessage-modal-lg" role="document">
-        <div class="modal-content">
+    <!-- System Message Modal -->
+    <div class="modal fade" id="systemMessageModal" tabindex="-1" role="dialog" aria-labelledby="systemMessageModalLabel" aria-hidden="true">
+        <div class="modal-dialog systemMessage-modal-lg" role="document">
 
-            <div class="modal-flex-container d-flex">
+            <div class="modal-content">
 
-                <!-- Sidebar Container -->
-                <div class="modal-sidebar">
-                    <div id="rag-controls">
-                        <h6>RAG Controls</h6>
-                        <!-- Placeholder for dynamic RAG controls -->
+                <div class="modal-flex-container d-flex">
 
-        
-                        
-                        <div id="RAG-Buttons">
-                            <!--- Website Identifier (real-time data, news summarization, and fact-checking) -->
-                            <button id="addWebsiteButton" type="button" class="btn btn-secondary">Add Website</button>
+                    <!-- Sidebar Container -->
+                    <div class="modal-sidebar">
 
-                            <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
-                            <button id="addFilesButton" type="button" class="btn btn-secondary">Add Files</button>
+                        <div id="rag-controls">
+                            <h6>RAG Controls</h6>
+                            <!-- Placeholder for dynamic RAG controls -->
+                            <div id="RAG-Buttons">
+                                <!--- Website Identifier (real-time data, news summarization, and fact-checking) -->
+                                <button id="addWebsiteButton" type="button" class="btn btn-secondary">Add Website</button>
+
+                                <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
+                                <button id="addFilesButton" type="button" class="btn btn-secondary">Add Files</button>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </div>  
+                   
+                    <div class="modal-main">
 
-                <div class="modal-main">
+                        <div class="modal-header"> <!-- System message modal header -->
 
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="systemMessageModalLabel">
-                            System: <!-- Title for the dropdown -->
-                            <!-- Dropdown for selecting the system message -->
-                            <div class="dropdown d-inline-block">
-                                <button class="btn btn-secondary dropdown-toggle" type="button" id="systemMessageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Select System Message
+                            <h5 class="modal-title" id="systemMessageModalLabel">
+                                System: <!-- Title for the dropdown -->
+                                <!-- Dropdown for selecting the system message -->
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="systemMessageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        Select System Message
+                                    </button>
+
+                                    <div class="dropdown-menu" aria-labelledby="systemMessageDropdown">
+                                        <!-- Dropdown items will be populated here -->
+                                    </div>
+                                        
+                                    <button id="new-system-message-btn" class="btn btn-info ml-2">+ New</button>
+                                </div>
+                            </h5>
+
+                            <!-- Model Dropdown -->
+                            <div class="model-dropdown-container">
+                                <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="modalModelDropdownButton" data-toggle="dropdown" aria-expanded="false">
+                                    Current Model
                                 </button>
-                                <div class="dropdown-menu" aria-labelledby="systemMessageDropdown">
-                                    <!-- Dropdown items will be populated here -->
-                                </div>
-                                <button id="new-system-message-btn" class="btn btn-info ml-2">+ New</button>
-                            </div>
-                        </h5>
 
-                        <!-- Model Dropdown -->
-                        <div class="model-dropdown-container">
-                            <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="modalModelDropdownButton" data-toggle="dropdown" aria-expanded="false">
-                                Current Model
+                                <div class="dropdown-menu" aria-labelledby="modalModelDropdownButton">
+                                    <!-- Populate with model options -->
+                                </div>
+                            </div>
+                         
+
+                            <!-- Temperature adjustment toggle, delete, and close -->
+                            <button id="modalTemperatureAdjustBtn" class="btn btn-sm btn-info" onclick="toggleTemperatureSettings()">
+                                <i class="fa-solid fa-temperature-low"></i>
                             </button>
-                            <div class="dropdown-menu" aria-labelledby="modalModelDropdownButton">
-                                <!-- Populate with model options -->
-                            </div>
-                        </div>
 
-                        <!-- Temperature Adjustment Button -->
-                        <button id="modalTemperatureAdjustBtn" class="btn btn-sm btn-info" onclick="toggleTemperatureSettings()">
-                            <i class="fa-solid fa-temperature-low"></i>
-                        </button>
+                            <button id="delete-system-message-btn" class="btn btn-sm ml-2" style="background-color: #9E4300; color: white;">
+                                <i class="far fa-trash-alt"></i>
+                            </button>                             
 
-                        <button id="delete-system-message-btn" class="btn btn-sm ml-2" style="background-color: #9E4300; color: white;">
-                            <i class="far fa-trash-alt"></i>
-                        </button>                             
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
 
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        </div> <!-- End of modal header -->
 
-
-                    </div>
-
-                    <div class="modal-body">
-                        
-                        <div class="row">
-                            <!-- Column for name -->
-                            <div class="col-md-6">
-                                <div class="form-group" style="margin-top: -7px;">
-                                    <label for="systemMessageName" style="color: white;">Name</label>
-                                    <input type="text" class="form-control" id="systemMessageName" style="color: black;">
+                        <div class="modal-body">
+                                
+                            <div class="row">
+                                <!-- Column for system name within modal body-->
+                                <div class="col-md-6">
+                                    <div class="form-group" style="margin-top: -7px;">
+                                        <label for="systemMessageName" style="color: white;">Name</label>
+                                        <input type="text" class="form-control" id="systemMessageName" style="color: black;">
+                                    </div>
                                 </div>
-                            </div>
-                        
-                            <!-- Column for temperature display -->
-                            <div class="col-md-6">
-                                <div class="form-group text-right">
-                                    <p id="temperatureDisplay" style="color: white;"></p>
+                                
+                                <!-- Column for temperature display within modal body -->
+                                <div class="col-md-6">
+                                    <div class="form-group text-right">
+                                        <p id="temperatureDisplay" style="color: white;"></p>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                                
 
-                        <div id="modal-flash-message-container" class="modal-flash-message-container">
-                            <!-- This container will hold the flash messages for the modal -->
-                        </div>
-                        
-                        <div class="row">
-                            <!-- Column for description -->
-                            <div class="col-md-12">
-                                <div class="form-group" style="margin-top: -7px;">
-                                    <label for="systemMessageDescription" id="descriptionLabel" style="color: white;">Description</label>
-                                    <input type="text" class="form-control" id="systemMessageDescription" style="color: black;">
+                                <div id="modal-flash-message-container" class="modal-flash-message-container">
+                                    <!-- This container will hold the flash messages for the modal -->
                                 </div>
-                            </div>
+                                
+
+                                <!-- System Message Content Group -->
+                                <div class="col-md-12">
+                                    <div id="systemMessageContentGroup" class="visible">
+                                        <!-- Description for drop down menu -->
+                                        <div class="form-group" style="margin-top: -7px;">
+                                            <label for="systemMessageDescription" class="modal-label">Description</label>
+                                            <input type="text" class="form-control" id="systemMessageDescription" style="color: black;">
+                                        </div>
+                                        <!-- Textarea for editing system message -->
+                                        <div class="form-group" style="margin-top: -7px;">
+                                            <label for="systemMessageContent" class="modal-label">Content</label>
+                                            <textarea class="form-control" id="systemMessageContent" style="color: black; overflow-y: auto;"></textarea>
+                                        </div>
+                                    </div> <!-- End of system message content group -->
+                                </div> <!-- End of Bootstrap column -->
+
+                                <!-- Temperature Group -->
+                                <div class="col-md-12">
+                                    <div id="temperatureGroup" class="hidden" style="margin-top: -7px;">
+                                        <div id="temperatureLabel">
+                                            <label class="modal-label">Temperature Settings</label>
+                                        </div>
+                                        <!-- Temperature Options -->
+                                        <div id="temperatureOptions">
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0" value="0">
+                                                <label class="form-check-label" for="temperature0">
+                                                    <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Not creative.
+                                                    <br><span class="temperature-use-case">Use Cases: Information retrieval, fact-checking, and data extraction.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.3" value="0.3">
+                                                <label class="form-check-label" for="temperature0.3">
+                                                    <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use.
+                                                    <br><span class="temperature-use-case">Use Cases: Technical writing, code generation, or legal document drafting.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.7" value="0.7" checked>
+                                                <label class="form-check-label" for="temperature0.7">
+                                                    <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. 
+                                                    <br><span class="temperature-use-case">Use Cases: Creative writing, marketing content creation, or conversational AI.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.0" value="1.0">
+                                                <label class="form-check-label" for="temperature1.0">
+                                                    <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming.
+                                                    <br><span class="temperature-use-case">Use Cases: Brainstorming, ideation, or artistic pursuits.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.5" value="1.5">
+                                                <label class="form-check-label" for="temperature1.5">
+                                                    <strong>1.5 - Experimental:</strong> Unconventional, abstract or off-topic at times. Use with caution.
+                                                    <br><span class="temperature-use-case">Use Cases: Experimental and avant-garde content generation.</span>
+                                                </label>
+                                            </div>
+                                        </div> <!-- End of temperature options -->
+                                    </div> <!-- End of temperature group -->
+                                </div> <!-- End of Bootstrap column -->
+
+                                        
+
+                            </div> <!-- End of row for modal-body -->
+                        </div> <!-- End of modal-body -->
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" id="saveSystemMessageChanges">Save Changes</button>
                         </div>
 
+                    </div> <!-- End of modal main -->
 
+                </div> <!-- End of flex container for sidebar and modal main -->
 
-                        <div id="temperatureLabel" style="display: none;">
-                            <label style="color: white;">Temperature Settings</label>
-                        </div>
-                        <!-- Temperature Options -->
-                        <div id="temperatureOptions" style="display: none;">
-                            <div class="form-check" style="margin-bottom: 10px;">
-                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0" value="0">
-                                <label class="form-check-label" for="temperature0">
-                                    <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Not creative.
-                                    <br><span class="temperature-use-case">Use Cases: Information retrieval, fact-checking, and data extraction.</span>
-                                </label>
-                            </div>
-                            <div class="form-check" style="margin-bottom: 10px;">
-                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.3" value="0.3">
-                                <label class="form-check-label" for="temperature0.3">
-                                    <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use.
-                                    <br><span class="temperature-use-case">Use Cases: Technical writing, code generation, or legal document drafting.</span>
-                                </label>
-                            </div>
-                            <div class="form-check" style="margin-bottom: 10px;">
-                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.7" value="0.7" checked>
-                                <label class="form-check-label" for="temperature0.7">
-                                    <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. 
-                                    <br><span class="temperature-use-case">Use Cases: Creative writing, marketing content creation, or conversational AI.</span>
-                                </label>
-                            </div>
-                            <div class="form-check" style="margin-bottom: 10px;">
-                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.0" value="1.0">
-                                <label class="form-check-label" for="temperature1.0">
-                                    <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming.
-                                    <br><span class="temperature-use-case">Use Cases: Brainstorming, ideation, or artistic pursuits.</span>
-                                </label>
-                            </div>
-                            <div class="form-check" style="margin-bottom: 10px;">
-                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.5" value="1.5">
-                                <label class="form-check-label" for="temperature1.5">
-                                    <strong>1.5 - Experimental:</strong> Unconventional, abstract or off-topic at times.
-                                    <br><span class="temperature-use-case">Use Cases: Experimental and avant-garde content generation.</span>
-                                </label>
-                            </div>
-                        </div>
+            </div> <!-- End of modal content container -->
 
-                        <!-- Textarea for editing content -->
-                        <div id="systemMessageContentGroup">
-                            <div class="form-group">
-                            <label for="systemMessageContent" style="color: white;">Content</label>
-                            <textarea class="form-control" id="systemMessageContent" style="color: black; overflow-y: auto;"></textarea>
-                        </div>
+        </div>
 
-                    </div> <!-- End of modal body -->
-
-                </div> <!-- End of modal main -->
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveSystemMessageChanges">Save Changes</button>
-                </div>
-
-            </div> <!-- End of flex container for sidebar and modal main -->
-
-        </div> <!-- End of modal content container -->
-    </div>
-</div>
+    </div> <!-- End of system message modal -->
 
 
 
