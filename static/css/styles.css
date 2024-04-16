@@ -4,6 +4,15 @@ body, html {
     overflow: hidden;
 }
 
+
+.hidden {
+    display: none;
+}
+
+.visible {
+    display: block;
+}
+
 #addWebsiteButton {
     margin-right: 10px; /* Adjust the space as needed */
 }
@@ -25,6 +34,10 @@ body, html {
     width: 90%; /* Add this line to set the width to 90% of the viewport */
     display: flex;
     overflow: hidden;
+}
+
+.modal-label {
+    color: #fff;
 }
 
 .modal-content {
@@ -51,6 +64,7 @@ body, html {
     scrollbar-width: thin;
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;
+    flex-shrink: 0; /* Prevent the sidebar from shrinking */
 }
 
 
@@ -161,10 +175,9 @@ pre code {
 }
 
 #temperatureContent {
-    height: 45vh; /* Match the height of the System Message modal */
+    height: 35vh; /* Match the height of the System Message modal */
     min-height: 150px; /* Match the min-height of the System Message modal */
     max-height: 600px; /* Match the max-height of the System Message modal */
-    /* overflow-y: auto;  Add vertical scrollbar when content overflows */
 }
 
 #temperatureModal .modal-header,
@@ -239,10 +252,6 @@ pre code {
    /* overflow-y: auto;  Add vertical scrollbar when content overflows */
 }
 
-/* System messages */
-.modal-content .form-group label {
-    color: white;
-}
 
 /* System messages */
 .modal-content .form-control {
@@ -364,9 +373,8 @@ code {
     max-width: 50%; /* Adjust the width as needed */
 }
 
-.form-check {
-    margin-bottom: 20px; /* Adjust the space between options */
-}
+
+
 
 
 #edit-title-btn, #delete-conversation-btn {
