@@ -1,9 +1,10 @@
+/**************** General Layout and Body Styles *******************/
+
 body, html {
     background-color: #E4EFF2;
     height: 100vh;
     overflow: hidden;
 }
-
 
 .hidden {
     display: none;
@@ -13,45 +14,124 @@ body, html {
     display: block;
 }
 
-#addWebsiteButton {
-    margin-right: 10px; /* Adjust the space as needed */
+textarea {
+    overflow: hidden; /* this ensures the scroll isn't shown */
+    resize: none;     /* this disables manual resizing */
 }
 
-.modal-second-level {
-    z-index: 1060; /* Default z-index for modals is 1050 */
+h2 {
+    font-size: 1.5em;
 }
 
-.modal-second-level .modal-dialog {
-    max-height: 90vh;
-    max-width: 1100px; /* Match the width of the system message modal */
-    width: 90%; /* This makes the modal responsive */
-    margin: auto; /* Centers the modal horizontally */
-}
 
-.modal-dialog.systemMessage-modal-lg {
-    max-height: 90vh;
-    max-width: 1100px;
-    width: 90%; /* Add this line to set the width to 90% of the viewport */
-    display: flex;
-    overflow: hidden;
-}
+
+
+/*********** System Message Modal Styles *****************/
+
 
 .modal-label {
     color: #fff;
 }
 
+/* Styling for the modal forms */
+.modal-content .form-control {
+    color: black;
+}
+
+#systemMessageModal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#systemMessageModal .modal-body {
+    flex: 1;
+}
+
+/* Modal content container, includes sidebar and main content */
+#systemMessageModal .modal-dialog {
+    min-width: 600px; /* Adjust the value as needed */
+}
+
+/* Wraps the entire modal content including the sidebar */
+.modal-dialog.systemMessage-modal-lg {
+    max-height: 90vh;
+    max-width: 1100px;
+    width: 90%; /* Add this line to set the width to 90% of the viewport */
+    display: flex;
+    overflow: hidden; 
+}
+
+/* Wraps the entire modal content including the sidebar - orientation change */
 .modal-content {
     display: flex;
     flex-direction: row; /* Change to row for horizontal layout */
     height: auto;
 }
 
+/* Container for header, main content, and footer */
 .modal-main {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     overflow-y: auto; /* Add scrollbar to the main content if it exceeds the height */
 }
+
+/* Container for dynamic modal content groups */
+.modal-content-group {
+    margin-bottom: 10px; /* Space between groups */
+    border-radius: 5px; /* Rounded corners for aesthetics */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+    max-height: 200px; /* Maximum height to maintain a consistent size */
+}
+
+/********** Modal Header and Footer Styles *****************/
+
+/* Base styling for modal header and footer */
+#systemMessageModal .modal-header, 
+#systemMessageModal .modal-footer {
+    background-color: #E4EFF2; /* Match with main body background */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Specific styling for modal header */
+#systemMessageModal .modal-header {
+    border-bottom: 1px solid #ddd; /* Add a border for separation */
+}
+
+#systemMessageModal .modal-header .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+#systemMessageModal .modal-header .btn-group .btn,
+#systemMessageModal .dropdown {
+    flex: 1; /* Make buttons flex to fill space */
+    margin: 5px; /* Uniform margin for buttons */
+}
+
+#systemMessageModal .modal-title {
+    flex-grow: 1; /* Allow title to take up any extra space */
+}
+
+#systemMessageModal .dropdown {
+    margin-left: 10px; /* Spacing between label and dropdown */
+}
+
+/* Adjusting spacing specifically between model dropdown and temperature adjust button */
+#modalModelDropdownButton + #modalTemperatureAdjustBtn {
+    margin-left: 10px; /* Add spacing to the left of the temperature adjust button */
+}
+
+/* Styling for modal footer */
+#systemMessageModal .modal-footer {
+    border-top: none; /* Remove the default top border */
+    justify-content: flex-end; /* Align buttons to the right */
+}
+
+/********* Modal Sidebar Styles ******************/
 
 .modal-sidebar {
     background-color: #3F484B;
@@ -67,8 +147,50 @@ body, html {
     flex-shrink: 0; /* Prevent the sidebar from shrinking */
 }
 
+#systemMessageModal .modal-sidebar {
+    min-width: 200px; /* Adjust the value as needed */
+}
+
+#addWebsiteButton {
+    margin-right: 10px; /* Adjust the space as needed */
+}
+
+/************** Temperature Group Styles  ****************/
+
+#temperatureOptions {
+    background-color: white;
+    padding: 20px; /* Add some padding so the content isn't flush against the edges */
+    border-radius: 4px;
+}
+
+.temperature-use-case {
+    font-size: smaller;
+    color: #8A7187;
+}
+
+/************ System Message Content Group Styles *****************/
+
+#systemMessageContent {
+    height: 35vh; /* 50% of the viewport height */
+    /* min-height: 150px;  Minimum height */
+    /* max-height: 600px;  Maximum height */
+    max-height: calc(100vh - 250px); /* Adjust 250px to fit the modal content within the viewport */
+   /* overflow-y: auto;  Add vertical scrollbar when content overflows */
+}
 
 
+/******************** Code Block Styles ********************/
+
+
+code {
+    font-weight: bold;
+}
+
+pre code {
+    display: block;
+    padding: 1em;
+    overflow-x: auto;
+}
 
 /* Adjust the font size and color of the code type text in the header */
 .code-block .code-block-header .code-type {
@@ -144,119 +266,8 @@ body, html {
     cursor: pointer;
 }
 
-pre code {
-    display: block;
-    padding: 1em;
-    overflow-x: auto;
-}
 
-
-.hidden {
-    display: none;
-}
-
-.title-container {
-    flex: 1 0 auto;
-}
-
-.modal-footer .button-container {
-    display: flex;
-    justify-content: flex-end;
-}
-
-#temperatureOptions {
-    background-color: white;
-    padding: 20px; /* Add some padding so the content isn't flush against the edges */
-    border-radius: 4px;
-}
-
-.temperature-modal-lg {
-    max-width: 50%; /* Match the max-width of the System Message modal */
-}
-
-#temperatureContent {
-    height: 35vh; /* Match the height of the System Message modal */
-    min-height: 150px; /* Match the min-height of the System Message modal */
-    max-height: 600px; /* Match the max-height of the System Message modal */
-}
-
-#temperatureModal .modal-header,
-#temperatureModal .modal-footer {
-    background-color: #E4EFF2;
-}
-
-.model-dropdown-container {
-    margin-right: 5px; /* Add a 5px margin to the right */
-}
-
-/* Custom styling for the modal header and footer */
-#systemMessageModal .modal-header, #systemMessageModal .modal-footer {
-    background-color: #E4EFF2; /* Match with main body background */
-    border-bottom: 1px solid #ddd; /* Optional: add a border for separation */
-}
-
-#systemMessageModal .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-#systemMessageModal .modal-title {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-}
-
-#systemMessageModal .dropdown {
-    margin-left: 10px; /* Spacing between label and dropdown */
-}
-
-#systemMessageModal .modal-footer {
-    border-top: none; /* Remove the default top border */
-}
-
-
-#systemMessageModal .modal-dialog {
-    min-width: 600px; /* Adjust the value as needed */
-}
-
-#systemMessageModal .modal-content {
-    display: flex;
-    flex-direction: column;
-}
-
-#systemMessageModal .modal-body {
-    flex: 1;
-}
-
-#systemMessageModal .modal-sidebar {
-    min-width: 200px; /* Adjust the value as needed */
-}
-
-#systemMessageModal .modal-header .btn-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-#systemMessageModal .modal-header .btn-group .btn {
-    flex: 1;
-    margin: 5px;
-}
-
-#systemMessageContent {
-    height: 35vh; /* 50% of the viewport height */
-    /* min-height: 150px;  Minimum height */
-    /* max-height: 600px;  Maximum height */
-    max-height: calc(100vh - 250px); /* Adjust 250px to fit the modal content within the viewport */
-   /* overflow-y: auto;  Add vertical scrollbar when content overflows */
-}
-
-
-/* System messages */
-.modal-content .form-control {
-    color: black;
-}
+/************** Flash Message Styles *****************/
 
 
 /* Custom CSS for flash message positioning */
@@ -281,6 +292,9 @@ pre code {
 }
 
 
+/***************  Admin Dashboard Styles **********************/
+
+
 /* Admin Dashboard button */
 .clickable-text {
     color: #007bff; /* Bootstrap primary blue color */
@@ -293,7 +307,6 @@ pre code {
     color: #0056b3; /* Slightly darker blue for hover effect */
 }
 
-
 /* Adjust the margin of the Admin Dashboard button */
 #admin-dashboard-btn {
     margin-top: -15px; /* Pull the button upwards */
@@ -305,6 +318,17 @@ pre code {
 }
 
 
+/****************** Primary Header Styles  *********************/
+
+
+/* Header container (title, buttons, etc.) */
+.row.align-items-center.py-4 {
+    position: relative;
+}
+
+.title-container {
+    flex: 1 0 auto;
+}
 
 #conversation-title {
     line-height: 1.5; /* or any other appropriate value */
@@ -321,6 +345,24 @@ pre code {
     margin-bottom: 20px;
 }
 
+.loading {
+    position: absolute;
+    left: 15%; /* Adjust these values according to your needs */
+    top: 50px; /* Adjust these values according to your needs */
+    display: none;
+    width: 100px;
+    height: 100px;
+}
+
+.loading {
+    position: absolute;
+    left: 5%;
+    top: -50px;
+    display: none;
+    width: 100px;
+    height: 100px;
+}
+
 #token-data {
     margin-left: 15px;
     font-size: 0.9em; /* This reduces the font size a bit. Adjust the value as needed. */
@@ -331,11 +373,7 @@ pre code {
     margin-right: 20px; /* This adds some space between each token count. */
 }
 
-code {
-    font-weight: bold;
-}
-
-
+/* Controls positioning within the header */
 .col-3.text-right {
     display: flex;
     justify-content: flex-start; /* Align children to the left */
@@ -343,39 +381,9 @@ code {
     margin-left: -120px;
 }
 
-.text-truncate {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
- }
- 
  #temperature-adjust-btn {
     margin-left: 5px;
 }
-
-.conversation-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.temperature-info {
-    font-style: italic;
-    color: #FFFFFF; /* Adjust the color as needed */
-}
-
-.temperature-use-case {
-    font-size: smaller;
-    color: #8A7187;
-}
-
-.custom-modal-width {
-    max-width: 50%; /* Adjust the width as needed */
-}
-
-
-
-
 
 #edit-title-btn, #delete-conversation-btn {
     vertical-align: middle; /* Ensures vertical alignment */
@@ -390,32 +398,9 @@ code {
     margin-bottom: 0; /* Removes bottom margin */
 }
 
-.chat-container {
-    height: 450px;
-    border: 1px solid #dedede;
-    border-radius: 5px;
-    overflow-y: scroll;
-    padding-left: 0px;
-    padding-right: 0px;
-    margin-bottom: 15px;
-    background-color: white;
-    width: 100%;
-    box-sizing: border-box;
-}
 
-/* Larger screens */
-@media (min-width: 2560px) {
-    .chat-container {
-        height: 75vh; /* Adjusted height based on viewport height */
-    }
-}
+/**************** Chat Interface Styles *****************/
 
-/* Smaller screens */
-@media (max-width: 1366px) {
-    .chat-container {
-        height: 55vh; /* Adjusted height based on viewport height, smaller screens might need less height */
-    }
-}
 
 .chat-entry {
     margin-bottom: 0px;
@@ -438,13 +423,11 @@ code {
     background-color: #8A7187; /* Same as .system-message background color */
 }
 
-
 #systemMessageModal .list-group-item:hover {
     background-color: #957D95; /* Slightly different shade for hover, adjust as needed */
     color: white; /* Ensures the text is visible */
     cursor: pointer;
 }
-
 
 .user {
     color:#5863F8;
@@ -464,9 +447,7 @@ code {
 
 .user-message span {
     color: #5863F8; /* Any color you prefer */
-    /* ... add any other styling properties as needed ... */
 }
-
 
 .far.fa-user {
     margin-right: 8px;  /* Add some space between the icon and the message */
@@ -503,6 +484,33 @@ i.fas.fa-robot {
     position: relative;  /* Make this new container the relative element for the loading spinner */
 }
 
+.chat-container {
+    height: 450px;
+    border: 1px solid #dedede;
+    border-radius: 5px;
+    overflow-y: scroll;
+    padding-left: 0px;
+    padding-right: 0px;
+    margin-bottom: 15px;
+    background-color: white;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Responsive design for larger screens */
+@media (min-width: 2560px) {
+    .chat-container {
+        height: 75vh; /* Adjusted height based on viewport height */
+    }
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 1366px) {
+    .chat-container {
+        height: 55vh; /* Adjusted height based on viewport height, smaller screens might need less height */
+    }
+}
+
 #user_input {
     width: 800px;
     height: 38px;  /* Optional, only if you find the heights don't match */
@@ -510,6 +518,7 @@ i.fas.fa-robot {
     max-height: 50vh; /* Adjust this value to your needs. 50vh means 50% of the viewport height. */
     overflow-y: auto;
 }
+
 .bottom-form {
     position: fixed;
     bottom: 10%;  
@@ -519,46 +528,16 @@ i.fas.fa-robot {
     background-color: transparent; /* Ensures the background is transparent */
     z-index: 999;  /* Ensures this layer stays on top */
 }
-#new-chat-btn {
-    margin-bottom: 25px;
-}
-#api-conversations-btn {
-    margin-bottom: 25px;
-}
-
 
 .btn-send {
     background-color: #5863F8; 
     margin-left: 15px;  /* Adds some space between the textarea and button */
     height: 38px;  /* Ensures it matches the height of the textarea */
 }
-.no-bootstrap {
-    height: auto !important;
-    max-height: none !important;
-  }
 
-.loading {
-    position: absolute;
-    left: 15%; /* Adjust these values according to your needs */
-    top: 50px; /* Adjust these values according to your needs */
-    display: none;
-    width: 100px;
-    height: 100px;
-}
-.loading {
-    position: absolute;
-    left: 5%;
-    top: -50px;
-    display: none;
-    width: 100px;
-    height: 100px;
-}
-.row.align-items-center.py-4 {
-    position: relative;
-}
-h2 {
-    font-size: 1.5em;
-}
+
+/****************** Sidebar / Converstation List Styles **********************/
+
 
 .sidebar {
     background-color: #3F484B;
@@ -570,6 +549,14 @@ h2 {
     scrollbar-color: #7F898B #3F484B;
     scrollbar-width: thin;
     z-index: 10;
+}
+
+#new-chat-btn {
+    margin-bottom: 25px;
+}
+
+#api-conversations-btn {
+    margin-bottom: 25px;
 }
 
 /* Making Scrollbar Smaller */
@@ -589,20 +576,6 @@ h2 {
 
 .sidebar:hover::-webkit-scrollbar-thumb {
     background-color: #7F898B; 
-}
-
-
-
-.main-content {
-    flex: 1; /* Flex property here */
-    padding-left: 20px;
-    padding-right: 20px;
-    border-top: 1px solid red; /* Temporary visual aid */
-}
-
-.dropdown {
-    z-index: 1;
-    min-width: 100px;
 }
 
 .conversation-item {
@@ -628,20 +601,52 @@ h2 {
     font-size: 12px; /* smaller font for metadata */
 }
 
+/* Container for converstation metadata */
+.conversation-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .token-count, .model-name {
     margin-right: 10px; /* space between the two metadata items */
 }
 
-textarea {
-    overflow: hidden; /* this ensures the scroll isn't shown */
-    resize: none;     /* this disables manual resizing */
+.temperature-info {
+    font-style: italic;
+    color: #FFFFFF; /* Adjust the color as needed */
 }
+
+
+/***************   Not Clear (Unused?) Styles   ******************/
+
+.main-content {
+    flex: 1; /* Flex property here */
+    padding-left: 20px;
+    padding-right: 20px;
+    border-top: 1px solid red; /* Temporary visual aid */
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+ }
+
+ .dropdown {
+    z-index: 1;
+    min-width: 100px;
+}
+
+.no-bootstrap {
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .custom-modal-width {
+    max-width: 50%; /* Adjust the width as needed */
+}
+
 .auto-height {
     height: auto;
   }
-
-
-/* textarea.form-control { */
- /*    height: auto !important;  Override Bootstrap's fixed height for textareas */
-/* } */
-
