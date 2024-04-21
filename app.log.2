@@ -1,4 +1,4 @@
-2024-04-11 09:56:33,598 - app - ERROR - Exception on /c/image.jpg [GET]
+2024-04-11 09:56:36,081 - app - ERROR - Exception on /c/image.jpg [GET]
 Traceback (most recent call last):
   File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
     self.dialect.do_execute(
@@ -83,3 +83,42 @@ FROM conversation
 WHERE conversation.id = %(pk_1)s]
 [parameters: {'pk_1': 'image.jpg'}]
 (Background on this error at: https://sqlalche.me/e/20/9h9h)
+2024-04-16 11:28:47,832 - app - INFO - Received model: gpt-3.5-turbo
+2024-04-16 11:28:47,835 - app - INFO - Received temperature: 0.7
+2024-04-16 11:28:48,976 - app - INFO - Response from model: Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."
+2024-04-16 11:28:49,132 - app - INFO - Prompt tokens: 29
+2024-04-16 11:28:49,133 - app - INFO - Completion tokens: 19
+2024-04-16 11:28:49,134 - app - INFO - Total tokens: 48
+2024-04-16 11:28:49,134 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. test sentence please Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-04-16 11:28:49,667 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "UI Development Assistance",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1713292129,
+  "id": "chatcmpl-9EhpxZYbNxwi9rk4lReYviGauIjRF",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c2295e73ad",
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 73,
+    "total_tokens": 76
+  }
+}
+2024-04-16 11:28:49,669 - app - INFO - Generated conversation summary: UI Development Assistance
+2024-04-16 11:28:49,675 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."'}]
+2024-04-16 11:29:01,055 - app - INFO - Received model: gpt-4-0613
+2024-04-16 11:29:01,056 - app - INFO - Received temperature: 0.7
+2024-04-16 11:29:01,058 - app - INFO - Using existing conversation with id 364.
+2024-04-16 11:29:03,454 - app - INFO - Response from model: Of course! Here is another test sentence: "The robust language model generates complex and coherent narratives based on the input provided."
+2024-04-16 11:29:03,456 - app - INFO - Prompt tokens: 54
+2024-04-16 11:29:03,456 - app - INFO - Completion tokens: 25
+2024-04-16 11:29:03,457 - app - INFO - Total tokens: 79
