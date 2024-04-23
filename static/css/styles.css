@@ -44,19 +44,16 @@ h2 {
 }
 
 #systemMessageModal .modal-body {
+    display: flex;
+    flex-direction: column;
     flex: 1;
-}
-
-/* Modal content container, includes sidebar and main content */
-#systemMessageModal .modal-dialog {
-    min-width: 600px; /* Adjust the value as needed */
 }
 
 /* Wraps the entire modal content including the sidebar */
 .modal-dialog.systemMessage-modal-lg {
-    max-height: 90vh;
-    max-width: 1100px;
-    width: 90%; /* Add this line to set the width to 90% of the viewport */
+    max-height: 650px;
+    max-width: 1300px; /* Key adjustment for system message modal width. Sized for min 1366 x 768 screen */
+    /* width: 90%;  Add this line to set the width to 90% of the viewport */
     display: flex;
     overflow: hidden; 
 }
@@ -78,11 +75,9 @@ h2 {
 
 /* Container for dynamic modal content groups */
 .modal-content-group {
-    margin-bottom: 10px; /* Space between groups */
-    border-radius: 5px; /* Rounded corners for aesthetics */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
-    max-height: 200px; /* Maximum height to maintain a consistent size */
+    height: 400px;  /* Orchestration content groups real estate available */
 }
+
 
 /********** Modal Header and Footer Styles *****************/
 
@@ -121,8 +116,8 @@ h2 {
 }
 
 /* Adjusting spacing specifically between model dropdown and temperature adjust button */
-#modalModelDropdownButton + #modalTemperatureAdjustBtn {
-    margin-left: 10px; /* Add spacing to the left of the temperature adjust button */
+.model-dropdown-container + #modalTemperatureAdjustBtn {
+    margin-left: 9px; /* Add spacing to the left of the temperature adjust button */
 }
 
 /* Styling for modal footer */
@@ -171,13 +166,24 @@ h2 {
 /************ System Message Content Group Styles *****************/
 
 #systemMessageContent {
-    height: 35vh; /* 50% of the viewport height */
-    /* min-height: 150px;  Minimum height */
-    /* max-height: 600px;  Maximum height */
-    max-height: calc(100vh - 250px); /* Adjust 250px to fit the modal content within the viewport */
-   /* overflow-y: auto;  Add vertical scrollbar when content overflows */
+    width: 100%;
+    min-height: 255px;  /*  Default minimum height for system message content. */
 }
 
+#systemMessageModal .modal-content {
+    display: flex;
+    flex-direction: column;  /* Change layout to vertical stacking */
+    height: 100%;  /* Fill the height of the modal dialog */
+}
+
+#systemMessageModal .modal-header, 
+#systemMessageModal .modal-footer {
+    height: 75px;  /* Fixed height for header and footer */
+}
+
+#systemMessageModal .modal-body {
+    flex-grow: 1;  /* Takes up all remaining space */
+}
 
 /******************** Code Block Styles ********************/
 
