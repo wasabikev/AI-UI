@@ -23,11 +23,17 @@ h2 {
     font-size: 1.5em;
 }
 
-
+.no-margin, .no-margin p, .no-margin div {
+    margin-top: 0;
+    margin-bottom: 0;
+}
 
 
 /*********** System Message Modal Styles *****************/
 
+.system-message strong, .system-message span {
+    display: inline; /* This ensures that the elements are not treated as block-level */
+}
 
 .modal-label {
     color: #fff;

@@ -12,6 +12,8 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **Multiple AI Models**: The interface supports switching between different AI models, including OpenAI and Anthropic models, to cater to diverse conversational needs. (More models to come later)
 - **Interactive UI**: A user-friendly interface with a chat box and messaging system that ensures a seamless conversational flow.
 - **Admin Dashboard**: An admin interface for user management and system message configuration.
+- **Flash Messages**: Provides feedback on user actions via transient notifications.
+- **Direct Database Access**: Includes a button to open a direct view of the database entries in a new tab, facilitating easy access to raw data.
 - **Rich Text Interaction**: Supports Markdown, code snippets with syntax highlighting, and LaTeX content, enabling rich text interactions within the chat interface.
 - **System Message Customization**: Offers a comprehensive system message management interface, allowing users to create, update, delete, and select system messages with customizable content, model names, and temperature settings.
 - **Flexible AI Behavior**: Users can adjust the "temperature" setting to influence the variability of AI responses and select from different AI models to tailor interactions to their needs.
@@ -29,7 +31,7 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **auth.py**: Authentication logic for user login, registration, and session handling.
 - **models.py**: SQLAlchemy models defining the database schema for users, conversations, and system messages.
 - **main.js**: Client-side logic for handling UI events, API calls, and dynamic content updates.
-- **chat.html**: The main chat interface template that users interact with.
+- **chat.html**: The primary user interface for real-time conversation with AI models. It includes functionalities such as initiating new conversations, accessing the admin dashboard, and adjusting AI model settings. It also integrates a rich text editor and supports rendering of Markdown, LaTeX, and syntax-highlighted code snippets.
 - **admin.html**: The admin dashboard template for managing users and system messages.
 - **login.html/register.html**: Templates for user authentication flows.
 
@@ -53,55 +55,44 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `updateSystemMessageDropdown()`, `populateSystemMessageModal()`, `updateModelDropdownInModal(modelName)`: Functions related to system message management, allowing for the customization of automated responses.
 - `updateTemperatureDisplay()`, `toggleTemperatureSettings()`: Functions for managing the temperature setting and model selection, providing flexibility in AI interactions.
 - `createMessageElement(message)`, `updateConversationList()`, `loadConversation(conversationId)`: Functions for dynamically updating the UI and handling real-time user interactions.
-
+- `saveWebsiteURL(websiteURL, systemMessageId)`: Saves a website URL associated with a particular system message to the backend. Handles POST request and error management.
+- `updateModelDropdownInModal(modelName)`: Updates the model dropdown in the system message modal to reflect the selected model name.
+- `toggleTemperatureSettings(shouldShowTemperature)`: Toggles the visibility of temperature settings in the system message modal based on user interaction.
+- Additionally, `main.js` handles dynamic text area resizing, admin dashboard access, database view access, and flash message timeout functionalities as linked with events in `chat.html`.
 
 ### models.py
 
-- `Conversation`: Represents a conversation with fields such as title, history, and token count.
+- `Conversation`: Represents a conversation with fields such as title, history, token count, folder_id, user_id, created_at, updated_at, model_name, sentiment, tags, language, status, rating, confidence, intent, entities, temperature, and prompt_template. This model is crucial for storing comprehensive details about each conversation, including metadata and interaction specifics.
 - `User`: Represents a user with fields for username, email, and password.
 - `SystemMessage`: Represents a system message that can be used as a template or preset response.
+- `Folder`: Manages groups of conversations, allowing users to categorize and organize conversations into folders for better usability and management.
+- `UserUsage`: Tracks the usage details of users, including the API used, tokens consumed, session timings, and cost. This model helps in monitoring and managing the resource utilization by individual users.
 
 ### Modal-Based User Interface Guidelines
 
 - In our project, we prioritize a modal-based approach for user interfaces when requesting input or displaying information that requires user interaction. This approach ensures a consistent, accessible, and user-friendly experience across the application. 
 - Use Modals for User Input: Whenever the application requires input from the user, whether it's form submission, settings configuration, or any other input-driven task, use a modal window. This includes actions like adding or editing data, confirming decisions, or any interaction that benefits from focused attention.
 - For future iterations and feature implementations, we strongly encourage maintaining the modal-based approach for user interfaces. This consistency is key to providing an intuitive and pleasant user experience across our application.
+- The system message modal allows for comprehensive configuration of system messages, including templates setup, model selection, and temperature settings. It also provides controls for adding websites and files, which can be used in specific scenarios like real-time data analysis or document review.  Intended as a hub for systemic orchestration.
+
+## Error Handling and Feedback
+**Client-Side**: Errors are logged in the console and user-friendly messages are displayed using modal alerts.
+**Server-Side**: Errors are logged using Flask's app.logger and appropriate HTTP status codes are returned to the frontend.
+
+## External Libraries and Scripts
+**Bootstrap**: Used for responsive design and UI components like modals and buttons.
+**jQuery**: Facilitates DOM manipulation and event handling.
+**Popper.js**: Used for tooltip and popover position.
+**Marked.js**: A markdown parser used to render markdown content within chats.
+**Prism.js**: A syntax highlighting library used for displaying code snippets.
+**MathJax**: Renders mathematical notation written in LaTeX within the chat interface.
+**Chart.js**: Enables graphical representation of data, potentially useful for visual AI data analysis.
+**DOMPurify**: Sanitizes HTML and prevents XSS attacks.
 
 ## Feature Roadmap
-
-### TriFusion Query
-
-Status: Under development
-
-Objective: Enhance the chatbot's capability to provide insightful and contextually relevant responses by leveraging a unique combination of three distinct database methodologies: relational, vector, and graph databases. This feature, named "TriFusion Query," aims to unify structured data querying, semantic search, and relationship exploration into a single, powerful query mechanism.
-
-Functional Spec:
-
-Relational Database Integration: Utilize a relational database (e.g., PostgreSQL) to store and manage structured data extracted from targeted websites. This will support complex queries, ensuring data integrity and transactional support for retrieving specific facts and structured information.
-
-Vector Database Incorporation: Implement a vector database to store text content from websites as vector representations, enabling efficient semantic search and similarity-based retrieval. This will allow the chatbot to provide contextually relevant responses based on the semantic similarity of user queries to stored data.
-
-Graph Database Utilization: Employ a graph database to represent the relationships between different entities extracted from websites, such as articles, authors, and categories. This will enable the exploration of interconnected data, uncovering hidden patterns and recommending related content based on the relational context.
-
-Query Fusion Mechanism: Develop a sophisticated query fusion mechanism that, upon receiving a user query, simultaneously leverages the relational, vector, and graph databases. This mechanism will parse the query, identify relevant keywords and entities, and retrieve data from all three databases. The aggregated data will then be used to generate comprehensive, accurate, and insightful responses.
-
-System Prompt Integration: Ensure that the "TriFusion Query" feature is seamlessly integrated into the system prompt, allowing for dynamic adjustment of query parameters, including targeted system prompts and temperature settings. This will enable the customization of chatbot responses to achieve the desired level of creativity, specificity, and relevance.
-
-Anticipated Benefits:
-
-- Enhanced accuracy and relevance of chatbot responses through semantic search capabilities and structured data retrieval.
-- Improved user experience by providing comprehensive answers that leverage interconnected data and insights.
-- Increased flexibility and adaptability of the chatbot in addressing a wide range of user queries with contextually rich responses.
-
-Development Milestones:
-
-- Relational Database Schema Design: Define and implement the schema for storing structured data from websites.
-- Vector Representation Processing: Select and integrate natural language processing (NLP) models for generating vector representations of text content.
-- Graph Database Structure Implementation: Design and create the graph database structure to represent the relationships between extracted entities.
-- Query Fusion Mechanism Development: Develop the core logic for the query fusion mechanism that combines data retrieval from all three databases.
-- Integration and Testing: Integrate the "TriFusion Query" feature into the existing system, followed by thorough testing to ensure accuracy and efficiency.
-
-Target Completion Date: TBD
+**Support for Additional AI Models**: Integrate more models from different providers to enhance versatility.
+**Expansion of System Message Modal**: Enhance the system message modal to serve as a central hub for orchestrating various layers of interaction, including but not limited to system messages, temperature settings, and the integration of controls for adding websites, files, graph databases, and advanced AI parameters like top-k settings.
+**Enhanced Security Features**: Implement advanced authentication and authorization features to secure user interactions.
 
 
 ## Setting up API Keys

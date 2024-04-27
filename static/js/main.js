@@ -491,12 +491,12 @@ function displaySystemMessage(systemMessage) {
     let systemMessageButton = createSystemMessageButton();
     const modelDisplayName = modelNameMapping(model);
     const temperatureDisplay = systemMessage.temperature;
-    const descriptionContent = renderOpenAI(systemMessage.description);
+    const descriptionContent = `<span class="no-margin">${renderOpenAI(systemMessage.description)}</span>`;
     const renderedContent = `
-        <div class="chat-entry system system-message">
-            <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
-            <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
-        </div>`;
+    <div class="chat-entry system system-message">
+        <strong>System:</strong>${systemMessageButton}${descriptionContent}<br>
+        <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
+    </div>`;
 
     // Update the UI
     $('#chat').prepend(renderedContent);
@@ -780,7 +780,7 @@ function toggleTemperatureSettings(shouldShowTemperature) {
 let selectedTemperature;
 
 function createSystemMessageButton() {
-    return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-solid fa-pencil"></i></button>`;
+    return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-solid fa-gear"></i></button>`;
 }
 
 document.addEventListener('click', function(event) {
