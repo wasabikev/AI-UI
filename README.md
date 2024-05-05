@@ -2,7 +2,8 @@
 
 ## Overview
 
-AI ∞ UI is a web-based conversational interface that facilitates interactions with various AI models via LLM APIs. It is designed to support pair-programming activities, particularly with a Large Language Model (LLM) as an assistant.
+AI ∞ UI is a web-based conversational interface that facilitates crafting and architecting layered (multi-system) AI orchestration. The AI ∞ UI system provides an interface to leverage a range of tools and models.
+A core function of AI ∞ UI is to provide an interface for AI-assisted programming (or AI-driven programming) with various AI models via LLM APIs. It is designed to support collaborative coding activities between a human and an AI, with the AI generating the majority of the code based on the human's guidance and high-level decisions.
 
 ## Features
 
@@ -14,10 +15,11 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **Admin Dashboard**: An admin interface for user management and system message configuration.
 - **Flash Messages**: Provides feedback on user actions via transient notifications.
 - **Direct Database Access**: Includes a button to open a direct view of the database entries in a new tab, facilitating easy access to raw data.
-- **Rich Text Interaction**: Supports Markdown, code snippets with syntax highlighting, and LaTeX content, enabling rich text interactions within the chat interface.
+- **Rich Text Interaction**: Supports Markdown, code snippets with syntax highlighting, LaTeX content, and lists, enabling rich text interactions within the chat interface.
 - **System Message Customization**: Offers a comprehensive system message management interface, allowing users to create, update, delete, and select system messages with customizable content, model names, and temperature settings.
 - **Flexible AI Behavior**: Users can adjust the "temperature" setting to influence the variability of AI responses and select from different AI models to tailor interactions to their needs.
 - **Dynamic UI and Real-time Feedback**: Features a dynamic user interface that updates in real-time, providing an interactive and responsive user experience.
+
 
 ## Key Components
 
@@ -30,7 +32,7 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **app.py**: Flask server that handles routes, API communication, and session management.
 - **auth.py**: Authentication logic for user login, registration, and session handling.
 - **models.py**: SQLAlchemy models defining the database schema for users, conversations, and system messages.
-- **main.js**: Client-side logic for handling UI events, API calls, and dynamic content updates.
+- **main.js**: Client-side logic for handling UI events, API calls, and dynamic content updates. Includes detailed modal interactions for system messages, model selection, and temperature adjustments, enhancing user control over AI behavior.
 - **chat.html**: The primary user interface for real-time conversation with AI models. It includes functionalities such as initiating new conversations, accessing the admin dashboard, and adjusting AI model settings. It also integrates a rich text editor and supports rendering of Markdown, LaTeX, and syntax-highlighted code snippets.
 - **admin.html**: The admin dashboard template for managing users and system messages.
 - **login.html/register.html**: Templates for user authentication flows.
@@ -58,7 +60,11 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `saveWebsiteURL(websiteURL, systemMessageId)`: Saves a website URL associated with a particular system message to the backend. Handles POST request and error management.
 - `updateModelDropdownInModal(modelName)`: Updates the model dropdown in the system message modal to reflect the selected model name.
 - `toggleTemperatureSettings(shouldShowTemperature)`: Toggles the visibility of temperature settings in the system message modal based on user interaction.
+- `updateModelDropdownInModal(modelName)`: Updates the model dropdown in the system message modal to reflect the selected model name, ensuring the UI is synchronized with the backend model settings.
+- `populateModelDropdownInModal()`: Populates the model dropdown in the system message modal with available AI models, allowing users to select different models dynamically.
 - Additionally, `main.js` handles dynamic text area resizing, admin dashboard access, database view access, and flash message timeout functionalities as linked with events in `chat.html`.
+
+
 
 ### models.py
 
@@ -117,4 +123,4 @@ For inquiries or assistance, reach out via [LinkedIn](https://www.linkedin.com/i
 
 ---
 
-**Note**: This README is intended for use by the LLM providing pair-programming assistance and may include specific instructions or details pertinent to that role.
+**Note**: This README is intended for use as contextual reference within a system prompt.

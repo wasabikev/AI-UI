@@ -1,124 +1,130 @@
-2024-04-11 09:56:36,081 - app - ERROR - Exception on /c/image.jpg [GET]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 325, in show_conversation
-    conversation = Conversation.query.get(conversation_id)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<string>", line 2, in get
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\util\deprecations.py", line 386, in warned
-    return fn(*args, **kwargs)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1130, in get
-    return self._get_impl(ident, loading.load_on_pk_identity)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\query.py", line 1139, in _get_impl
-    return self.session._get_impl(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3684, in _get_impl
-    return db_load_fn(
-           ^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 666, in load_on_pk_identity
-    session.execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2246, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2141, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "image.jpg"
-LINE 3: WHERE conversation.id = 'image.jpg'
-                                ^
-
-[SQL: SELECT conversation.id AS conversation_id, conversation.title AS conversation_title, conversation.history AS conversation_history, conversation.token_count AS conversation_token_count, conversation.folder_id AS conversation_folder_id, conversation.user_id AS conversation_user_id, conversation.created_at AS conversation_created_at, conversation.updated_at AS conversation_updated_at, conversation.model_name AS conversation_model_name, conversation.sentiment AS conversation_sentiment, conversation.tags AS conversation_tags, conversation.language AS conversation_language, conversation.status AS conversation_status, conversation.rating AS conversation_rating, conversation.confidence AS conversation_confidence, conversation.intent AS conversation_intent, conversation.entities AS conversation_entities, conversation.temperature AS conversation_temperature, conversation.prompt_template AS conversation_prompt_template 
-FROM conversation 
-WHERE conversation.id = %(pk_1)s]
-[parameters: {'pk_1': 'image.jpg'}]
-(Background on this error at: https://sqlalche.me/e/20/9h9h)
-2024-04-16 11:28:47,832 - app - INFO - Received model: gpt-3.5-turbo
-2024-04-16 11:28:47,835 - app - INFO - Received temperature: 0.7
-2024-04-16 11:28:48,976 - app - INFO - Response from model: Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."
-2024-04-16 11:28:49,132 - app - INFO - Prompt tokens: 29
-2024-04-16 11:28:49,133 - app - INFO - Completion tokens: 19
-2024-04-16 11:28:49,134 - app - INFO - Total tokens: 48
-2024-04-16 11:28:49,134 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. test sentence please Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
-2024-04-16 11:28:49,667 - app - INFO - Response from OpenAI for summary: {
+2024-05-04 15:38:09,105 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.', 'role': 'system'}, {'content': 'A test sentence please', 'role': 'user'}, {'content': 'Sure! Here is a test sentence for you to use:\n\n"The quick brown fox jumps over the lazy dog."', 'role': 'assistant'}, {'role': 'user', 'content': 'Another please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s another test sentence:\n\n"Lightning flashed across the sky, illuminating the dark, winding path ahead."'}]
+2024-05-05 09:40:19,574 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-05 09:40:19,577 - app - INFO - Received temperature: 0.3
+2024-05-05 09:40:20,478 - app - INFO - Response from model: Sure, here is a test sentence for you: "The quick brown fox jumps over the lazy dog."
+2024-05-05 09:40:20,694 - app - INFO - Prompt tokens: 30
+2024-05-05 09:40:20,694 - app - INFO - Completion tokens: 21
+2024-05-05 09:40:20,694 - app - INFO - Total tokens: 51
+2024-05-05 09:40:20,694 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. A test sentence please Sure, here is a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-05-05 09:40:21,003 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "UI Development Assistance",
+        "content": "UI Solution for Language Models",
         "role": "assistant"
       }
     }
   ],
-  "created": 1713292129,
-  "id": "chatcmpl-9EhpxZYbNxwi9rk4lReYviGauIjRF",
+  "created": 1714927218,
+  "id": "chatcmpl-9LZCMDwZ41jVjFJolHJ8HecR395WU",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_c2295e73ad",
+  "system_fingerprint": "fp_a450710239",
   "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 73,
-    "total_tokens": 76
+    "completion_tokens": 5,
+    "prompt_tokens": 76,
+    "total_tokens": 81
   }
 }
-2024-04-16 11:28:49,669 - app - INFO - Generated conversation summary: UI Development Assistance
-2024-04-16 11:28:49,675 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test sentence: "The quick brown fox jumps over the lazy dog."'}]
-2024-04-16 11:29:01,055 - app - INFO - Received model: gpt-4-0613
-2024-04-16 11:29:01,056 - app - INFO - Received temperature: 0.7
-2024-04-16 11:29:01,058 - app - INFO - Using existing conversation with id 364.
-2024-04-16 11:29:03,454 - app - INFO - Response from model: Of course! Here is another test sentence: "The robust language model generates complex and coherent narratives based on the input provided."
-2024-04-16 11:29:03,456 - app - INFO - Prompt tokens: 54
-2024-04-16 11:29:03,456 - app - INFO - Completion tokens: 25
-2024-04-16 11:29:03,457 - app - INFO - Total tokens: 79
+2024-05-05 09:40:21,009 - app - INFO - Generated conversation summary: UI Solution for Language Models
+2024-05-05 09:40:21,026 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure, here is a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]
+2024-05-05 11:38:11,349 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-05 11:38:11,350 - app - INFO - Received temperature: 0.3
+2024-05-05 11:38:12,537 - app - INFO - Response from model: Sure, here is a test sentence for you: "The quick brown fox jumps over the lazy dog."
+2024-05-05 11:38:12,751 - app - INFO - Prompt tokens: 30
+2024-05-05 11:38:12,752 - app - INFO - Completion tokens: 21
+2024-05-05 11:38:12,753 - app - INFO - Total tokens: 51
+2024-05-05 11:38:12,754 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. A test sentence please Sure, here is a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
+2024-05-05 11:38:13,422 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "UI Solution for Large Language Models",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1714934290,
+  "id": "chatcmpl-9Lb2QMtpedMrwygiOLqQ4dUQK344i",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_a450710239",
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 76,
+    "total_tokens": 82
+  }
+}
+2024-05-05 11:38:13,429 - app - INFO - Generated conversation summary: UI Solution for Large Language Models
+2024-05-05 11:38:13,438 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure, here is a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]
+2024-05-05 11:39:36,170 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-05 11:39:36,171 - app - INFO - Received temperature: 0.7
+2024-05-05 11:39:37,378 - app - INFO - Response from model: Sure, here is a test paragraph: The quick brown fox jumped over the lazy dog. The dog barked loudly in response. This sentence is included to provide more content for testing purposes. apple.
+2024-05-05 11:39:37,576 - app - INFO - Prompt tokens: 31
+2024-05-05 11:39:37,576 - app - INFO - Completion tokens: 40
+2024-05-05 11:39:37,576 - app - INFO - Total tokens: 71
+2024-05-05 11:39:37,576 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple". A test paragraph please Sure, here is a test paragraph: The quick brown fox jumped over the lazy dog. The dog barked loudly in response. This sentence is included to provide more content for testing purposes. apple.'}], 'max_tokens': 10}
+2024-05-05 11:39:37,966 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "API Interface Development Testapple",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1714934374,
+  "id": "chatcmpl-9Lb3mh3T77YmgrnRZnI6YvM8HPyxU",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3b956da36b",
+  "usage": {
+    "completion_tokens": 5,
+    "prompt_tokens": 96,
+    "total_tokens": 101
+  }
+}
+2024-05-05 11:39:37,972 - app - INFO - Generated conversation summary: API Interface Development Testapple
+2024-05-05 11:39:37,981 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test paragraph please'}, {'role': 'assistant', 'content': 'Sure, here is a test paragraph: The quick brown fox jumped over the lazy dog. The dog barked loudly in response. This sentence is included to provide more content for testing purposes. apple.'}]
+2024-05-05 11:40:17,380 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-05 11:40:17,381 - app - INFO - Received temperature: 0.3
+2024-05-05 11:40:19,224 - app - INFO - Response from model: Certainly! Here is a test paragraph for you:
+
+"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+2024-05-05 11:40:19,432 - app - INFO - Prompt tokens: 30
+2024-05-05 11:40:19,432 - app - INFO - Completion tokens: 88
+2024-05-05 11:40:19,434 - app - INFO - Total tokens: 118
+2024-05-05 11:40:19,434 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. A test paragraph please Certainly! Here is a test paragraph for you:\n\n"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."'}], 'max_tokens': 10}
+2024-05-05 11:40:20,077 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "UI Solution Development for Language Models",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1714934417,
+  "id": "chatcmpl-9Lb4T0S1jzX3KStsRlqKq5A4pzN7A",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_3b956da36b",
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 143,
+    "total_tokens": 149
+  }
+}
+2024-05-05 11:40:20,079 - app - INFO - Generated conversation summary: UI Solution Development for Language Models
