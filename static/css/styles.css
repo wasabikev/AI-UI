@@ -28,6 +28,10 @@ h2 {
     margin-bottom: 0;
 }
 
+.no-caret::after {
+    display: none;
+}
+
 
 /*********** System Message Modal Styles *****************/
 
@@ -333,6 +337,10 @@ pre code {
 /****************** Primary Header Styles  *********************/
 
 
+.model-dropdown-margin {
+    margin-right: 10px;
+}
+
 /* Header container (title, buttons, etc.) */
 .row.align-items-center.py-4 {
     position: relative;
@@ -359,17 +367,8 @@ pre code {
 
 .loading {
     position: absolute;
-    left: 15%; /* Adjust these values according to your needs */
-    top: 50px; /* Adjust these values according to your needs */
-    display: none;
-    width: 100px;
-    height: 100px;
-}
-
-.loading {
-    position: absolute;
-    left: 5%;
-    top: -50px;
+    left: 5%; /* Adjust these values according to your needs */
+    top: -50px; /* Adjust these values according to your needs */
     display: none;
     width: 100px;
     height: 100px;
@@ -645,10 +644,7 @@ i.fas.fa-robot {
     text-overflow: ellipsis;
  }
 
- .dropdown {
-    z-index: 1;
-    min-width: 100px;
-}
+
 
 .no-bootstrap {
     height: auto !important;

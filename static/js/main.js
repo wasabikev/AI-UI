@@ -12,6 +12,7 @@ let initialTemperature;
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
 let showTemperature = false;  // Tracks the visibility of the temperature settings
+let selectedTemperature = 0.7; // Default temperature value
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -33,33 +34,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
-    });
-
-    // Event listener for opening the Add Website Modal
-    document.getElementById('addWebsiteButton').addEventListener('click', function() {
-        $('#addWebsiteModal').modal('show');
-    });
-
-    // Add event listener to clear the websiteURL input when the modal is closed
-    $('#addWebsiteModal').on('hidden.bs.modal', function () {
-        document.getElementById('websiteURL').value = '';
-    });
-
-    // Event listener for the form submission inside the Add Website Modal
-    document.getElementById('addWebsiteForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission
-        const websiteURL = document.getElementById('websiteURL').value;
-
-        if (websiteURL) {
-            // Here, you can send the website URL to your backend for processing or storing
-            // Example: saveWebsiteURL(websiteURL);
-            console.log(`Website URL added: ${websiteURL}`); // For demonstration purposes
-
-            // Optionally, close the modal after submission
-            $('#addWebsiteModal').modal('hide');
-        } else {
-            alert('No website URL provided.');
-        }
     });
 });
 
@@ -249,11 +223,13 @@ document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
 $('#systemMessageModal').on('hide.bs.modal', function (event) {
     // Check if the changes were not saved
     if (!isSaved) {
+        console.log("Modal closed without saving. Restoring initial states where necessary.");
+
         // Revert temperature only if not saved
         selectedTemperature = initialTemperature;
-        console.log("Modal closed without saving. Restoring temperature to:", initialTemperature);
+        updateTemperatureSelectionInModal(initialTemperature);
 
-        // Revert UI changes here (if any were made)
+        // Revert other UI changes here (if any were made)
         if (activeSystemMessageId) {
             const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
             if (activeSystemMessage) {
@@ -262,20 +238,20 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
                 document.getElementById('systemMessageContent').value = activeSystemMessage.content;
                 document.getElementById('modalModelDropdownButton').dataset.apiName = activeSystemMessage.model_name;
                 document.getElementById('systemMessageDropdown').textContent = activeSystemMessage.name;
-                updateTemperatureSelectionInModal(activeSystemMessage.temperature); // Ensure the UI reflects the reverted temperature
                 console.log("Modal content reset to active system message:", activeSystemMessage.name);
             }
         }
     } else {
-        // Optionally, handle any tasks that should occur when the modal is closed after saving changes
-        console.log("Changes were saved, no need to revert the temperature.");
+        console.log("Changes were saved, no need to revert.");
     }
 
-    // Reset the isSaved flag back to false for the next time the modal is opened
+    // Reset the isSaved flag and any other flags or data attributes
     isSaved = false;
+    $(this).removeData('targetGroup');
 
-    // Any other cleanup actions can go here
+    // Cleanup UI changes
     $(this).find('.modal-dialog').css('height', 'auto');
+    $('.modal-content-group').addClass('hidden');  // Ensure all groups are hidden by default
 });
 
 
@@ -422,6 +398,7 @@ function populateSystemMessageModal() {
     dropdownMenu.innerHTML = '';
 
     // Add each system message to the dropdown
+    console.log('Populating system message modal...');
     systemMessages.forEach((message, index) => {
         console.log('System message:', message);
         console.log(`System message [${message.name}] temperature:`, message.temperature); 
@@ -431,7 +408,9 @@ function populateSystemMessageModal() {
         dropdownItem.onclick = function() {
             // Update the dropdown button text and modal content
             dropdownButton.textContent = this.textContent; // Update the system message dropdown button text
+            console.log(`Setting name: ${message.name}`);
             document.getElementById('systemMessageName').value = message.name || '';
+            console.log(`Current name value in input: ${document.getElementById('systemMessageName').value}`);
             document.getElementById('systemMessageDescription').value = message.description || '';
             document.getElementById('systemMessageContent').value = message.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = message.id;
@@ -601,19 +580,6 @@ $(window).on('load', function () {
 });
 
 
-$('.dropdown-item').on('click', function(event) {
-    event.preventDefault(); // Prevent the # appearing in the URL
-    $('#dropdownMenuButton').text($(this).text());
-    model = $(this).attr('data-model'); // Update the model variable here
-    console.log("Dropdown item clicked. Model is now: " + model);
-
-    // Update the displayed model name in the system message section
-    $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
-});
-
-
-
-
 document.querySelectorAll('input[name="temperatureOptions"]').forEach((radioButton) => {
     radioButton.addEventListener('change', updateTemperatureDisplay);
 });
@@ -700,84 +666,91 @@ function updateModelDropdownInModal(modelName) {
 updateModelDropdownInModal('GPT-3.5'); // Update with the actual model name
 
 $('#systemMessageModal').on('show.bs.modal', function () {
-    var shouldShowTemperature = $(this).data('showTemperature');
-    console.log("Modal show event - shouldShowTemperature:", shouldShowTemperature);
-    toggleTemperatureSettings(shouldShowTemperature);
+    const targetGroup = $(this).data('targetGroup');
+    console.log("Modal show event - target group:", targetGroup);
 
-    // Load details of the active system message if available
+    // Hide all groups
+    $('.modal-content-group').addClass('hidden');
+
+    // Show the selected group
+    $('#' + targetGroup).removeClass('hidden');
+
+    // Setup the dropdown for selecting the model.
+    populateModelDropdownInModal();
+
+    // Set the system message name if there's an active system message
     if (activeSystemMessageId) {
         const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
         if (activeSystemMessage) {
             document.getElementById('systemMessageName').value = activeSystemMessage.name;
-            document.getElementById('systemMessageDescription').value = activeSystemMessage.description;
-            document.getElementById('systemMessageContent').value = activeSystemMessage.content;
-            document.getElementById('modalModelDropdownButton').dataset.apiName = activeSystemMessage.model_name;
-            selectedTemperature = activeSystemMessage.temperature;
-
+            console.log("System message name set to:", activeSystemMessage.name);
+            // Ensure the model dropdown is set to the correct model
             updateModelDropdownInModal(activeSystemMessage.model_name);
-            updateTemperatureDisplay();
         }
+    } else {
+        // Optionally set a default name if no active message is found
+        document.getElementById('systemMessageName').value = "Default Name";
+        console.log("No active system message. Setting default name.");
+        // Set a default model or handle the case where no model is set
+        updateModelDropdownInModal("default-model-name"); // Adjust "default-model-name" as needed
     }
-
-    populateSystemMessageModal();
-    populateModelDropdownInModal();
 });
 
+$('#systemMessageModal').on('hidden.bs.modal', function () {
+    // Hide all content groups
+    $('.modal-content-group').addClass('hidden');
 
-// Main temperature adjust button in chat interface
-document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
-    $('#systemMessageModal').data('showTemperature', true); // Set the flag
-    $('#systemMessageModal').modal('show');
+    // Reset any specific flags or settings
+    $(this).removeData('targetGroup');
 });
 
-// Event listener for modal temperature adjust button
-document.getElementById("modalTemperatureAdjustBtn").addEventListener("click", function() {
-    showTemperature = !showTemperature;  // Toggle the global state
-    toggleTemperatureSettings(showTemperature);  // Pass the updated state to the function
-});
 
 // Event listener for the system message button in the chat interface
 document.addEventListener('click', function(event) {
     if (event.target && event.target.closest('#systemMessageButton')) {
-        var shouldShowTemperature = false; // Default to not showing temperature settings
+        // Set the target group to 'systemMessageContentGroup'
+        $('#systemMessageModal').data('targetGroup', 'systemMessageContentGroup');
 
-        // Set the data attribute and show the modal
-        $('#systemMessageModal').data('showTemperature', shouldShowTemperature);
+        // Show the modal
         $('#systemMessageModal').modal('show');
     }
 });
 
 // Reset modal to default state on close
 $('#systemMessageModal').on('hidden.bs.modal', function () {
-    // Always reset to hide temperature settings by default when the modal is closed
-    isTemperatureVisible = false;
-    toggleTemperatureSettings();
-    $(this).data('showTemperature', false); // Reset the flag
+    // Hide all content groups
+    $('.modal-content-group').addClass('hidden');
+
+    // Reset any specific flags or settings
+    $(this).removeData('targetGroup'); // Remove the data attribute for safety
 });
 
-function toggleTemperatureSettings(shouldShowTemperature) {
-    isTemperatureVisible = shouldShowTemperature;  // Set the state based on the passed parameter
-    console.log("toggleTemperatureSettings called with:", isTemperatureVisible);
-    var temperatureGroup = document.getElementById('temperatureGroup');
-    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
+function openModalAndShowGroup(targetGroup) {
+    console.log("Opening modal with target group:", targetGroup);
 
-    if (isTemperatureVisible) {
-        console.log("Showing temperature settings");
-        temperatureGroup.classList.remove('hidden');
-        temperatureGroup.classList.add('visible');
-        systemMessageContentGroup.classList.add('hidden');
-        systemMessageContentGroup.classList.remove('visible');
-    } else {
-        console.log("Hiding temperature settings");
-        temperatureGroup.classList.add('hidden');
-        temperatureGroup.classList.remove('visible');
-        systemMessageContentGroup.classList.remove('hidden');
-        systemMessageContentGroup.classList.add('visible');
-    }
+    // Hide all groups in the modal
+    $('.modal-content-group').addClass('hidden');
+
+    // Show the selected group
+    $('#' + targetGroup).removeClass('hidden');
+
+    // Open the modal
+    $('#systemMessageModal').modal('show');
 }
 
-// let selectedTemperature = 0.7; // Default temperature value
-let selectedTemperature;
+function toggleContentGroup(groupID) {
+    // Hide all groups
+    const groups = document.querySelectorAll('.modal-content-group');
+    groups.forEach(group => {
+        group.classList.add('hidden');
+    });
+
+    // Show the selected group
+    const selectedGroup = document.getElementById(groupID);
+    if (selectedGroup) {
+        selectedGroup.classList.remove('hidden');
+    }
+}
 
 function createSystemMessageButton() {
     return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-solid fa-gear"></i></button>`;
@@ -788,9 +761,6 @@ document.addEventListener('click', function(event) {
         // Logic to handle adding a new system message
     }
 });
-
-
-
 
 
 // Add event listener to model dropdown to handle model changes
@@ -1328,6 +1298,36 @@ $(document).ready(function() {  // Document Ready (initialization)
     
         // Navigate to the root URL
         window.location.href = '/';
+    });
+
+    // Handler for model dropdown items
+    $('.model-dropdown .dropdown-item').on('click', function(event) {
+        event.preventDefault(); // Prevent the # appearing in the URL
+        $('#dropdownMenuButton').text($(this).text());
+        model = $(this).attr('data-model'); // Update the model variable here
+        console.log("Dropdown item clicked. Model is now: " + model);
+
+        // Update the displayed model name in the system message section
+        $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
+    });
+
+    // Handler for system settings dropdown items
+    $('.settings-dropdown .dropdown-item').on('click', function(event) {
+        event.preventDefault();
+        const targetGroup = $(this).data('target');
+        console.log("Settings dropdown item clicked, target group:", targetGroup);
+        
+        // Pass the target group to the modal
+        $('#systemMessageModal').data('targetGroup', targetGroup);
+        $('#systemMessageModal').modal('show');
+    });
+
+    // Needed for "Send" to respond to the 'enter' key.
+    $('#user_input').keydown(function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Still prevent the default to avoid a newline on Enter
+            $('#chat-form').submit(); // Submit form when Enter is pressed without Shift
+        }
     });
 });
     
