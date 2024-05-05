@@ -95,30 +95,40 @@
                     <iframe id="loading" class="loading" src="https://giphy.com/embed/xTk9ZvMnbIiIew7IpW" frameBorder="0" allowFullScreen></iframe>
                     </div>
 
-                    <!-- Controls -->
+                    <!-- Models  -->
                     <div class="col-3 text-right">
-                        <div class="dropdown d-inline-block">
-                            <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false" style="display: none;">
-                                GPT-3.5
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo">GPT-3.5</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4 (8k)</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (1106)</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gemini-1.5-pro">Gemini 1.5 Pro</a></li>
-                            </ul>
-                        </div>
-                        <!-- Temperature Adjustment Button -->
-                        <button id="temperature-adjust-btn" class="btn btn-sm btn-info">
-                            <i class="fa fa-bars"></i>
-                        </button>
+                            <div class="dropdown model-dropdown model-dropdown-margin"> 
+                                <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false" style="display: none;">
+                                    GPT-3.5
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo">GPT-3.5</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4 (8k)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (1106)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gemini-1.5-pro">Gemini 1.5 Pro</a></li>
+                                </ul>
+                            </div>
 
-                        <button id="edit-title-btn" class="btn btn-sm btn-info hidden">Rename</button>
-                        <button id="delete-conversation-btn" class="btn btn-sm hidden" style="background-color: #9E4300; color: white;">
-                            <i class="far fa-trash-alt"></i>
-                        </button>
+                            <!-- System Settings -->
+                            <div class="dropdown settings-dropdown">
+                                <button class="btn btn-sm btn-info dropdown-toggle no-caret" type="button" id="settingsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fa fa-bars"></i>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="settingsDropdown">
+                                    <button class="dropdown-item" data-target="systemMessageContentGroup">System Message</button>
+                                    <button class="dropdown-item" data-target="temperatureGroup">Temperature</button>
+                                    <button class="dropdown-item" data-target="websitesGroup">Websites</button>
+                                    <button class="dropdown-item" data-target="filesGroup">Files</button>
+                                </div>
+                            </div>
+
+
+                            <button id="edit-title-btn" class="btn btn-sm btn-info hidden">Rename</button>
+                            <button id="delete-conversation-btn" class="btn btn-sm hidden" style="background-color: #9E4300; color: white;">
+                                <i class="far fa-trash-alt"></i>
+                            </button>
                     </div>
                 </header>
                 
@@ -161,10 +171,10 @@
                             <!-- Placeholder for dynamic RAG controls -->
                             <div id="RAG-Buttons">
                                 <!--- Website Identifier (real-time data, news summarization, and fact-checking) -->
-                                <button id="addWebsiteButton" type="button" class="btn btn-secondary">Add Website</button>
+                                <button id="addWebsiteButton" type="button" class="btn btn-secondary" onclick="toggleWebsiteGroup()">Websites</button>
 
                                 <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
-                                <button id="addFilesButton" type="button" class="btn btn-secondary">Add Files</button>
+                                <button id="addFilesButton" type="button" class="btn btn-secondary">Files</button>
                             </div>
                         </div>
                     </div>  
@@ -174,7 +184,7 @@
                         <div class="modal-header"> <!-- System message modal header -->
 
                             <h5 class="modal-title" id="systemMessageModalLabel">
-                                System: <!-- Title for the dropdown -->
+                                System: 
                                 <!-- Dropdown for selecting the system message -->
                                 <div class="dropdown d-inline-block">
                                     <button class="btn btn-secondary dropdown-toggle" type="button" id="systemMessageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -200,15 +210,24 @@
                                 </div>
                             </div>
                          
+                            <!-- Grouping Settings Dropdown and Delete Button -->
+                            <div class="ml-auto">
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-info dropdown-toggle no-caret" type="button" id="modalSettingsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fa fa-bars"></i>
+                                    </button>
+                                    <div class="dropdown-menu" aria-labelledby="modalSettingsDropdown">
+                                        <button class="dropdown-item" onclick="toggleContentGroup('systemMessageContentGroup')">System Message</button>
+                                        <button class="dropdown-item" onclick="toggleContentGroup('temperatureGroup')">Temperature</button>
+                                        <button class="dropdown-item" onclick="toggleContentGroup('websitesGroup')">Websites</button>
+                                        <button class="dropdown-item" onclick="toggleContentGroup('filesGroup')">Files</button>
+                                    </div>
+                                </div>
 
-                            <!-- Temperature adjustment toggle, delete, and close -->
-                            <button id="modalTemperatureAdjustBtn" class="btn btn-sm btn-info" onclick="toggleTemperatureSettings()">
-                                <i class="fa fa-bars"></i>
-                            </button>
-
-                            <button id="delete-system-message-btn" class="btn btn-sm ml-2" style="background-color: #9E4300; color: white;">
-                                <i class="far fa-trash-alt"></i>
-                            </button>                             
+                                <button id="delete-system-message-btn" class="btn btn-sm ml-2" style="background-color: #9E4300; color: white;">
+                                    <i class="far fa-trash-alt"></i>
+                                </button>
+                            </div>                         
 
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
@@ -242,7 +261,7 @@
 
                                 <!-- System Message Content Group -->
                                 <div class="col-md-12">
-                                    <div id="systemMessageContentGroup" class="modal-content-group visible">
+                                    <div id="systemMessageContentGroup" class="modal-content-group hidden">
                                         <!-- Description for drop down menu -->
                                         <div class="form-group" style="margin-top: -7px;">
                                             <label for="systemMessageDescription" class="modal-label">Description</label>
@@ -304,13 +323,22 @@
                                 </div> <!-- End of Bootstrap column -->
 
                                 <!-- Websites Group -->
-                                <div id="websitesGroup" class="hidden">
+                                <div id="websitesGroup" class="modal-content-group hidden">
                                     <div class="form-group">
                                         <label for="websiteURL">Website URL</label>
                                         <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
                                     </div>
-                                    <button type="button" class="btn btn-secondary" onclick="addWebsite()">Add Website</button>
-                                </div>        
+                                    <button id="submitWebsiteButton" type="button" class="btn btn-secondary" onclick="addWebsite()">Add Website</button>
+                                </div>   
+                                
+                                <!-- Files Group -->
+                                <div id="filesGroup" class="modal-content-group hidden">
+                                    <div class="form-group">
+                                        <label for="fileInput">Upload File</label>
+                                        <input type="file" class="form-control-file" id="fileInput">
+                                        <button type="button" class="btn btn-secondary mt-2" onclick="uploadFile()">Upload File</button>
+                                    </div>
+                                </div>
 
                             </div> <!-- End of row for modal-body -->
                         </div> <!-- End of modal-body -->
