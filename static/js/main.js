@@ -606,7 +606,7 @@ function modelNameMapping(modelName) {
         case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
-        case "gemini-1.5-pro": mappedName = "Gemini 1.5 Pro"; break;
+        case "gemini-pro": mappedName = "Gemini Pro"; break;
         default: mappedName = "Unknown Model"; break;
     }
     console.log("Mapped model name:", mappedName);
@@ -626,7 +626,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-1.5-pro"];
+    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown

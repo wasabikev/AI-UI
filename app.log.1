@@ -1,90 +1,129 @@
-2024-05-05 11:40:20,092 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test paragraph please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test paragraph for you:\n\n"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."'}]
-2024-05-05 11:42:56,544 - app - INFO - Received model: gpt-3.5-turbo
-2024-05-05 11:42:56,546 - app - INFO - Received temperature: 0.3
-2024-05-05 11:42:56,547 - app - INFO - Using existing conversation with id 381.
-2024-05-05 11:42:58,654 - app - INFO - Response from model: Of course! Here is another test paragraph for you:
+2024-05-09 14:58:42,085 - app - INFO - Response from model: The ideal steeping time for black tea can vary depending on personal preference and the type of black tea being used. As a general guideline, black tea is typically steeped for 3 to 5 minutes in water that has been brought to a rolling boil (around 200-212°F or 93-100°C). 
 
-"The sun was shining brightly in the clear blue sky as the gentle breeze rustled through the leaves of the tall trees. Birds chirped merrily, adding to the symphony of nature's sounds. The scent of fresh flowers wafted through the air, creating a sense of tranquility and peace in the surroundings. It was a perfect day for a leisurely stroll in the park."
-2024-05-05 11:42:58,848 - app - INFO - Prompt tokens: 122
-2024-05-05 11:42:58,850 - app - INFO - Completion tokens: 90
-2024-05-05 11:42:58,850 - app - INFO - Total tokens: 212
-2024-05-05 11:42:58,856 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.', 'role': 'system'}, {'content': 'A test paragraph please', 'role': 'user'}, {'content': 'Certainly! Here is a test paragraph for you:\n\n"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."', 'role': 'assistant'}, {'role': 'user', 'content': 'Another test paragraph please'}, {'role': 'assistant', 'content': 'Of course! Here is another test paragraph for you:\n\n"The sun was shining brightly in the clear blue sky as the gentle breeze rustled through the leaves of the tall trees. Birds chirped merrily, adding to the symphony of nature\'s sounds. The scent of fresh flowers wafted through the air, creating a sense of tranquility and peace in the surroundings. It was a perfect day for a leisurely stroll in the park."'}]
-2024-05-05 11:43:07,974 - app - INFO - Received model: gpt-3.5-turbo
-2024-05-05 11:43:07,976 - app - INFO - Received temperature: 0.3
-2024-05-05 11:43:09,774 - app - INFO - Response from model: Certainly! Here is a test paragraph for you:
+However, some black teas may benefit from longer or shorter steeping times. For example, stronger black teas like Assam or Ceylon may be steeped for closer to 5 minutes, while lighter teas like Darjeeling may be steeped for around 3 minutes to avoid bitterness.
 
-"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
-2024-05-05 11:43:09,778 - app - INFO - Prompt tokens: 30
-2024-05-05 11:43:09,779 - app - INFO - Completion tokens: 88
-2024-05-05 11:43:09,780 - app - INFO - Total tokens: 118
-2024-05-05 11:43:09,781 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. A test paragraph please Certainly! Here is a test paragraph for you:\n\n"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."'}], 'max_tokens': 10}
-2024-05-05 11:43:10,267 - app - INFO - Response from OpenAI for summary: {
+It's always a good idea to experiment with different steeping times to find what works best for your taste preferences. Remember that steeping too long can result in a bitter or astringent taste, so it's best to start with the recommended time and adjust from there based on your personal preference.
+2024-05-09 14:58:42,392 - app - INFO - Prompt tokens: 21
+2024-05-09 14:58:42,394 - app - INFO - Completion tokens: 185
+2024-05-09 14:58:42,395 - app - INFO - Total tokens: 206
+2024-05-09 14:58:42,398 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': "Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. How long to steep black tea for? The ideal steeping time for black tea can vary depending on personal preference and the type of black tea being used. As a general guideline, black tea is typically steeped for 3 to 5 minutes in water that has been brought to a rolling boil (around 200-212°F or 93-100°C). \n\nHowever, some black teas may benefit from longer or shorter steeping times. For example, stronger black teas like Assam or Ceylon may be steeped for closer to 5 minutes, while lighter teas like Darjeeling may be steeped for around 3 minutes to avoid bitterness.\n\nIt's always a good idea to experiment with different steeping times to find what works best for your taste preferences. Remember that steeping too long can result in a bitter or astringent taste, so it's best to start with the recommended time and adjust from there based on your personal preference."}], 'max_tokens': 10}
+2024-05-09 14:58:42,685 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "UI Solution Development",
+        "content": "Black Tea Steeping Times",
         "role": "assistant"
       }
     }
   ],
-  "created": 1714934587,
-  "id": "chatcmpl-9Lb7Dv1PdqBSlojru906RWEUYRVfT",
+  "created": 1715291921,
+  "id": "chatcmpl-9N64fmoAEQLHJdc0JYwk8W6fCbne8",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_3b956da36b",
+  "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 143,
-    "total_tokens": 146
+    "completion_tokens": 5,
+    "prompt_tokens": 231,
+    "total_tokens": 236
   }
 }
-2024-05-05 11:43:10,267 - app - INFO - Generated conversation summary: UI Solution Development
-2024-05-05 11:43:10,282 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test paragraph please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test paragraph for you:\n\n"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."'}]
-2024-05-05 11:43:26,167 - app - INFO - Received model: gpt-3.5-turbo
-2024-05-05 11:43:26,168 - app - INFO - Received temperature: 0.7
-2024-05-05 11:43:26,170 - app - INFO - Using existing conversation with id 382.
-2024-05-05 11:43:27,392 - app - INFO - Response from model: Sure! Here is a test sentence for you: 
-
-"The API interface provides a seamless connection between different systems to enable efficient data exchange." Apple
-2024-05-05 11:43:27,394 - app - INFO - Prompt tokens: 123
-2024-05-05 11:43:27,395 - app - INFO - Completion tokens: 28
-2024-05-05 11:43:27,396 - app - INFO - Total tokens: 151
-2024-05-05 11:43:27,403 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are assisting with the development of a new API interface.  For any question, please end the sentence with the word "apple".'}, {'role': 'user', 'content': 'A test paragraph please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test paragraph for you:\n\n"The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure! Here is a test sentence for you: \n\n"The API interface provides a seamless connection between different systems to enable efficient data exchange." Apple'}]
-2024-05-05 11:44:02,263 - app - INFO - Received model: gpt-3.5-turbo
-2024-05-05 11:44:02,263 - app - INFO - Received temperature: 0.3
-2024-05-05 11:44:04,201 - app - INFO - Response from model: Certainly! Here is a test sentence for you: "The quick brown fox jumps over the lazy dog."
-2024-05-05 11:44:04,353 - app - INFO - Prompt tokens: 30
-2024-05-05 11:44:04,353 - app - INFO - Completion tokens: 21
-2024-05-05 11:44:04,353 - app - INFO - Total tokens: 51
-2024-05-05 11:44:04,353 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models. A test sentence please Certainly! Here is a test sentence for you: "The quick brown fox jumps over the lazy dog."'}], 'max_tokens': 10}
-2024-05-05 11:44:04,667 - app - INFO - Response from OpenAI for summary: {
+2024-05-09 14:58:42,685 - app - INFO - Generated conversation summary: Black Tea Steeping Times
+2024-05-09 14:58:42,703 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'How long to steep black tea for?'}, {'role': 'assistant', 'content': "The ideal steeping time for black tea can vary depending on personal preference and the type of black tea being used. As a general guideline, black tea is typically steeped for 3 to 5 minutes in water that has been brought to a rolling boil (around 200-212°F or 93-100°C). \n\nHowever, some black teas may benefit from longer or shorter steeping times. For example, stronger black teas like Assam or Ceylon may be steeped for closer to 5 minutes, while lighter teas like Darjeeling may be steeped for around 3 minutes to avoid bitterness.\n\nIt's always a good idea to experiment with different steeping times to find what works best for your taste preferences. Remember that steeping too long can result in a bitter or astringent taste, so it's best to start with the recommended time and adjust from there based on your personal preference."}]
+2024-05-09 15:56:19,304 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-09 15:56:19,305 - app - INFO - Received temperature: 0.7
+2024-05-09 15:56:20,348 - app - INFO - Response from model: Certainly! Here's a test sentence for you: "The scientific method involves systematic observation, measurement, and experimentation to gain knowledge and understanding of the natural world."
+2024-05-09 15:56:20,508 - app - INFO - Prompt tokens: 17
+2024-05-09 15:56:20,508 - app - INFO - Completion tokens: 32
+2024-05-09 15:56:20,519 - app - INFO - Total tokens: 49
+2024-05-09 15:56:20,519 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. a test sentence please Certainly! Here\'s a test sentence for you: "The scientific method involves systematic observation, measurement, and experimentation to gain knowledge and understanding of the natural world."'}], 'max_tokens': 10}
+2024-05-09 15:56:21,018 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "UI Solution Design",
+        "content": "Critical thinking assistant",
         "role": "assistant"
       }
     }
   ],
-  "created": 1714934641,
-  "id": "chatcmpl-9Lb85cy96z8EiJ60ylyPEWMPD23fd",
+  "created": 1715295379,
+  "id": "chatcmpl-9N6yRX816hX8w9OT0Zv474eIlREwD",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
-  "system_fingerprint": "fp_3b956da36b",
+  "system_fingerprint": null,
   "usage": {
     "completion_tokens": 3,
-    "prompt_tokens": 76,
-    "total_tokens": 79
+    "prompt_tokens": 74,
+    "total_tokens": 77
   }
 }
-2024-05-05 11:44:04,667 - app - INFO - Generated conversation summary: UI Solution Design
-2024-05-05 11:44:04,681 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis, helping with the development of a UI solution for large language models.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test sentence for you: "The quick brown fox jumps over the lazy dog."'}]
-2024-05-05 11:44:32,986 - app - INFO - Received model: claude-3-opus-20240229
-2024-05-05 11:44:32,987 - app - INFO - Received temperature: 0
-2024-05-05 11:44:32,991 - app - INFO - Using existing conversation with id 383.
+2024-05-09 15:56:21,018 - app - INFO - Generated conversation summary: Critical thinking assistant
+2024-05-09 15:56:21,018 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'a test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you: "The scientific method involves systematic observation, measurement, and experimentation to gain knowledge and understanding of the natural world."'}]
+2024-05-09 15:56:58,391 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-09 15:56:58,392 - app - INFO - Received temperature: 0.7
+2024-05-09 15:56:59,252 - app - INFO - Response from model: Certainly! Here is a test sentence for you: "Critical thinking skills are essential for making informed decisions."
+2024-05-09 15:56:59,254 - app - INFO - Prompt tokens: 17
+2024-05-09 15:56:59,255 - app - INFO - Completion tokens: 21
+2024-05-09 15:56:59,255 - app - INFO - Total tokens: 38
+2024-05-09 15:56:59,256 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here is a test sentence for you: "Critical thinking skills are essential for making informed decisions."'}], 'max_tokens': 10}
+2024-05-09 15:56:59,527 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Test sentence analysis",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1715295418,
+  "id": "chatcmpl-9N6z435nF0owlVYAu9ea0xqJ1Tmc8",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 63,
+    "total_tokens": 66
+  }
+}
+2024-05-09 15:56:59,533 - app - INFO - Generated conversation summary: Test sentence analysis
+2024-05-09 15:56:59,538 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here is a test sentence for you: "Critical thinking skills are essential for making informed decisions."'}]
+2024-05-09 15:57:30,346 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-09 15:57:30,346 - app - INFO - Received temperature: 0.7
+2024-05-09 15:57:31,224 - app - INFO - Response from model: Sure! Here is a test sentence for you: "Critical thinking skills are essential for making well-informed decisions."
+2024-05-09 15:57:31,224 - app - INFO - Prompt tokens: 17
+2024-05-09 15:57:31,224 - app - INFO - Completion tokens: 23
+2024-05-09 15:57:31,224 - app - INFO - Total tokens: 40
+2024-05-09 15:57:31,224 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Sure! Here is a test sentence for you: "Critical thinking skills are essential for making well-informed decisions."'}], 'max_tokens': 10}
+2024-05-09 15:57:31,614 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Critical Thinking Importance",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1715295450,
+  "id": "chatcmpl-9N6zaWXqudCpTI7ip33fh0kc659at",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 65,
+    "total_tokens": 68
+  }
+}
+2024-05-09 15:57:31,618 - app - INFO - Generated conversation summary: Critical Thinking Importance
