@@ -11,7 +11,8 @@ let currentSystemMessageDescription; // Description of the current system messag
 let initialTemperature;
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
-
+let showTemperature = false;  // Tracks the visibility of the temperature settings
+let selectedTemperature = 0.7; // Default temperature value
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -33,33 +34,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
-    });
-
-    // Event listener for opening the Add Website Modal
-    document.getElementById('addWebsiteButton').addEventListener('click', function() {
-        $('#addWebsiteModal').modal('show');
-    });
-
-    // Add event listener to clear the websiteURL input when the modal is closed
-    $('#addWebsiteModal').on('hidden.bs.modal', function () {
-        document.getElementById('websiteURL').value = '';
-    });
-
-    // Event listener for the form submission inside the Add Website Modal
-    document.getElementById('addWebsiteForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission
-        const websiteURL = document.getElementById('websiteURL').value;
-
-        if (websiteURL) {
-            // Here, you can send the website URL to your backend for processing or storing
-            // Example: saveWebsiteURL(websiteURL);
-            console.log(`Website URL added: ${websiteURL}`); // For demonstration purposes
-
-            // Optionally, close the modal after submission
-            $('#addWebsiteModal').modal('hide');
-        } else {
-            alert('No website URL provided.');
-        }
     });
 });
 
@@ -172,6 +146,29 @@ function checkAdminStatus(e) {
     }
 }
 
+// Function to open the modal and set the user ID and current status
+function openStatusModal(userId, currentStatus) {
+    // Set the action URL for the form
+    document.getElementById('statusUpdateForm').action = `/update-status/${userId}`;
+
+    // Check the radio button that matches the current status
+    if (currentStatus === 'Active') {
+        document.getElementById('statusActive').checked = true;
+    } else if (currentStatus === 'Pending') {
+        document.getElementById('statusPending').checked = true;
+    } else {
+        document.getElementById('statusNA').checked = true;
+    }
+
+    // Open the modal
+    $('#statusUpdateModal').modal('show');
+}
+
+// Function to submit the form
+function updateStatus() {
+    document.getElementById('statusUpdateForm').submit();
+}
+
 function fetchAndProcessSystemMessages() {
     return new Promise((resolve, reject) => {
         fetch('/api/system_messages')
@@ -226,11 +223,13 @@ document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
 $('#systemMessageModal').on('hide.bs.modal', function (event) {
     // Check if the changes were not saved
     if (!isSaved) {
+        console.log("Modal closed without saving. Restoring initial states where necessary.");
+
         // Revert temperature only if not saved
         selectedTemperature = initialTemperature;
-        console.log("Modal closed without saving. Restoring temperature to:", initialTemperature);
+        updateTemperatureSelectionInModal(initialTemperature);
 
-        // Revert UI changes here (if any were made)
+        // Revert other UI changes here (if any were made)
         if (activeSystemMessageId) {
             const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
             if (activeSystemMessage) {
@@ -239,40 +238,22 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
                 document.getElementById('systemMessageContent').value = activeSystemMessage.content;
                 document.getElementById('modalModelDropdownButton').dataset.apiName = activeSystemMessage.model_name;
                 document.getElementById('systemMessageDropdown').textContent = activeSystemMessage.name;
-                updateTemperatureSelectionInModal(activeSystemMessage.temperature); // Ensure the UI reflects the reverted temperature
                 console.log("Modal content reset to active system message:", activeSystemMessage.name);
             }
         }
     } else {
-        // Optionally, handle any tasks that should occur when the modal is closed after saving changes
-        console.log("Changes were saved, no need to revert the temperature.");
+        console.log("Changes were saved, no need to revert.");
     }
 
-    // Reset the isSaved flag back to false for the next time the modal is opened
+    // Reset the isSaved flag and any other flags or data attributes
     isSaved = false;
+    $(this).removeData('targetGroup');
 
-    // Any other cleanup actions can go here
+    // Cleanup UI changes
     $(this).find('.modal-dialog').css('height', 'auto');
+    $('.modal-content-group').addClass('hidden');  // Ensure all groups are hidden by default
 });
 
-
-
-
-function toggleTemperatureSettings() {
-    var temperatureLabel = document.getElementById('temperatureLabel');
-    var temperatureOptions = document.getElementById('temperatureOptions');
-    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-
-    if (temperatureOptions.style.display === 'none') {
-        temperatureLabel.style.display = 'block';
-        temperatureOptions.style.display = 'block';
-        systemMessageContentGroup.style.display = 'none';
-    } else {
-        temperatureLabel.style.display = 'none';
-        temperatureOptions.style.display = 'none';
-        systemMessageContentGroup.style.display = 'block';
-    }
-}
 
 
 
@@ -394,8 +375,6 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
 });
 
 
-
-
 function updateTemperatureSelectionInModal(temperature) {
     console.log("Updating temperature in modal to:", temperature);
     selectedTemperature = temperature;
@@ -419,6 +398,7 @@ function populateSystemMessageModal() {
     dropdownMenu.innerHTML = '';
 
     // Add each system message to the dropdown
+    console.log('Populating system message modal...');
     systemMessages.forEach((message, index) => {
         console.log('System message:', message);
         console.log(`System message [${message.name}] temperature:`, message.temperature); 
@@ -428,7 +408,9 @@ function populateSystemMessageModal() {
         dropdownItem.onclick = function() {
             // Update the dropdown button text and modal content
             dropdownButton.textContent = this.textContent; // Update the system message dropdown button text
+            console.log(`Setting name: ${message.name}`);
             document.getElementById('systemMessageName').value = message.name || '';
+            console.log(`Current name value in input: ${document.getElementById('systemMessageName').value}`);
             document.getElementById('systemMessageDescription').value = message.description || '';
             document.getElementById('systemMessageContent').value = message.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = message.id;
@@ -488,12 +470,12 @@ function displaySystemMessage(systemMessage) {
     let systemMessageButton = createSystemMessageButton();
     const modelDisplayName = modelNameMapping(model);
     const temperatureDisplay = systemMessage.temperature;
-    const descriptionContent = renderOpenAI(systemMessage.description);
+    const descriptionContent = `<span class="no-margin">${renderOpenAI(systemMessage.description)}</span>`;
     const renderedContent = `
-        <div class="chat-entry system system-message">
-            <strong>System:</strong> ${descriptionContent} ${systemMessageButton}<br>
-            <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
-        </div>`;
+    <div class="chat-entry system system-message">
+        <strong>System:</strong>${systemMessageButton}${descriptionContent}<br>
+        <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
+    </div>`;
 
     // Update the UI
     $('#chat').prepend(renderedContent);
@@ -509,10 +491,6 @@ function displaySystemMessage(systemMessage) {
         });
     }
 }
-
-
-
-
 
 
 
@@ -602,19 +580,6 @@ $(window).on('load', function () {
 });
 
 
-$('.dropdown-item').on('click', function(event) {
-    event.preventDefault(); // Prevent the # appearing in the URL
-    $('#dropdownMenuButton').text($(this).text());
-    model = $(this).attr('data-model'); // Update the model variable here
-    console.log("Dropdown item clicked. Model is now: " + model);
-
-    // Update the displayed model name in the system message section
-    $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
-});
-
-
-
-
 document.querySelectorAll('input[name="temperatureOptions"]').forEach((radioButton) => {
     radioButton.addEventListener('change', updateTemperatureDisplay);
 });
@@ -700,132 +665,102 @@ function updateModelDropdownInModal(modelName) {
 // Example usage when a system message is selected or modal is opened
 updateModelDropdownInModal('GPT-3.5'); // Update with the actual model name
 
-$('#systemMessageModal').on('show.bs.modal', function (event) {
-    isSaved = false; // Reset the isSaved flag whenever the modal is shown
-    // Check if there's an active system message
+$('#systemMessageModal').on('show.bs.modal', function () {
+    const targetGroup = $(this).data('targetGroup');
+    console.log("Modal show event - target group:", targetGroup);
+
+    // Hide all groups
+    $('.modal-content-group').addClass('hidden');
+
+    // Show the selected group
+    $('#' + targetGroup).removeClass('hidden');
+
+    // Setup the dropdown for selecting the model.
+    populateModelDropdownInModal();
+
+    // Set the system message name if there's an active system message
     if (activeSystemMessageId) {
         const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
         if (activeSystemMessage) {
-            initialTemperature = activeSystemMessage.temperature; // Corrected variable name here
-            console.log("Modal opened. Initial temperature set to:", initialTemperature);
-            // Set the modal fields to the values of the active system message
             document.getElementById('systemMessageName').value = activeSystemMessage.name;
-            document.getElementById('systemMessageDescription').value = activeSystemMessage.description;
-            document.getElementById('systemMessageContent').value = activeSystemMessage.content;
-            document.getElementById('modalModelDropdownButton').dataset.apiName = activeSystemMessage.model_name;
-            selectedTemperature = activeSystemMessage.temperature;
-            console.log("System Message Modal shown. Current Temperature:", selectedTemperature);
-
-            // Update the model dropdown and the temperature display
+            console.log("System message name set to:", activeSystemMessage.name);
+            // Ensure the model dropdown is set to the correct model
             updateModelDropdownInModal(activeSystemMessage.model_name);
-            updateTemperatureDisplay();
         }
-    }
-
-    populateSystemMessageModal(); // Populate dropdown and set default description
-    populateModelDropdownInModal(); // Populate the model dropdown
-});
-
-
-
-
-// Function to open the modal and set the user ID and current status
-function openStatusModal(userId, currentStatus) {
-    // Set the action URL for the form
-    document.getElementById('statusUpdateForm').action = `/update-status/${userId}`;
-
-    // Check the radio button that matches the current status
-    if (currentStatus === 'Active') {
-        document.getElementById('statusActive').checked = true;
-    } else if (currentStatus === 'Pending') {
-        document.getElementById('statusPending').checked = true;
     } else {
-        document.getElementById('statusNA').checked = true;
+        // Optionally set a default name if no active message is found
+        document.getElementById('systemMessageName').value = "Default Name";
+        console.log("No active system message. Setting default name.");
+        // Set a default model or handle the case where no model is set
+        updateModelDropdownInModal("default-model-name"); // Adjust "default-model-name" as needed
     }
-
-    // Open the modal
-    $('#statusUpdateModal').modal('show');
-}
-
-// Function to submit the form
-function updateStatus() {
-    document.getElementById('statusUpdateForm').submit();
-}
-
-// System message temperature adjust button
-document.getElementById("modalTemperatureAdjustBtn").addEventListener("click", function() {
-    $('#temperatureModal').modal('show');
 });
 
-// Function to toggle temperature settings visibility
-function toggleTemperatureSettings() {
-    var temperatureLabel = document.getElementById('temperatureLabel');
-    var temperatureOptions = document.getElementById('temperatureOptions');
-    var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-    var descriptionLabel = document.getElementById('descriptionLabel'); // Label for the description
-    var descriptionInput = document.getElementById('systemMessageDescription'); // Input for the description
+$('#systemMessageModal').on('hidden.bs.modal', function () {
+    // Hide all content groups
+    $('.modal-content-group').addClass('hidden');
 
-    if (temperatureOptions.style.display === 'none') {
-        temperatureLabel.style.display = 'block';
-        temperatureOptions.style.display = 'block';
-        systemMessageContentGroup.style.display = 'none';
-        descriptionLabel.style.display = 'none'; // Hide the description label
-        descriptionInput.style.display = 'none'; // Hide the description input
-    } else {
-        temperatureLabel.style.display = 'none';
-        temperatureOptions.style.display = 'none';
-        systemMessageContentGroup.style.display = 'block';
-        descriptionLabel.style.display = 'block'; // Show the description label
-        descriptionInput.style.display = 'block'; // Show the description input
-    }
-}
-
-// Main temperature adjust button event listener
-document.getElementById("temperature-adjust-btn").addEventListener("click", function() {
-    $('#systemMessageModal').modal('show'); // Open the system message modal
-    toggleTemperatureSettings(); // Call the function to ensure the temperature options are visible
+    // Reset any specific flags or settings
+    $(this).removeData('targetGroup');
 });
 
 
-// let selectedTemperature = 0.7; // Default temperature value
-let selectedTemperature;
-
-
-
-
-
-function createSystemMessageButton() {
-    return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-solid fa-pencil"></i></button>`;
-}
-
-// Handle the click event on the system message button
+// Event listener for the system message button in the chat interface
 document.addEventListener('click', function(event) {
     if (event.target && event.target.closest('#systemMessageButton')) {
-        $('#systemMessageModal').modal('show'); // Open the system message modal
+        // Set the target group to 'systemMessageContentGroup'
+        $('#systemMessageModal').data('targetGroup', 'systemMessageContentGroup');
 
-        // Function to toggle temperature settings visibility
-        function toggleTemperatureSettings(show) {
-            var temperatureLabel = document.getElementById('temperatureLabel');
-            var temperatureOptions = document.getElementById('temperatureOptions');
-            var systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
-
-            if (show) {
-                temperatureLabel.style.display = 'block';
-                temperatureOptions.style.display = 'block';
-                systemMessageContentGroup.style.display = 'none';
-            } else {
-                temperatureLabel.style.display = 'none';
-                temperatureOptions.style.display = 'none';
-                systemMessageContentGroup.style.display = 'block';
-            }
-        }
-
-        // Ensure the system message content is visible
-        toggleTemperatureSettings(false);
+        // Show the modal
+        $('#systemMessageModal').modal('show');
     }
 });
 
+// Reset modal to default state on close
+$('#systemMessageModal').on('hidden.bs.modal', function () {
+    // Hide all content groups
+    $('.modal-content-group').addClass('hidden');
 
+    // Reset any specific flags or settings
+    $(this).removeData('targetGroup'); // Remove the data attribute for safety
+});
+
+function openModalAndShowGroup(targetGroup) {
+    console.log("Opening modal with target group:", targetGroup);
+
+    // Hide all groups in the modal
+    $('.modal-content-group').addClass('hidden');
+
+    // Show the selected group
+    $('#' + targetGroup).removeClass('hidden');
+
+    // Open the modal
+    $('#systemMessageModal').modal('show');
+}
+
+function toggleContentGroup(groupID) {
+    // Hide all groups
+    const groups = document.querySelectorAll('.modal-content-group');
+    groups.forEach(group => {
+        group.classList.add('hidden');
+    });
+
+    // Show the selected group
+    const selectedGroup = document.getElementById(groupID);
+    if (selectedGroup) {
+        selectedGroup.classList.remove('hidden');
+    }
+}
+
+function createSystemMessageButton() {
+    return `<button class="btn btn-sm" id="systemMessageButton" style="color: white;"><i class="fa-solid fa-gear"></i></button>`;
+}
+
+document.addEventListener('click', function(event) {
+    if (event.target && event.target.id === 'add-system-message-btn') {
+        // Logic to handle adding a new system message
+    }
+});
 
 
 // Add event listener to model dropdown to handle model changes
@@ -839,8 +774,6 @@ document.addEventListener('change', function(event) {
     }
 });
 
-
-
 document.addEventListener('click', function(event) {
     if (event.target && event.target.id === 'add-system-message-btn') {
         // Logic to handle adding a new system message
@@ -850,11 +783,7 @@ document.addEventListener('click', function(event) {
 
 
 
-document.addEventListener('click', function(event) {
-    if (event.target && event.target.closest('#systemMessageButton')) {
-        $('#systemMessageModal').modal('show'); // Show the modal when the button is clicked
-    }
-});
+
 
 
 function copyCodeToClipboard(button) {
@@ -875,18 +804,48 @@ function copyCodeToClipboard(button) {
     window.getSelection().removeAllRanges(); // Clear selection
 }
 
+function createMessageElement(message) {
+    // Handle the system message differently to include the model name and temperature
+    if (message.role === 'system') {
+        let systemMessageContent = renderOpenAI(message.content);
+        // Prepare the display content for system message
+        const systemMessageHTML = `
+            <div class="chat-entry system system-message">
+                <strong>System:</strong> ${systemMessageContent}<br>
+                <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
+            </div>`;
+        return $(systemMessageHTML);
+    } else {
+        const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
+        const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
+        let processedContent;
+        if (message.role === 'user') {
+            // Escape HTML entities in user input to prevent rendering
+            processedContent = escapeHtml(message.content);
+        } else {
+            // Use renderOpenAI to process both Markdown and code
+            processedContent = renderOpenAI(message.content);
+        }
+        const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
+        return $(messageHTML);
+    }
+}
 
 // Function to render Markdown and code snippets
 function renderMarkdownAndCode(content) {
     console.log('renderMarkdownAndCode called with content:', content);
 
+    // Normalize newlines to ensure consistent handling across different environments
+    content = content.replace(/\r\n/g, '\n');
+
     // Step 1: Correctly identify and temporarily replace code blocks with placeholders
     let codeBlockCounter = 0;
     const codeBlocks = [];
-    const codeBlockRegex = /```(\w*)\n([\s\S]+?)\n```/g;
+    const codeBlockRegex = /```(\w*)\s*([\s\S]+?)\s*```/g;
 
     // Replace code blocks with placeholders and store their content in an array
     let safeContent = content.replace(codeBlockRegex, function(match, lang, code) {
+        console.log(`Code block found: Language: ${lang}, Code: ${code.substring(0, 30)}...`);
         const index = codeBlockCounter++;
         codeBlocks[index] = { lang, code };
         return `%%%CODE_BLOCK_${index}%%%`;
@@ -906,17 +865,14 @@ function renderMarkdownAndCode(content) {
 }
 
 function processCodeSnippet(lang, code) {
-    // Ensure HTML is escaped to prevent XSS attacks
+    const languageClass = lang ? `language-${lang}` : 'language-plaintext';
+    const displayLang = lang || "CODE";
     const escapedCode = escapeHtml(code.trim());
 
-    // Define the language class for syntax highlighting
-    const languageClass = lang ? `language-${lang}` : 'language-plaintext';
-
-    // Wrap the code with a div for styling and functionality
     return `
     <div class="code-block">
         <div class="code-block-header">
-            <span class="code-type">${lang.toUpperCase() || "CODE"}</span>
+            <span class="code-type">${displayLang.toUpperCase()}</span>
             <button class="copy-code" onclick="copyCodeToClipboard(this)"><i class="fas fa-clipboard"></i> Copy code</button>
         </div>
         <pre><code class="${languageClass}">${escapedCode}</code></pre>
@@ -972,55 +928,6 @@ function handleLists(content) {
 
     return content;
 }
-
-
-
-
-function detectAndRenderMarkdown(content) {
-    console.log('detectAndRenderMarkdown called with content:', content);
-    const markdownPatterns = [
-        /^# .+/gm,       // Headers
-        /^\* .+/gm,      // Unordered lists
-        /^\d+\. .+/gm,   // Ordered lists
-        /\[.+\]\(.+\)/g, // Links
-        /\*\*(.+)\*\*/g, // Bold
-        /\*(.+)\*/g,     // Italics
-        /^> .+/gm        // Blockquotes
-    ];
-
-    let containsMarkdown = false;
-    for (let pattern of markdownPatterns) {
-        if (pattern.test(content)) {
-            containsMarkdown = true;
-            console.log('Markdown detected with pattern:', pattern);
-            break;
-        }
-    }
-
-    if (containsMarkdown) {
-        console.log('Processing Markdown...');
-        const codeBlockRegex = /```[\s\S]*?```/g;
-        const codeBlocks = [...content.matchAll(codeBlockRegex)];
-        content = content.replace(codeBlockRegex, '%%%CODE_BLOCK%%%');
-        content = marked.parse(content);
-        let blockIndex = 0;
-        content = content.replace(/%%%CODE_BLOCK%%%/g, () => {
-            return codeBlocks[blockIndex++] && codeBlocks[blockIndex - 1][0];
-        });
-        console.log('Processed Markdown:', content);
-    } else {
-        console.log('No Markdown detected');
-    }
-
-    return content;
-}
-
-
-
-
-
-
-
 
 
 
@@ -1214,32 +1121,7 @@ function loadConversation(conversationId) {
         });
 }
 
-function createMessageElement(message) {
-    // Handle the system message differently to include the model name and temperature
-    if (message.role === 'system') {
-        let systemMessageContent = renderOpenAI(message.content);
-        // Prepare the display content for system message
-        const systemMessageHTML = `
-            <div class="chat-entry system system-message">
-                <strong>System:</strong> ${systemMessageContent}<br>
-                <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
-            </div>`;
-        return $(systemMessageHTML);
-    } else {
-        const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
-        const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
-        let processedContent;
-        if (message.role === 'user') {
-            // Escape HTML entities in user input to prevent rendering
-            processedContent = escapeHtml(message.content);
-        } else {
-            processedContent = renderOpenAI(message.content);
-            processedContent = detectAndRenderMarkdown(processedContent); // Process Markdown content
-        }
-        const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
-        return $(messageHTML);
-    }
-}
+
 
 
 //Record the default height 
@@ -1416,6 +1298,28 @@ $(document).ready(function() {  // Document Ready (initialization)
     
         // Navigate to the root URL
         window.location.href = '/';
+    });
+
+    // Handler for model dropdown items
+    $('.model-dropdown .dropdown-item').on('click', function(event) {
+        event.preventDefault(); // Prevent the # appearing in the URL
+        $('#dropdownMenuButton').text($(this).text());
+        model = $(this).attr('data-model'); // Update the model variable here
+        console.log("Dropdown item clicked. Model is now: " + model);
+
+        // Update the displayed model name in the system message section
+        $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
+    });
+
+    // Handler for system settings dropdown items
+    $('.settings-dropdown .dropdown-item').on('click', function(event) {
+        event.preventDefault();
+        const targetGroup = $(this).data('target');
+        console.log("Settings dropdown item clicked, target group:", targetGroup);
+        
+        // Pass the target group to the modal
+        $('#systemMessageModal').data('targetGroup', targetGroup);
+        $('#systemMessageModal').modal('show');
     });
 });
     

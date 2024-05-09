@@ -170,8 +170,25 @@ h2 {
 
 .temperature-use-case {
     font-size: smaller;
-    color: #8A7187;
+    color: #517693;   /* #8A7187 was version 1 varient */
 }
+
+/************ wesitesGroup Content Group Styles *****************/
+
+#websitesGroup {
+    color: white; /* Ensures all text within the group is white */
+}
+
+.website-control-btn {
+    margin-top: 25px; /* Adjust the top margin as needed */
+    margin-right: 10px; /* Right margin to space out buttons horizontally */
+    /* Add any other specific styles for website control buttons here */
+}
+
+.website-control-btn:last-child {
+    margin-right: 0;
+}
+
 
 /************ System Message Content Group Styles *****************/
 
@@ -418,7 +435,7 @@ pre code {
 }
 
 .system-message {
-    background-color: #8A7187;
+    background-color: #517693; /* First draft varient: #8A7187 */
     color: white;  
     padding-left: 50px;
     padding-top: 15px;
@@ -431,7 +448,7 @@ pre code {
 }
 
 #systemMessageModal .modal-body {
-    background-color: #8A7187; /* Same as .system-message background color */
+    background-color: #517693; /* Same as .system-message background color */
 }
 
 #systemMessageModal .list-group-item:hover {

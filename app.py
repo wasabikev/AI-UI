@@ -23,6 +23,7 @@ import json
 from models import db, Folder, Conversation, User, SystemMessage
 from logging.handlers import RotatingFileHandler # for log file rotation
 from werkzeug.security import generate_password_hash
+from google.generativeai import GenerativeModel
 
 from auth import auth as auth_blueprint  # Import the auth blueprint
 
@@ -496,16 +497,13 @@ def get_response_from_model(model, messages, temperature):
         model_name = model  # Use the provided model name for Anthropic
     elif model.startswith("gemini-"):
         # Gemini models
-        client = Completion.from_service_account_json(
-            os.environ.get("GOOGLE_API_KEY")
-        )
-        response = client.generate_text(
-            model=model,
-            prompt="\n".join([m['content'] for m in messages]),
-            temperature=temperature,
-            max_output_tokens=2000
-        )
-        chat_output = response.result
+        gemini_model = GenerativeModel(model_name=model)
+        contents = [{
+            "role": "user",
+            "parts": [{"text": "\n".join([m['content'] for m in messages])}]
+        }]
+        response = gemini_model.generate_content(contents, generation_config={"temperature": temperature})
+        chat_output = response.text
         model_name = model
     else:
         chat_output = "Sorry, the selected model is not supported yet."
@@ -603,17 +601,21 @@ def chat():
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
         encoding = tiktoken.encoding_for_model(model_name)
+        num_tokens = 0
+        for message in messages:
+            num_tokens += len(encoding.encode(message['content']))
+        return num_tokens
     elif model_name.startswith("claude-"):
-        encoding = tiktoken.get_encoding("cl100k_base")  # Use the cl100k_base encoding for Anthropic models
+        encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = 0
+        for message in messages:
+            num_tokens += len(encoding.encode(message['content']))
+        return num_tokens
+    elif model_name == "gemini-pro":
+        # Return "0" for token count for the gemini-pro model
+        return 0
     else:
         raise ValueError(f"Unsupported model: {model_name}")
-    
-    num_tokens = 0
-    for message in messages:
-        num_tokens += len(encoding.encode(message['content']))
-    
-    return num_tokens
-
 
 
 @app.route('/get_active_conversation', methods=['GET'])

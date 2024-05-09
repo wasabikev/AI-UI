@@ -2,8 +2,7 @@
 
 ## Overview
 
-AI ∞ UI is a web-based conversational interface that facilitates crafting and architecting layered (multi-system) AI orchestration. The AI ∞ UI system provides an interface to leverage a range of tools and models.
-A core function of AI ∞ UI is to provide an interface for AI-assisted programming (or AI-driven programming) with various AI models via LLM APIs. It is designed to support collaborative coding activities between a human and an AI, with the AI generating the majority of the code based on the human's guidance and high-level decisions.
+AI ∞ UI is a web-based conversational interface that facilitates interactions with various AI models and is intended for crafting and architecting layered (multi-system) AI orchestration using a variety of tools and models.
 
 ## Features
 
@@ -51,20 +50,25 @@ A core function of AI ∞ UI is to provide an interface for AI-assisted programm
 ### main.js
 
 - `updateConversationList()`: Refreshes the conversation list in the sidebar.
-- `loadConversation()`: Loads messages from a selected conversation into the chat interface.
-- `sendMessage()`: Sends user input to the server for processing and appends the AI's response to the chat.
+- `checkActiveConversation()`: Checks if there is an active conversation and loads it if present.
+- `showConversationControls(title, tokens)`: Updates the UI to show conversation controls and token usage information.
+- $('#chat-form').on('submit', function (e)): Handles the submission of the chat form, preventing default behavior, capturing and displaying user input, sending it to the server, and processing the AI's response to update the chat interface dynamically. This function also manages the display of system messages, updates conversation lists, and handles URL and UI updates based on the conversation context
 - `renderOpenAI(content)`: Processes and renders Markdown, code snippets, and LaTeX content within the chat interface.
 - `updateSystemMessageDropdown()`, `populateSystemMessageModal()`, `updateModelDropdownInModal(modelName)`: Functions related to system message management, allowing for the customization of automated responses.
-- `updateTemperatureDisplay()`, `toggleTemperatureSettings()`: Functions for managing the temperature setting and model selection, providing flexibility in AI interactions.
+- `updateTemperatureDisplay()` : Function for managing the temperature setting and model selection, providing flexibility in AI interactions.
 - `createMessageElement(message)`, `updateConversationList()`, `loadConversation(conversationId)`: Functions for dynamically updating the UI and handling real-time user interactions.
 - `saveWebsiteURL(websiteURL, systemMessageId)`: Saves a website URL associated with a particular system message to the backend. Handles POST request and error management.
-- `updateModelDropdownInModal(modelName)`: Updates the model dropdown in the system message modal to reflect the selected model name.
-- `toggleTemperatureSettings(shouldShowTemperature)`: Toggles the visibility of temperature settings in the system message modal based on user interaction.
 - `updateModelDropdownInModal(modelName)`: Updates the model dropdown in the system message modal to reflect the selected model name, ensuring the UI is synchronized with the backend model settings.
 - `populateModelDropdownInModal()`: Populates the model dropdown in the system message modal with available AI models, allowing users to select different models dynamically.
-- Additionally, `main.js` handles dynamic text area resizing, admin dashboard access, database view access, and flash message timeout functionalities as linked with events in `chat.html`.
-
-
+- `fetchAndProcessSystemMessages()`: Fetches system messages from the server and processes them to update the UI.
+- `showModalFlashMessage(message, category)`: Displays a modal flash message of a specified category (e.g., success, warning).
+- `checkAdminStatus(e)`: Checks if the user is an admin before allowing access to admin-specific features.
+- `openStatusModal(userId, currentStatus)`: Opens a modal for updating the status of a user, pre-filling it with current information.
+- `updateStatus()`: Submits the form inside the status update modal.
+- `renderMathInElement(element)`: Checks and processes any LaTeX content within the specified element using MathJax.
+- `createMessageElement(message)`: Creates and returns a message element for the chat interface based on the message role and content.
+- `displaySystemMessage(systemMessage)`: Updates the chat interface to display a system message, including its description, associated model name, and temperature setting. It removes any existing system messages, prepends the new system message to the chat, and updates the internal messages array to include this system message. This function ensures that system messages are prominently displayed at the top of the chat interface.
+- `openModalAndShowGroup(targetGroup)` and `toggleContentGroup(groupID)`: These functions manage the visibility of content groups within modals. openModalAndShowGroup is used to open a modal and display a specific content group by hiding others and showing the targeted one. toggleContentGroup handles the visibility toggle of content groups within a modal, ensuring only the selected group is visible while others are hidden. Both functions are essential for dynamic UI interactions within modals, allowing for context-specific displays.
 
 ### models.py
 
