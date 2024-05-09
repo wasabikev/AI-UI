@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import JSON  # Import JSON support
@@ -20,8 +20,8 @@ class Conversation(db.Model):
     token_count = db.Column(db.Integer, default=0)    # Token count of the conversation
     folder_id = db.Column(db.Integer, db.ForeignKey('folder.id'), nullable=True)    # ID of the folder that the conversation belongs to
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)    # ID of the user who initiated the conversation
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)    # Time when the conversation was created
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)    # Time when the conversation was last updated
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))    # Time when the conversation was created
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))    # Time when the conversation was last updated
     model_name = db.Column(db.String(120))    # Name of the AI model used for the conversation
     sentiment = db.Column(db.String(120))    # Overall sentiment of the conversation (positive, neutral, negative)
     tags = db.Column(db.String(120))    # Any tags associated with the conversation
@@ -70,8 +70,8 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     is_admin = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(20), default="Pending")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, onupdate=lambda: datetime.now(timezone.utc))
     last_login = db.Column(db.DateTime)
     conversations = db.relationship('Conversation', backref='user', lazy=True)
 
@@ -92,8 +92,8 @@ class UserUsage(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     api_used = db.Column(db.String(50))
     tokens_used = db.Column(db.Integer)
-    session_start = db.Column(db.DateTime)
-    session_end = db.Column(db.DateTime)
+    session_start = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    session_end = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     cost = db.Column(db.Float)
 
     user = db.relationship('User', backref='usage')
@@ -108,8 +108,8 @@ class SystemMessage(db.Model):
     model_name = db.Column(db.String(120))  # Model associated with the system message
     temperature = db.Column(db.Float)  # Temperature setting for the system message
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Foreign key to the user table
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     source_config = db.Column(JSON)  # Field for storing RAG source configurations
 
     creator = db.relationship('User', backref='created_system_messages')  # Relationship to the user table
@@ -131,3 +131,31 @@ class SystemMessage(db.Model):
             'source_config': self.source_config,  # Include the source config in the dictionary representation
         }
 
+class Website(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    url = db.Column(db.String(2048), nullable=False, index=True)  # Added index for better performance on queries
+    site_metadata = db.Column(db.JSON)  # Renamed to avoid conflict with SQLAlchemy reserved keyword
+    system_message_id = db.Column(db.Integer, db.ForeignKey('system_message.id', ondelete='CASCADE'), nullable=False)
+    indexed_at = db.Column(db.DateTime)
+    indexing_status = db.Column(db.String(50), default='Pending')
+    last_error = db.Column(db.Text)
+    indexing_frequency = db.Column(db.Integer, nullable=True, default=None)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    system_message = db.relationship('SystemMessage', backref=db.backref('websites', lazy=True, cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return '<Website %r>' % self.url
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'url': self.url,
+            'site_metadata': self.site_metadata,  # Updated field name here as well
+            'indexing_status': self.indexing_status,
+            'indexed_at': self.indexed_at.isoformat() if self.indexed_at else None,
+            'last_error': self.last_error,
+            'indexing_frequency': self.indexing_frequency,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }

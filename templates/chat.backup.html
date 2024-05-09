@@ -4,12 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"><!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI ∞ UI</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -57,7 +51,7 @@
                 </button>
                 <!-- Button for accessing Admin Dashboard -->
                 <button id="admin-dashboard-btn" class="btn btn-info ml-2" onclick="checkAdminStatus(event)">
-                    <i class="fa-solid fa-gear text-white"></i>
+                    <i class="fa-solid fa-users text-white"></i>
                 </button>
 
                 <div id="conversation-list"></div>
@@ -67,12 +61,26 @@
             <!-- Main content -->
             <main class="col-10" style="padding-left: 0; padding-right: 0;">
 
-
+   
 
                 <header class="row align-items-center py-4" style="min-height: 100px;">
 
                     <!-- Title -->
                     <div class="col-5 title-container">
+                                        <!-- Flash Message Container -->
+                        <div class="flash-message-container">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }} text-center flash-message">
+                                            {{ message }}
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="alert flash-message-placeholder"></div> <!-- Transparent Placeholder -->
+                                {% endif %}
+                            {% endwith %}
+                        </div>   
                     <h2 class="mb-0" id="conversation-title">AI ∞ UI</h2>
                     <div id="token-data">
                         <span id="prompt-tokens">Prompt Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 
@@ -87,27 +95,40 @@
                     <iframe id="loading" class="loading" src="https://giphy.com/embed/xTk9ZvMnbIiIew7IpW" frameBorder="0" allowFullScreen></iframe>
                     </div>
 
-                    <!-- Controls -->
+                    <!-- Models  -->
                     <div class="col-3 text-right">
-                        <div class="dropdown d-inline-block">
-                            <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false">
-                                GPT-3.5
+                            <div class="dropdown model-dropdown model-dropdown-margin"> 
+                                <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false" style="display: none;">
+                                    GPT-3.5
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo">GPT-3.5</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4 (8k)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (1106)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gemini-1.5-pro">Gemini 1.5 Pro</a></li>
+                                </ul>
+                            </div>
+
+                            <!-- System Settings -->
+                            <div class="dropdown settings-dropdown">
+                                <button class="btn btn-sm btn-info dropdown-toggle no-caret" type="button" id="settingsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fa fa-bars"></i>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="settingsDropdown">
+                                    <button class="dropdown-item" data-target="systemMessageContentGroup">System Message</button>
+                                    <button class="dropdown-item" data-target="temperatureGroup">Temperature</button>
+                                    <button class="dropdown-item" data-target="websitesGroup">Websites</button>
+                                    <button class="dropdown-item" data-target="filesGroup">Files</button>
+                                </div>
+                            </div>
+
+
+                            <button id="edit-title-btn" class="btn btn-sm btn-info hidden">Rename</button>
+                            <button id="delete-conversation-btn" class="btn btn-sm hidden" style="background-color: #9E4300; color: white;">
+                                <i class="far fa-trash-alt"></i>
                             </button>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo-0613">GPT-3.5</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4</a></li>
-                            </ul>
-                        </div>
-                        <!-- Temperature Adjustment Button -->
-                        <button id="temperature-adjust-btn" class="btn btn-sm btn-info">
-                            <i class="fa-solid fa-temperature-low"></i>
-                        </button>
-
-
-                        <button id="edit-title-btn" class="btn btn-sm btn-info hidden">Rename</button>
-                        <button id="delete-conversation-btn" class="btn btn-sm btn-info hidden">
-                            <i class="far fa-trash-alt"></i>
-                        </button>
                     </div>
                 </header>
                 
@@ -134,80 +155,209 @@
         </div>  <!-- Closing for row full-height full-height-row -->
     </div> <!-- Closing for container-fluid full-height -->
 
-<!-- System Message Selection Modal -->
-<div class="modal fade" id="systemMessageModal" tabindex="-1" role="dialog" aria-labelledby="systemMessageModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="systemMessageModalLabel">Select System Message</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <ul class="list-group">
-                    <!-- System messages will be populated here -->
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+    <!-- System Message Modal -->
+    <div class="modal fade" id="systemMessageModal" tabindex="-1" role="dialog" aria-labelledby="systemMessageModalLabel" aria-hidden="true">
+        <div class="modal-dialog systemMessage-modal-lg" role="document">
 
-<!-- Temperature Adjustment Modal -->
-<div class="modal fade" id="temperatureModal" tabindex="-1" role="dialog" aria-labelledby="temperatureModalLabel" aria-hidden="true">
-    <div class="modal-dialog custom-modal-width" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="temperatureModalLabel">Temperature Setting</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Temperature Options -->
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0" value="0">
-                    <label class="form-check-label" for="temperature0">
-                        <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Ideal for testing and scenarios where consistency is key. Less creative, more straightforward.
-                        <br><span class="temperature-use-case">Use Cases: Information retrieval, fact-checking, and data extraction.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.3" value="0.3">
-                    <label class="form-check-label" for="temperature0.3">
-                        <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use where a higher level of reliability is desired.
-                        <br><span class="temperature-use-case">Use Cases: Technical writing, code generation, or legal document drafting.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.7" value="0.7" checked>
-                    <label class="form-check-label" for="temperature0.7">
-                        <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. Provides a good mix of interesting yet coherent responses.
-                        <br><span class="temperature-use-case">Use Cases: Creative writing, marketing content creation, or conversational AI.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.0" value="1.0">
-                    <label class="form-check-label" for="temperature1.0">
-                        <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming and scenarios where out-of-the-box thinking is desired.
-                        <br><span class="temperature-use-case">Use Cases: Brainstorming, ideation, or artistic pursuits.</span>
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.5" value="1.5">
-                    <label class="form-check-label" for="temperature1.5">
-                        <strong>1.5 - Experimental:</strong> Unconventional and less constrained responses. Can be more abstract or off-topic at times.
-                        <br><span class="temperature-use-case">Use Cases: Experimental and avant-garde content generation.</span>
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="save-temperature-setting">Save changes</button>
-            </div>
+            <div class="modal-content">
+
+                <div class="modal-flex-container d-flex">
+
+                    <!-- Sidebar Container -->
+                    <div class="modal-sidebar">
+
+                        <div id="rag-controls">
+                            <h6>RAG Controls</h6>
+                            <!-- Placeholder for dynamic RAG controls -->
+                            <div id="RAG-Buttons">
+                                <!--- Website Identifier (real-time data, news summarization, and fact-checking) -->
+                                <button id="addWebsiteButton" type="button" class="btn btn-secondary" onclick="toggleWebsiteGroup()">Websites</button>
+
+                                <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
+                                <button id="addFilesButton" type="button" class="btn btn-secondary">Files</button>
+                            </div>
+                        </div>
+                    </div>  
+                   
+                    <div class="modal-main">
+
+                        <div class="modal-header"> <!-- System message modal header -->
+
+                            <h5 class="modal-title" id="systemMessageModalLabel">
+                                System: 
+                                <!-- Dropdown for selecting the system message -->
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="systemMessageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        Select System Message
+                                    </button>
+
+                                    <div class="dropdown-menu" aria-labelledby="systemMessageDropdown">
+                                        <!-- Dropdown items will be populated here -->
+                                    </div>
+                                        
+                                    <button id="new-system-message-btn" class="btn btn-info ml-2">+ New</button>
+                                </div>
+                            </h5>
+
+                            <!-- Model Dropdown -->
+                            <div class="model-dropdown-container">
+                                <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="modalModelDropdownButton" data-toggle="dropdown" aria-expanded="false">
+                                    Current Model
+                                </button>
+
+                                <div class="dropdown-menu" aria-labelledby="modalModelDropdownButton">
+                                    <!-- Populate with model options -->
+                                </div>
+                            </div>
+                         
+                            <!-- Settings Dropdown in Modal -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-info dropdown-toggle no-caret" type="button" id="modalSettingsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fa fa-bars"></i>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="modalSettingsDropdown">
+                                    <button class="dropdown-item" onclick="toggleContentGroup('systemMessageContentGroup')">System Message</button>
+                                    <button class="dropdown-item" onclick="toggleContentGroup('temperatureGroup')">Temperature</button>
+                                    <button class="dropdown-item" onclick="toggleContentGroup('websitesGroup')">Websites</button>
+                                    <button class="dropdown-item" onclick="toggleContentGroup('filesGroup')">Files</button>
+                                </div>
+                            </div>
+
+                            <button id="delete-system-message-btn" class="btn btn-sm ml-2" style="background-color: #9E4300; color: white;">
+                                <i class="far fa-trash-alt"></i>
+                            </button>                             
+
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+
+                        </div> <!-- End of modal header -->
+
+                        <div class="modal-body">
+                                
+                            <div class="row">
+                                <!-- Column for system name within modal body-->
+                                <div class="col-md-6">
+                                    <div class="form-group" style="margin-top: -7px;">
+                                        <label for="systemMessageName" style="color: white;">Name</label>
+                                        <input type="text" class="form-control" id="systemMessageName" style="color: black;">
+                                    </div>
+                                </div>
+                                
+                                <!-- Column for temperature display within modal body -->
+                                <div class="col-md-6">
+                                    <div class="form-group text-right">
+                                        <p id="temperatureDisplay" style="color: white;"></p>
+                                    </div>
+                                </div>
+                                
+
+                                <div id="modal-flash-message-container" class="modal-flash-message-container">
+                                    <!-- This container will hold the flash messages for the modal -->
+                                </div>
+                                
+
+                                <!-- System Message Content Group -->
+                                <div class="col-md-12">
+                                    <div id="systemMessageContentGroup" class="modal-content-group hidden">
+                                        <!-- Description for drop down menu -->
+                                        <div class="form-group" style="margin-top: -7px;">
+                                            <label for="systemMessageDescription" class="modal-label">Description</label>
+                                            <input type="text" class="form-control" id="systemMessageDescription" style="color: black;">
+                                        </div>
+                                        <!-- Textarea for editing system message -->
+                                        <div class="form-group" style="margin-top: -7px;">
+                                            <label for="systemMessageContent" class="modal-label">Content</label>
+                                            <textarea class="form-control" id="systemMessageContent" style="color: black; overflow-y: auto;"></textarea>
+                                        </div>
+                                    </div> <!-- End of system message content group -->
+                                </div> <!-- End of Bootstrap column -->
+
+                                <!-- Temperature Group -->
+                                <div class="col-md-12">
+                                    <div id="temperatureGroup" class="modal-content-group hidden" style="margin-top: -7px;">
+                                        <div id="temperatureLabel">
+                                            <label class="modal-label">Temperature Settings</label>
+                                        </div>
+                                        <!-- Temperature Options -->
+                                        <div id="temperatureOptions">
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0" value="0">
+                                                <label class="form-check-label" for="temperature0">
+                                                    <strong>0 (Zero) - Deterministic:</strong> Highly deterministic and predictable responses. Not creative.
+                                                    <br><span class="temperature-use-case">Use Cases: Information retrieval, fact-checking, and data extraction.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.3" value="0.3">
+                                                <label class="form-check-label" for="temperature0.3">
+                                                    <strong>0.3 - Low Variability:</strong> More predictable and safe responses. Suitable for general use.
+                                                    <br><span class="temperature-use-case">Use Cases: Technical writing, code generation, or legal document drafting.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature0.7" value="0.7" checked>
+                                                <label class="form-check-label" for="temperature0.7">
+                                                    <strong>0.7 - Balanced Creativity:</strong> The default setting. Balanced between creativity and predictability. 
+                                                    <br><span class="temperature-use-case">Use Cases: Creative writing, marketing content creation, or conversational AI.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.0" value="1.0">
+                                                <label class="form-check-label" for="temperature1.0">
+                                                    <strong>1.0 - High Creativity:</strong> Highly creative and varied responses. Best for brainstorming.
+                                                    <br><span class="temperature-use-case">Use Cases: Brainstorming, ideation, or artistic pursuits.</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check" style="margin-bottom: 10px;">
+                                                <input class="form-check-input" type="radio" name="temperatureOptions" id="temperature1.5" value="1.5">
+                                                <label class="form-check-label" for="temperature1.5">
+                                                    <strong>1.5 - Experimental:</strong> Unconventional, abstract or off-topic at times. Use with caution.
+                                                    <br><span class="temperature-use-case">Use Cases: Experimental and avant-garde content generation.</span>
+                                                </label>
+                                            </div>
+                                        </div> <!-- End of temperature options -->
+                                    </div> <!-- End of temperature group -->
+                                </div> <!-- End of Bootstrap column -->
+
+                                <!-- Websites Group -->
+                                <div id="websitesGroup" class="modal-content-group hidden">
+                                    <div class="form-group">
+                                        <label for="websiteURL">Website URL</label>
+                                        <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
+                                    </div>
+                                    <button id="submitWebsiteButton" type="button" class="btn btn-secondary" onclick="addWebsite()">Add Website</button>
+                                </div>   
+                                
+                                <!-- Files Group -->
+                                <div id="filesGroup" class="modal-content-group hidden">
+                                    <div class="form-group">
+                                        <label for="fileInput">Upload File</label>
+                                        <input type="file" class="form-control-file" id="fileInput">
+                                        <button type="button" class="btn btn-secondary mt-2" onclick="uploadFile()">Upload File</button>
+                                    </div>
+                                </div>
+
+                            </div> <!-- End of row for modal-body -->
+                        </div> <!-- End of modal-body -->
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" id="saveSystemMessageChanges">Save Changes</button>
+                        </div>
+
+                    </div> <!-- End of modal main -->
+
+                </div> <!-- End of flex container for sidebar and modal main -->
+
+            </div> <!-- End of modal content container -->
+
         </div>
-    </div>
-</div>
+
+    </div> <!-- End of system message modal -->
+
+
+
 
 
 
@@ -216,8 +366,23 @@
     <!-- Scripts -->
     <script src="/static/js/marked.min.js"></script>
     <script src="/static/js/prism.js"></script>
+
+
+    <!-- Include MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Include Chart.js for rendering graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script src="/static/js/main.js"></script>
     
+
+
+
+
+
+
     <script>
         const ta = document.getElementById('user_input'); // Changed the targeted ID
         ta.addEventListener('input', function() {
@@ -238,127 +403,17 @@
         });
     </script>
 
-
-
-</body>
-
-</html>
-    <title>AI ∞ UI</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <link href="/static/css/prism.css" rel="stylesheet" />
-
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/autosize.js/4.0.2/autosize.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
-    
     <script>
-        var conversation_id = {{ conversation_id | default('null', true) }};
+        setTimeout(function() {
+            $('.flash-message').fadeOut('slow');
+        }, 3000); // 3000 milliseconds = 3 seconds
     </script>
 
-<style>
-    .full-height {
-        min-height: 100vh;
-    }
-
-    textarea {
-        overflow: hidden;
-        resize: none;
-    }
-</style>
-
-</head>
-
-<body>
-    <div class="container-fluid full-height">
-        <div class="row full-height full-height-row">
-            <!-- Sidebar -->
-            <aside class="col-2 sidebar">
-                <button id="new-chat-btn" class="btn btn-info">+ New Chat</button>
-                <div id="conversation-list"></div>
-            </aside>
-
-            <!-- Main content -->
-            <main class="col-10" style="padding-left: 0; padding-right: 0;">
-                <header class="row align-items-center py-4" style="min-height: 100px;">
-
-                    <!-- Title -->
-                    <div class="col-5 title-container">
-                    <h2 class="mb-0" id="conversation-title">AI ∞ UI</h2>
-                    <div id="token-data">
-                        <span id="prompt-tokens">Prompt Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 
-                        <span id="completion-tokens">Completion Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 
-                        <span id="total-tokens">Total Tokens:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                    </div>
-                    
-                    </div>
-
-                    <!-- Loading Animation -->
-                    <div class="col-2 text-center">
-                    <iframe id="loading" class="loading" src="https://giphy.com/embed/xTk9ZvMnbIiIew7IpW" frameBorder="0" allowFullScreen></iframe>
-                    </div>
-
-                    <!-- Controls -->
-                    <div class="col-3 text-right">
-                        <div class="dropdown d-inline-block">
-                            <button class="btn btn-sm btn-info dropdown-toggle current-model-btn" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false">
-                                GPT-3.5
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo-0613">GPT-3.5</a></li>
-                                <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4</a></li>
-                            </ul>
-                        </div>
-
-
-
-                        <button id="edit-title-btn" class="btn btn-sm btn-info hidden">Rename</button>
-                        <button id="delete-conversation-btn" class="btn btn-sm btn-info hidden">
-                            <i class="far fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </header>
-                
-                <!-- Chat Content-->
-                <section class="row">
-                    <div class="col-12">
-                        <div class="chat-container" id="chat">
-                            <div id="system-message-selection">
-                                <!-- Model selection dropdown and system message will be inserted here -->
-                            </div>
-                            <!-- Chat entries will be inserted here -->
-                        </div>
-                    </div>
-                </section>
-            </main>       
-     
-            <!-- Message Form   -->
-            <footer class="col-10 offset-2">
-                <form id="chat-form" class="bottom-form">
-                    <textarea id="user_input" class="form-control" placeholder="Type your message here..." rows="1" required></textarea>
-                    <button type="submit" class="btn btn-primary btn-send">Send</button>
-                </form>
-            </footer>
-        </div>  <!-- Closing for row full-height full-height-row -->
-    </div> <!-- Closing for container-fluid full-height -->
-
-    <!-- Scripts -->
-    <script src="/static/js/marked.min.js"></script>
-    <script src="/static/js/prism.js"></script>
-    <script src="/static/js/main.js"></script>
-    
     <script>
-        const ta = document.getElementById('user_input'); // Changed the targeted ID
-        ta.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
+        console.log('System messages:', systemMessages);
     </script>
+
+
 </body>
 
 </html>

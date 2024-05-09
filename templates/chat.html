@@ -107,7 +107,7 @@
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (1106)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
-                                    <li><a class="dropdown-item" href="#" data-model="gemini-1.5-pro">Gemini 1.5 Pro</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gemini-pro">Gemini Pro</a></li>
                                 </ul>
                             </div>
 
@@ -323,22 +323,34 @@
                                 </div> <!-- End of Bootstrap column -->
 
                                 <!-- Websites Group -->
-                                <div id="websitesGroup" class="modal-content-group hidden">
-                                    <div class="form-group">
-                                        <label for="websiteURL">Website URL</label>
-                                        <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
-                                    </div>
-                                    <button id="submitWebsiteButton" type="button" class="btn btn-secondary" onclick="addWebsite()">Add Website</button>
-                                </div>   
-                                
+                                <div class="col-md-12">
+                                    <div id="websitesGroup" class="modal-content-group hidden">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group" style="margin-top: -7px;">
+                                                    <label for="websiteURL">Website URL</label>
+                                                    <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button id="submitWebsiteButton" type="button" class="btn btn-info website-control-btn" onclick="addWebsite()">Add Website</button>
+                                                <button type="button" class="btn btn-info website-control-btn" onclick="removeWebsite()">Remove Website</button>
+                                                <button type="button" class="btn btn-info website-control-btn" onclick="reindexWebsite()">Re-index Website</button>
+                                            </div>
+                                        </div>
+                                    </div> <!-- End of websites group -->
+                                </div> <!-- End of Bootstrap column -->
+                                                                
                                 <!-- Files Group -->
-                                <div id="filesGroup" class="modal-content-group hidden">
-                                    <div class="form-group">
-                                        <label for="fileInput">Upload File</label>
-                                        <input type="file" class="form-control-file" id="fileInput">
-                                        <button type="button" class="btn btn-secondary mt-2" onclick="uploadFile()">Upload File</button>
-                                    </div>
-                                </div>
+                                <div class="col-md-12">
+                                    <div id="filesGroup" class="modal-content-group hidden">
+                                        <div class="form-group" style="margin-top: -7px;">
+                                            <label for="fileInput">Upload File</label>
+                                            <input type="file" class="form-control-file" id="fileInput">
+                                            <button type="button" class="btn btn-secondary mt-2" onclick="uploadFile()">Upload File</button>
+                                        </div>
+                                    </div> <!-- End of files group -->
+                                </div> <!-- End of Bootstrap column -->
 
                             </div> <!-- End of row for modal-body -->
                         </div> <!-- End of modal-body -->
