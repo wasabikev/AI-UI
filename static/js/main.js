@@ -38,32 +38,101 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
-function saveWebsiteURL(websiteURL, systemMessageId) {
-    fetch(`/api/system-messages/${systemMessageId}/add-website`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
+
+function loadWebsitesForSystemMessage(systemMessageId) {
+    $.ajax({
+        url: `/get-websites/${systemMessageId}`,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            const sidebar = document.getElementById('modal-sidebar');
+            if (!sidebar) {
+                console.error("Sidebar element not found in the DOM.");
+                return;
+            }
+
+            sidebar.innerHTML = '';
+
+            const websites = Array.isArray(response) ? response : response.websites;
+
+            if (websites && websites.length > 0) {
+                websites.forEach(website => {
+                    const div = document.createElement('div');
+                    div.className = 'website-item';
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = website.url;
+                    div.appendChild(textSpan);
+
+                    const settingsButton = document.createElement('button');
+                    settingsButton.className = 'websiteSettings-button';
+                    settingsButton.innerHTML = '<i class="fa-solid fa-gear"></i>';
+                    settingsButton.addEventListener('click', function() {
+                        openModalAndShowGroup('websiteGroup');
+                    });
+                    div.appendChild(settingsButton);
+
+                    sidebar.appendChild(div);
+                });
+            } else {
+                sidebar.textContent = 'No websites for this system message.';
+            }
         },
-        body: JSON.stringify({ websiteURL: websiteURL }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+        error: function(xhr) {
+            console.error('Failed to fetch websites:', xhr.responseText);
+            if (sidebar) {
+                sidebar.textContent = 'Failed to load websites.';
+            }
         }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Success:', data);
-        // Handle success, such as updating the UI or showing a success message
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-        // Handle error, such as showing an error message to the user
     });
 }
 
+function removeWebsite(websiteId) {
+    if (!confirm('Are you sure you want to remove this website?')) {
+        return;
+    }
 
+    // AJAX call to the server to remove the website
+    $.ajax({
+        url: '/remove-website/' + websiteId,
+        type: 'DELETE',
+        success: function(response) {
+            alert('Website removed successfully');
+            loadWebsites(); // Refresh the list of websites
+        },
+        error: function(xhr) {
+            alert('Error removing website: ' + xhr.responseText);
+        }
+    });
+}
 
+function reindexWebsite(websiteId) {
+    // AJAX call to the server to re-index the website
+    $.ajax({
+        url: '/reindex-website/' + websiteId,
+        type: 'POST',
+        success: function(response) {
+            alert('Website re-indexing initiated');
+        },
+        error: function(xhr) {
+            alert('Error re-indexing website: ' + xhr.responseText);
+        }
+    });
+}
+
+function loadWebsites() {
+    $.ajax({
+        url: '/get-websites',
+        type: 'GET',
+        success: function(response) {
+            // Code to display the websites in the UI
+            // Example: update a table or list in your HTML
+        },
+        error: function(xhr) {
+            alert('Error fetching websites: ' + xhr.responseText);
+        }
+    });
+}
 
 
 function updateSystemMessageDropdown() {
@@ -97,6 +166,11 @@ function updateSystemMessageDropdown() {
             // Update the model dropdown in the modal and the global model variable
             updateModelDropdownInModal(message.model_name);
             model = message.model_name; // Update the global model variable
+
+            // Set the active system message ID globally
+            activeSystemMessageId = message.id;
+            // Load websites for the newly selected system message
+            loadWebsitesForSystemMessage(activeSystemMessageId);
         };
         dropdownMenu.appendChild(dropdownItem);
     });
@@ -400,55 +474,48 @@ function populateSystemMessageModal() {
     // Add each system message to the dropdown
     console.log('Populating system message modal...');
     systemMessages.forEach((message, index) => {
-        console.log('System message:', message);
-        console.log(`System message [${message.name}] temperature:`, message.temperature); 
         let dropdownItem = document.createElement('button');
         dropdownItem.className = 'dropdown-item';
         dropdownItem.textContent = message.name;
         dropdownItem.onclick = function() {
             // Update the dropdown button text and modal content
             dropdownButton.textContent = this.textContent; // Update the system message dropdown button text
-            console.log(`Setting name: ${message.name}`);
             document.getElementById('systemMessageName').value = message.name || '';
-            console.log(`Current name value in input: ${document.getElementById('systemMessageName').value}`);
             document.getElementById('systemMessageDescription').value = message.description || '';
             document.getElementById('systemMessageContent').value = message.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = message.id;
-            // Update the current system message description
+
+            // Update global and modal-specific variables
             currentSystemMessageDescription = message.description;
-            // Update the temperature display
-            console.log(`Dropdown item clicked for [${message.name}], setting temperature to:`, message.temperature);
             initialTemperature = message.temperature;
             selectedTemperature = message.temperature;
-            updateTemperatureSelectionInModal(message.temperature);
-            // Update the model dropdown in the modal and the global model variable
-            updateModelDropdownInModal(message.model_name);
             model = message.model_name; // Update the global model variable
-            console.log('Model updated to:', model);
+            activeSystemMessageId = message.id; // Update the active system message ID
 
-            editSystemMessage = message; // Set the editSystemMessage variable to the selected system message
+            // Update UI elements
+            updateTemperatureSelectionInModal(message.temperature);
+            updateModelDropdownInModal(message.model_name);
+
+            // Load websites for the selected system message
+            loadWebsitesForSystemMessage(message.id);
         };
         dropdownMenu.appendChild(dropdownItem);
     });
 
-    // Pre-select and display the default system message only if there's no active system message
-    if (!activeSystemMessageId) {
-        const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
-        if (defaultSystemMessage) {
-            dropdownButton.textContent = defaultSystemMessage.name;
-            document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
-            document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
-            document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
-
-            // Set the temperature to the default system message's temperature
-            initialTemperature = defaultSystemMessage.temperature;
-            updateTemperatureSelectionInModal(initialTemperature);
-
-            // Update the model variable and display the system message
-            model = defaultSystemMessage.model_name;
-            displaySystemMessage(defaultSystemMessage);
-        }
-    }    
+    // Handle default system message selection
+    if (!activeSystemMessageId && systemMessages.length > 0) {
+        const defaultSystemMessage = systemMessages[0]; // Assuming the first message is the default
+        activeSystemMessageId = defaultSystemMessage.id;
+        loadWebsitesForSystemMessage(defaultSystemMessage.id);
+        dropdownButton.textContent = defaultSystemMessage.name;
+        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
+        document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
+        document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
+        initialTemperature = defaultSystemMessage.temperature;
+        updateTemperatureSelectionInModal(initialTemperature);
+        updateModelDropdownInModal(defaultSystemMessage.model_name);
+        model = defaultSystemMessage.model_name;
+    }
 }
 
 function updateTemperatureDisplay() {
@@ -549,10 +616,31 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
     document.getElementById('modalModelDropdownButton').textContent = 'GPT-3.5';
     document.getElementById('modalModelDropdownButton').dataset.apiName = 'gpt-3.5-turbo';
 
-    // Set the temperature to .07
+    // Set the temperature to 0.7
     document.querySelector('input[name="temperatureOptions"][value="0.7"]').checked = true;
     updateTemperatureDisplay();
+
+    // Clear the sidebar
+    const sidebar = document.getElementById('modal-sidebar');
+    if (sidebar) {
+        sidebar.innerHTML = ''; // Clear existing content
+    }
+
+    // Switch to the systemMessageContentGroup
+    switchToSystemMessageContentGroup();
 });
+
+function switchToSystemMessageContentGroup() {
+    // Hide all content groups
+    const contentGroups = document.querySelectorAll('.modal-content-group');
+    contentGroups.forEach(group => group.classList.add('hidden'));
+
+    // Show the systemMessageContentGroup
+    const systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
+    if (systemMessageContentGroup) {
+        systemMessageContentGroup.classList.remove('hidden');
+    }
+}
 
 $(window).on('load', function () {
     // Fetch the current model_name from the backend when the page loads
@@ -602,9 +690,8 @@ function modelNameMapping(modelName) {
     let mappedName;
     switch(modelName) {
         case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
-        case "gpt-4-0613": mappedName = "GPT-4 (8k)"; break;
-        case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
+        case "gpt-4o-2024-05-13": mappedName = "GPT-4o"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
         case "gemini-pro": mappedName = "Gemini Pro"; break;
         default: mappedName = "Unknown Model"; break;
@@ -626,7 +713,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-pro"];
+    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13","claude-3-opus-20240229","gemini-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown
@@ -686,6 +773,8 @@ $('#systemMessageModal').on('show.bs.modal', function () {
             console.log("System message name set to:", activeSystemMessage.name);
             // Ensure the model dropdown is set to the correct model
             updateModelDropdownInModal(activeSystemMessage.model_name);
+            // Load websites for the active system message
+            loadWebsitesForSystemMessage(activeSystemMessageId);
         }
     } else {
         // Optionally set a default name if no active message is found

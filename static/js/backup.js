@@ -37,33 +37,143 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-
-function saveWebsiteURL(websiteURL, systemMessageId) {
-    fetch(`/api/system-messages/${systemMessageId}/add-website`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
+function loadWebsitesForSystemMessage(systemMessageId) {
+    $.ajax({
+        url: '/get-websites/' + systemMessageId,
+        type: 'GET',
+        success: function(response) {
+            const websites = response.websites;
+            const sidebar = document.getElementById('modal-sidebar');
+            sidebar.innerHTML = '';  // Clear existing content
+            websites.forEach(website => {
+                const websiteElement = document.createElement('div');
+                websiteElement.textContent = website.url;  // Adjust as needed to include more details
+                sidebar.appendChild(websiteElement);
+            });
         },
-        body: JSON.stringify({ websiteURL: websiteURL }),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+        error: function(xhr) {
+            console.error('Error fetching websites:', xhr.responseText);
         }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Success:', data);
-        // Handle success, such as updating the UI or showing a success message
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-        // Handle error, such as showing an error message to the user
     });
 }
 
 
+document.addEventListener('DOMContentLoaded', function() {
+    const addWebsiteBtn = document.getElementById('submitWebsiteButton');
+    const removeWebsiteBtn = document.getElementById('removeWebsiteButton');
+    const reindexWebsiteBtn = document.getElementById('reindexWebsiteButton');
 
+    if (addWebsiteBtn) {
+        addWebsiteBtn.addEventListener('click', function() {
+            addWebsite();
+        });
+    }
+
+    if (removeWebsiteBtn) {
+        removeWebsiteBtn.addEventListener('click', function() {
+            const websiteId = prompt("Enter the ID of the website to remove:");
+            if (websiteId) {
+                removeWebsite(websiteId);
+            }
+        });
+    }
+
+    if (reindexWebsiteBtn) {
+        reindexWebsiteBtn.addEventListener('click', function() {
+            const websiteId = prompt("Enter the ID of the website to re-index:");
+            if (websiteId) {
+                reindexWebsite(websiteId);
+            }
+        });
+    }
+});
+
+
+function addWebsite() {
+    const websiteInputElement = document.getElementById('websiteURL');
+
+    console.log(websiteInputElement); // Check if this logs the correct element or null
+
+    if (!websiteInputElement) {
+        alert('Website input element not found');
+        return;
+    }
+
+    const websiteURL = websiteInputElement.value;
+
+    if (!websiteURL) {
+        alert('Please enter a URL');
+        return;
+    }
+
+    if (!activeSystemMessageId) {
+        alert('No active system message selected');
+        return;
+    }
+
+    // AJAX call to the server to add the website
+    $.ajax({
+        url: '/add-website',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ url: websiteURL, system_message_id: activeSystemMessageId }),
+        success: function(response) {
+            alert('Website added successfully');
+            document.getElementById('websiteURL').value = ''; // Clear the input field
+            loadWebsites(); // Refresh the list of websites
+        },
+        error: function(xhr) {
+            alert('Error adding website: ' + xhr.responseText);
+        }
+    });
+}
+
+function removeWebsite(websiteId) {
+    if (!confirm('Are you sure you want to remove this website?')) {
+        return;
+    }
+
+    // AJAX call to the server to remove the website
+    $.ajax({
+        url: '/remove-website/' + websiteId,
+        type: 'DELETE',
+        success: function(response) {
+            alert('Website removed successfully');
+            loadWebsites(); // Refresh the list of websites
+        },
+        error: function(xhr) {
+            alert('Error removing website: ' + xhr.responseText);
+        }
+    });
+}
+
+function reindexWebsite(websiteId) {
+    // AJAX call to the server to re-index the website
+    $.ajax({
+        url: '/reindex-website/' + websiteId,
+        type: 'POST',
+        success: function(response) {
+            alert('Website re-indexing initiated');
+        },
+        error: function(xhr) {
+            alert('Error re-indexing website: ' + xhr.responseText);
+        }
+    });
+}
+
+function loadWebsites() {
+    $.ajax({
+        url: '/get-websites',
+        type: 'GET',
+        success: function(response) {
+            // Code to display the websites in the UI
+            // Example: update a table or list in your HTML
+        },
+        error: function(xhr) {
+            alert('Error fetching websites: ' + xhr.responseText);
+        }
+    });
+}
 
 
 function updateSystemMessageDropdown() {
@@ -606,7 +716,7 @@ function modelNameMapping(modelName) {
         case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
-        case "gemini-1.5-pro": mappedName = "Gemini 1.5 Pro"; break;
+        case "gemini-pro": mappedName = "Gemini Pro"; break;
         default: mappedName = "Unknown Model"; break;
     }
     console.log("Mapped model name:", mappedName);
@@ -626,7 +736,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-1.5-pro"];
+    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown
@@ -1320,6 +1430,14 @@ $(document).ready(function() {  // Document Ready (initialization)
         // Pass the target group to the modal
         $('#systemMessageModal').data('targetGroup', targetGroup);
         $('#systemMessageModal').modal('show');
+    });
+
+    // Needed for "Send" to respond to the 'enter' key.
+    $('#user_input').keydown(function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Still prevent the default to avoid a newline on Enter
+            $('#chat-form').submit(); // Submit form when Enter is pressed without Shift
+        }
     });
 });
     

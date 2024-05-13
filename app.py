@@ -20,7 +20,8 @@ import google.generativeai as genai
 import requests
 import json
 
-from models import db, Folder, Conversation, User, SystemMessage
+from models import db, Folder, Conversation, User, SystemMessage, Website
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler # for log file rotation
 from werkzeug.security import generate_password_hash
 from google.generativeai import GenerativeModel
@@ -28,6 +29,7 @@ from google.generativeai import GenerativeModel
 from auth import auth as auth_blueprint  # Import the auth blueprint
 
 app = Flask(__name__)
+
 
 app.logger.setLevel(logging.INFO)  # Set logging level to INFO
 handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3) # Create log file with max size of 10KB and max number of 3 files
@@ -42,6 +44,50 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 CORS(app)  # Cross-Origin Resource Sharing
+
+@app.route('/get-websites/<int:system_message_id>', methods=['GET'])
+def get_websites(system_message_id):
+    websites = Website.query.filter_by(system_message_id=system_message_id).all()
+    return jsonify({'websites': [website.to_dict() for website in websites]}), 200
+
+@app.route('/add-website', methods=['POST'])
+def add_website():
+    data = request.get_json()
+    url = data.get('url')
+    system_message_id = data.get('system_message_id')  # Assuming you pass this from the frontend
+
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    # Validate URL format here (optional, can be done in the frontend too)
+
+    new_website = Website(url=url, system_message_id=system_message_id)
+    db.session.add(new_website)
+    db.session.commit()
+
+    return jsonify({'message': 'Website added successfully', 'website': new_website.to_dict()}), 201
+
+@app.route('/remove-website/<int:website_id>', methods=['DELETE'])
+def remove_website(website_id):
+    website = Website.query.get_or_404(website_id)
+    db.session.delete(website)
+    db.session.commit()
+
+    return jsonify({'message': 'Website removed successfully'}), 200
+
+@app.route('/reindex-website/<int:website_id>', methods=['POST'])
+def reindex_website(website_id):
+    website = Website.query.get_or_404(website_id)
+    # Trigger re-indexing logic here (e.g., update indexed_at, change status)
+    website.indexed_at = datetime.now(timezone.utc)
+    website.indexing_status = 'In Progress'
+    db.session.commit()
+
+    return jsonify({'message': 'Re-indexing initiated', 'website': website.to_dict()}), 200
+
+
+
+
 
 # User loader function
 @login_manager.user_loader
@@ -453,7 +499,7 @@ def get_response_from_model(model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
     """
-    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09"]:
+    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13"]:
         # OpenAI models
         payload = {
             "model": model,
@@ -600,20 +646,30 @@ def chat():
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
-        encoding = tiktoken.encoding_for_model(model_name)
+        if model_name == "gpt-4o-2024-05-13":
+            # Temporarily return "0" for token count for the gpt-4o-2024-05-13 model
+            return 0
+        try:
+            encoding = tiktoken.encoding_for_model(model_name)
+        except KeyError:
+            raise ValueError(f"Tokenizer not found for model: {model_name}")
+        
         num_tokens = 0
         for message in messages:
             num_tokens += len(encoding.encode(message['content']))
         return num_tokens
+
     elif model_name.startswith("claude-"):
         encoding = tiktoken.get_encoding("cl100k_base")
         num_tokens = 0
         for message in messages:
             num_tokens += len(encoding.encode(message['content']))
         return num_tokens
+
     elif model_name == "gemini-pro":
         # Return "0" for token count for the gemini-pro model
         return 0
+
     else:
         raise ValueError(f"Unsupported model: {model_name}")
 
