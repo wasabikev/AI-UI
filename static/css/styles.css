@@ -141,24 +141,47 @@ h2 {
 .modal-sidebar {
     background-color: #3F484B;
     color: #fff;
-    padding: 20px 20px 10px 20px;
+    padding: 20px; /* Uniform padding on all sides */
     width: 300px;
-    min-width: 300px; /* Add this line to set a minimum width for the sidebar */
+    min-width: 300px; /* Ensures a minimum width for the sidebar */
     overflow-y: auto;
     scrollbar-color: #7F898B #3F484B;
     scrollbar-width: thin;
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;
-    flex-shrink: 0; /* Prevent the sidebar from shrinking */
+    flex-shrink: 0; /* Prevents the sidebar from shrinking */
+    text-align: left; /* Aligns text to the left */
 }
 
 #systemMessageModal .modal-sidebar {
-    min-width: 200px; /* Adjust the value as needed */
+    min-width: 200px; /* Adjust the minimum width as needed */
 }
 
 #addWebsiteButton {
-    margin-right: 10px; /* Adjust the space as needed */
+    margin-right: 10px; /* Adjusts the space to the right of the button */
 }
+
+.website-item {
+    padding: 5px 10px; /* Adds padding inside each website item */
+    margin-left: -30px; /* Adds left margin to shift content away from the edge */
+    border-bottom: 1px solid #ccc; /* Adds a subtle line beneath each item */
+    display: block; /* Ensures the item takes up the full width it can */
+    width: calc(100% + 10px); /*  Reduces width to prevent flush with the right side */
+}
+
+.websiteSettings-button {
+    background: none;
+    border: none;
+    color: #fff;  /* Adjust color to fit your design */
+    cursor: pointer;
+    margin-left: 15px; /* Adds more space between the URL and the button */
+
+}
+
+.websiteSettings-button i {
+    font-size: 16px;  /* Adjust size as needed */
+}
+
 
 /************** Temperature Group Styles  ****************/
 

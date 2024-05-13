@@ -103,9 +103,8 @@
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                     <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo">GPT-3.5</a></li>
-                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-0613">GPT-4 (8k)</a></li>
-                                    <li><a class="dropdown-item" href="#" data-model="gpt-4-1106-preview">GPT-4 (1106)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4o-2024-05-13">GPT-4o</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gemini-pro">Gemini Pro</a></li>
                                 </ul>
@@ -175,6 +174,9 @@
 
                                 <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
                                 <button id="addFilesButton" type="button" class="btn btn-secondary">Files</button>
+                            </div>
+                            <div class="modal-sidebar" id="modal-sidebar">
+                                <!-- Dynamic content will be loaded here -->
                             </div>
                         </div>
                     </div>  
@@ -333,9 +335,9 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <button id="submitWebsiteButton" type="button" class="btn btn-info website-control-btn" onclick="addWebsite()">Add Website</button>
-                                                <button type="button" class="btn btn-info website-control-btn" onclick="removeWebsite()">Remove Website</button>
-                                                <button type="button" class="btn btn-info website-control-btn" onclick="reindexWebsite()">Re-index Website</button>
+                                                <button id="submitWebsiteButton" type="button" class="btn btn-info website-control-btn">Add Website</button>
+                                                <button id="removeWebsiteButton" type="button" class="btn btn-info website-control-btn">Remove Website</button>
+                                                <button id="reindexWebsiteButton" type="button" class="btn btn-info website-control-btn">Re-index Website</button>
                                             </div>
                                         </div>
                                     </div> <!-- End of websites group -->
