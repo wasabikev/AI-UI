@@ -30,3 +30,35 @@
 }
 2024-05-27 15:47:39,693 - app - INFO - Generated conversation summary: Summary: Critical Thinking Skills
 2024-05-27 15:47:39,705 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure, here is a test sentence for you: "Critical thinking is essential for making well-informed decisions."'}]
+2024-05-27 16:27:46,512 - app - INFO - Received model: gemini-pro
+2024-05-27 16:27:46,512 - app - INFO - Received temperature: 0.7
+2024-05-27 16:27:48,052 - app - INFO - Response from model: Examine the validity of the following argument: "All dogs are mammals. My pet is a dog. Therefore, my pet is a mammal."
+2024-05-27 16:27:48,059 - app - INFO - Prompt tokens: 0
+2024-05-27 16:27:48,060 - app - INFO - Completion tokens: 0
+2024-05-27 16:27:48,060 - app - INFO - Total tokens: 0
+2024-05-27 16:27:48,061 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Examine the validity of the following argument: "All dogs are mammals. My pet is a dog. Therefore, my pet is a mammal."'}], 'max_tokens': 10}
+2024-05-27 16:27:48,760 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Dog to Mammal Argument",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1716852463,
+  "id": "chatcmpl-9Te2hvnI2ALPnZklv8ccoc8AgqAZJ",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 72,
+    "total_tokens": 78
+  }
+}
+2024-05-27 16:27:48,776 - app - INFO - Generated conversation summary: Dog to Mammal Argument
+2024-05-27 16:27:48,781 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Examine the validity of the following argument: "All dogs are mammals. My pet is a dog. Therefore, my pet is a mammal."'}]
