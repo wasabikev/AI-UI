@@ -72,7 +72,7 @@ def generate_image():
 if __name__ == '__main__':
        # Set host to '0.0.0.0' to make the server externally visible
        # Get the port from the environment variable or default to 5000
-       port = int(os.getenv('PORT', 5000))
+       port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000
        app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
