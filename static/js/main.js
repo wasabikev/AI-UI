@@ -13,6 +13,7 @@ let isSaved = false; // Flag to track whether the system message changes have be
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
 let showTemperature = false;  // Tracks the visibility of the temperature settings
 let selectedTemperature = 0.7; // Default temperature value
+let activeWebsiteId = null;  // This will store the currently active website ID for the Websites Group
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -36,6 +37,89 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error('Error during system message fetch and display:', error);
     });
 });
+
+function handleAddWebsiteButtonClick() {
+    // Switch to the websitesGroup
+    openModalAndShowGroup('websitesGroup');
+
+    // Clear active website ID and website details
+    activeWebsiteId = null;
+    clearWebsiteDetails();
+    updateWebsiteControls();
+}
+
+
+function openModalAndShowGroup(groupID) {
+    // Hide all content groups
+    $('.modal-content-group').addClass('hidden');
+
+    // Show the selected group
+    $('#' + groupID).removeClass('hidden');
+}
+
+function updateWebsiteControls() {
+    const addWebsiteButton = document.getElementById('submitWebsiteButton');
+    const removeWebsiteButton = document.getElementById('removeWebsiteButton');
+    const indexWebsiteButton = document.getElementById('indexWebsiteButton');
+
+    if (activeWebsiteId) {
+        // Hide the Add Website button and show the Remove and Index buttons
+        addWebsiteButton.style.display = 'none';
+        removeWebsiteButton.style.display = 'inline-block';
+        indexWebsiteButton.style.display = 'visible';
+    } else {
+        // Show the Add Website button and hide the Remove and Index buttons
+        addWebsiteButton.style.display = 'inline-block';
+        removeWebsiteButton.style.display = 'none';
+        indexWebsiteButton.style.display = 'hidden';
+    }
+}
+
+document.getElementById('submitWebsiteButton').addEventListener('click', function() {
+    const websiteURL = document.getElementById('websiteURL').value;
+
+    if (!websiteURL) {
+        alert('Please enter a valid URL.');
+        return;
+    }
+
+    if (!activeSystemMessageId) {
+        alert('System message ID is required.');
+        return;
+    }
+
+    addWebsite(websiteURL, activeSystemMessageId).then(response => {
+        if (response.success) {
+            activeWebsiteId = response.website.id; // Set the active website ID
+            updateWebsiteControls(); // Update UI controls
+            // Repopulate the input field with the name of the newly added website
+            document.getElementById('websiteURL').value = response.website.url;
+            alert('Website added successfully.');
+            // Reload the websites for the current system message to update the sidebar
+            loadWebsitesForSystemMessage(activeSystemMessageId);
+            // Display the details of the newly added website
+            displayWebsiteDetails(response.website);
+        } else {
+            alert('Error adding website: ' + response.message);
+        }
+    }).catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the website.');
+    });
+});
+
+
+function addWebsite(url, systemMessageId) {
+    console.log("Adding website with URL:", url, "and system message ID:", systemMessageId);
+    return fetch('/add-website', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: url, system_message_id: systemMessageId })
+    })
+    .then(response => response.json());
+}
 
 
 
@@ -66,9 +150,13 @@ function loadWebsitesForSystemMessage(systemMessageId) {
 
                     const settingsButton = document.createElement('button');
                     settingsButton.className = 'websiteSettings-button';
-                    settingsButton.innerHTML = '<i class="fa-solid fa-gear"></i>';
+                    settingsButton.innerHTML = '<i class="fa fa-ellipsis-h"></i>';
                     settingsButton.addEventListener('click', function() {
-                        openModalAndShowGroup('websiteGroup');
+                        openModalAndShowGroup('websitesGroup');
+                        document.getElementById('websiteURL').value = website.url; // Display the website URL in the input field
+                        activeWebsiteId = website.id; // Set the active website ID
+                        updateWebsiteControls(); // Update UI controls
+                        displayWebsiteDetails(website); // Display website details
                     });
                     div.appendChild(settingsButton);
 
@@ -76,6 +164,9 @@ function loadWebsitesForSystemMessage(systemMessageId) {
                 });
             } else {
                 sidebar.textContent = 'No websites for this system message.';
+                activeWebsiteId = null; // Clear the active website ID
+                clearWebsiteDetails(); // Clear the website details
+                updateWebsiteControls(); // Update UI controls
             }
         },
         error: function(xhr) {
@@ -86,6 +177,40 @@ function loadWebsitesForSystemMessage(systemMessageId) {
         }
     });
 }
+
+
+
+function displayWebsiteDetails(website) {
+    document.getElementById('indexingStatus').textContent = website.indexing_status || 'N/A';
+    document.getElementById('indexedAt').textContent = website.indexed_at || 'N/A';
+    document.getElementById('lastError').textContent = website.last_error || 'N/A';
+    document.getElementById('indexingFrequency').textContent = website.indexing_frequency || 'N/A';
+    document.getElementById('createdAt').textContent = website.created_at ? formatDate(website.created_at) : 'N/A';
+    document.getElementById('updatedAt').textContent = website.updated_at ? formatDate(website.updated_at) : 'N/A';
+
+    // Show the Index Website button
+    document.getElementById('indexWebsiteButton').style.visibility = 'visible';
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString(); // Customize the format as needed
+}
+
+
+function clearWebsiteDetails() {
+    document.getElementById('indexingStatus').textContent = 'N/A';
+    document.getElementById('indexedAt').textContent = 'N/A';
+    document.getElementById('lastError').textContent = 'N/A';
+    document.getElementById('indexingFrequency').textContent = 'N/A';
+    document.getElementById('createdAt').textContent = 'N/A';
+    document.getElementById('updatedAt').textContent = 'N/A';
+    document.getElementById('websiteURL').value = '';
+
+    // Hide the Index Website button
+    document.getElementById('indexWebsiteButton').style.visibility = 'hidden';
+}
+
 
 function removeWebsite(websiteId) {
     if (!confirm('Are you sure you want to remove this website?')) {
@@ -98,13 +223,25 @@ function removeWebsite(websiteId) {
         type: 'DELETE',
         success: function(response) {
             alert('Website removed successfully');
-            loadWebsites(); // Refresh the list of websites
+            activeWebsiteId = null; // Clear the active website ID
+            clearWebsiteDetails(); // Clear the website details
+            updateWebsiteControls(); // Update UI controls
+            loadWebsitesForSystemMessage(activeSystemMessageId); // Refresh the list of websites
         },
         error: function(xhr) {
             alert('Error removing website: ' + xhr.responseText);
         }
     });
 }
+
+// Listener for the Remove Website button
+document.getElementById('removeWebsiteButton').addEventListener('click', function() {
+    if (activeWebsiteId) {
+        removeWebsite(activeWebsiteId);
+    } else {
+        alert('No website selected to remove.');
+    }
+});
 
 function reindexWebsite(websiteId) {
     // AJAX call to the server to re-index the website
@@ -602,7 +739,7 @@ document.getElementById('delete-system-message-btn').addEventListener('click', f
     }
 });
 
-
+// New system message button actions
 document.getElementById('new-system-message-btn').addEventListener('click', function() {
     // Clear all the fields in the modal
     document.getElementById('systemMessageName').value = '';
@@ -625,6 +762,11 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
     if (sidebar) {
         sidebar.innerHTML = ''; // Clear existing content
     }
+
+    // Clear active website ID and website details
+    activeWebsiteId = null;
+    clearWebsiteDetails();
+    updateWebsiteControls();
 
     // Switch to the systemMessageContentGroup
     switchToSystemMessageContentGroup();
@@ -812,8 +954,14 @@ $('#systemMessageModal').on('hidden.bs.modal', function () {
 
     // Reset any specific flags or settings
     $(this).removeData('targetGroup'); // Remove the data attribute for safety
+
+    // Clear active website ID and website details
+    activeWebsiteId = null;
+    clearWebsiteDetails();
+    updateWebsiteControls();
 });
 
+// Handles switching between different layers of orchestration within the modal.
 function openModalAndShowGroup(targetGroup) {
     console.log("Opening modal with target group:", targetGroup);
 
@@ -1236,6 +1384,52 @@ $('#chat-form').on('submit', function (e) {
     userInputTextarea.css('height', defaultHeight);
 
     document.getElementById('loading').style.display = 'block';
+
+    // Check if the user input is a command to generate an image
+    if (userInput.toLowerCase().startsWith("generate image of")) {
+        let prompt = userInput.substring("generate image of".length).trim();
+        console.log('Generating image with prompt:', prompt);
+
+        fetch('/generate-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: prompt })
+        })
+        .then(response => {
+            console.log('Received response from /generate-image endpoint:', response);
+
+            document.getElementById('loading').style.display = 'none';
+
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+
+            return response.json();
+        })
+        .then(data => {
+            console.log("Complete server response from image generation:", data);
+            const imageElement = $('<img>').attr('src', data.image_url).addClass('img-fluid');
+            const botMessageDiv = $('<div class="chat-entry bot bot-message">')
+                .append('<i class="fas fa-robot"></i> ')
+                .append(imageElement);
+            $('#chat').append(botMessageDiv);
+
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
+            messages.push({ "role": "assistant", "content": data.image_url });
+
+            console.log('End of image generation handling');
+        })
+        .catch(error => {
+            console.error('Error processing image generation:', error);
+            document.getElementById('loading').style.display = 'none';
+        });
+
+        return; // Exit the function early since we handled the image generation
+    }
 
     let requestPayload = {
         messages: messages,
