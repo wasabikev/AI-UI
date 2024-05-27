@@ -1,91 +1,32 @@
-2024-05-18 16:26:08,597 - app - INFO - Received messages: [{'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.', 'role': 'system'}, {'content': 'A test sentence please', 'role': 'user'}, {'content': 'Analyze the following argument: "All dogs are mammals. My pet is a mammal. Therefore, my pet is a dog."', 'role': 'assistant'}, {'role': 'user', 'content': 'Not a very good argument.'}, {'role': 'assistant', 'content': '**The argument is invalid.**\n\nThe argument is an example of a syllogism, which is a logical argument that consists of three parts: a major premise, a minor premise, and a conclusion. In this case, the major premise is "All dogs are mammals," the minor premise is "My pet is a mammal," and the conclusion is "Therefore, my pet is a dog."\n\nThe argument is invalid because the conclusion does not follow logically from the premises. The fact that all dogs are mammals and that my pet is a mammal does not necessarily mean that my pet is a dog. My pet could be a cat, a rabbit, or any other type of mammal.\n\nIn order for the argument to be valid, the major premise would need to be "All mammals are dogs." However, this is not true, so the argument is invalid.'}, {'role': 'user', 'content': 'I mean... if you want to be verbose about it.'}, {'role': 'assistant', 'content': '**The argument is invalid.**\n\nThe argument is an example of a syllogism, which is a logical argument that consists of three parts: a major premise, a minor premise, and a conclusion. In this case, the major premise is "All dogs are mammals," the minor premise is "My pet is a mammal," and the conclusion is "Therefore, my pet is a dog."\n\nThe argument is invalid because the conclusion does not follow logically from the premises. The fact that all dogs are mammals and that my pet is a mammal does not necessarily mean that my pet is a dog. My pet could be a cat, a rabbit, or any other type of mammal.\n\n**A valid argument would look like this:**\n\n* All dogs are mammals.\n* My pet is a dog.\n* Therefore, my pet is a mammal.\n\nIn this case, the conclusion follows logically from the premises. If my pet is a dog, then it must also be a mammal.\n\n**The original argument is an example of a fallacy called the "affirming the consequent."** This fallacy occurs when someone assumes that because the consequent of a conditional statement is true, the antecedent must also be true. In this case, the conditional statement is "If my pet is a dog, then my pet is a mammal." The consequent of this statement is true, because my pet is a mammal. However, this does not mean that the antecedent is also true, which is that my pet is a dog.'}]
-2024-05-23 06:48:15,323 - app - ERROR - Exception on /add-website [POST]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-psycopg2.errors.NotNullViolation: null value in column "system_message_id" of relation "website" violates not-null constraint
-DETAIL:  Failing row contains (3, https://boards.greenhouse.io/, null, null, null, Pending, null, null, 2024-05-23 06:48:15.319924, 2024-05-23 06:48:15.319924).
-
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 92, in add_website
-    db.session.commit()
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\scoping.py", line 552, in commit
-    return self._proxied.commit()
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1920, in commit
-    trans.commit(_to_root=True)
-  File "<string>", line 2, in commit
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1236, in commit
-    self._prepare_impl()
-  File "<string>", line 2, in _prepare_impl
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1211, in _prepare_impl
-    self.session.flush()
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4163, in flush
-    self._flush(objects)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4298, in _flush
-    with util.safe_reraise():
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 147, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4259, in _flush
-    flush_context.execute()
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
-    rec.execute(self)
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
-    util.preloaded.orm_persistence.save_obj(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
-    _emit_insert_statements(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1226, in _emit_insert_statements
-    result = connection.execute(
-             ^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1412, in execute
-    return meth(
-           ^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 483, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1635, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1844, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1984, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2339, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1965, in _exec_single_context
-    self.dialect.do_execute(
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 921, in do_execute
-    cursor.execute(statement, parameters)
-sqlalchemy.exc.IntegrityError: (psycopg2.errors.NotNullViolation) null value in column "system_message_id" of relation "website" violates not-null constraint
-DETAIL:  Failing row contains (3, https://boards.greenhouse.io/, null, null, null, Pending, null, null, 2024-05-23 06:48:15.319924, 2024-05-23 06:48:15.319924).
-
-[SQL: INSERT INTO website (url, system_message_id, indexed_at, indexing_status, last_error, indexing_frequency, created_at, updated_at) VALUES (%(url)s, %(system_message_id)s, %(indexed_at)s, %(indexing_status)s, %(last_error)s, %(indexing_frequency)s, %(created_at)s, %(updated_at)s) RETURNING website.id]
-[parameters: {'url': 'https://boards.greenhouse.io/', 'system_message_id': None, 'indexed_at': None, 'indexing_status': 'Pending', 'last_error': None, 'indexing_frequency': None, 'created_at': datetime.datetime(2024, 5, 23, 13, 48, 15, 319924, tzinfo=datetime.timezone.utc), 'updated_at': datetime.datetime(2024, 5, 23, 13, 48, 15, 319924, tzinfo=datetime.timezone.utc)}]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2024-05-27 15:47:32,286 - app - INFO - Received model: gpt-3.5-turbo
+2024-05-27 15:47:32,290 - app - INFO - Received temperature: 0.7
+2024-05-27 15:47:33,272 - app - INFO - Response from model: Sure, here is a test sentence for you: "Critical thinking is essential for making well-informed decisions."
+2024-05-27 15:47:39,063 - app - INFO - Prompt tokens: 17
+2024-05-27 15:47:39,064 - app - INFO - Completion tokens: 22
+2024-05-27 15:47:39,064 - app - INFO - Total tokens: 39
+2024-05-27 15:47:39,065 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Sure, here is a test sentence for you: "Critical thinking is essential for making well-informed decisions."'}], 'max_tokens': 10}
+2024-05-27 15:47:39,688 - app - INFO - Response from OpenAI for summary: {
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Summary: Critical Thinking Skills",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1716850054,
+  "id": "chatcmpl-9TdPqdOsKRbd5Fl3DIBw4JDuyUwbp",
+  "model": "gpt-3.5-turbo-0125",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 5,
+    "prompt_tokens": 64,
+    "total_tokens": 69
+  }
+}
+2024-05-27 15:47:39,693 - app - INFO - Generated conversation summary: Summary: Critical Thinking Skills
+2024-05-27 15:47:39,705 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Sure, here is a test sentence for you: "Critical thinking is essential for making well-informed decisions."'}]

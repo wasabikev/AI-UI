@@ -45,6 +45,10 @@ login_manager.init_app(app)
 
 CORS(app)  # Cross-Origin Resource Sharing
 
+@app.route('/health')
+def health_check():
+    return 'OK', 200
+
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
     data = request.json
