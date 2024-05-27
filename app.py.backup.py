@@ -625,6 +625,6 @@ def get_active_conversation():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8080))  # Get port from PORT environment variable or default to 8080
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=False, host='0.0.0.0', port=port)
 
 
