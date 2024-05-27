@@ -45,6 +45,29 @@ login_manager.init_app(app)
 
 CORS(app)  # Cross-Origin Resource Sharing
 
+@app.route('/generate-image', methods=['POST'])
+def generate_image():
+    data = request.json
+    prompt = data.get('prompt', '')
+
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    try:
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size="256x256"
+        )
+        image_url = response['data'][0]['url']
+        return jsonify({"image_url": image_url})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 def get_websites(system_message_id):
     websites = Website.query.filter_by(system_message_id=system_message_id).all()
@@ -54,26 +77,30 @@ def get_websites(system_message_id):
 def add_website():
     data = request.get_json()
     url = data.get('url')
-    system_message_id = data.get('system_message_id')  # Assuming you pass this from the frontend
+    system_message_id = data.get('system_message_id')
 
     if not url:
-        return jsonify({'error': 'URL is required'}), 400
+        return jsonify({'success': False, 'message': 'URL is required'}), 400
+
+    if not system_message_id:
+        return jsonify({'success': False, 'message': 'System message ID is required'}), 400
 
     # Validate URL format here (optional, can be done in the frontend too)
+    if not url.startswith('http://') and not url.startswith('https://'):
+        return jsonify({'success': False, 'message': 'Invalid URL format'}), 400
 
     new_website = Website(url=url, system_message_id=system_message_id)
     db.session.add(new_website)
     db.session.commit()
 
-    return jsonify({'message': 'Website added successfully', 'website': new_website.to_dict()}), 201
+    return jsonify({'success': True, 'message': 'Website added successfully', 'website': new_website.to_dict()}), 201
 
 @app.route('/remove-website/<int:website_id>', methods=['DELETE'])
 def remove_website(website_id):
     website = Website.query.get_or_404(website_id)
     db.session.delete(website)
     db.session.commit()
-
-    return jsonify({'message': 'Website removed successfully'}), 200
+    return jsonify({'success': True, 'message': 'Website removed successfully'}), 200
 
 @app.route('/reindex-website/<int:website_id>', methods=['POST'])
 def reindex_website(website_id):

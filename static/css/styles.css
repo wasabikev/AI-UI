@@ -212,6 +212,16 @@ h2 {
     margin-right: 0;
 }
 
+.index-website-btn {
+    position: relative;
+    top: -15px;
+    right: -10px;
+    visibility: hidden; /* Reserve space but hide the button */
+}
+
+.detail-item {
+    margin-bottom: 15px; /* Adjust the value as needed for desired spacing */
+}
 
 /************ System Message Content Group Styles *****************/
 

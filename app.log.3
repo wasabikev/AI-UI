@@ -1,112 +1,23 @@
-2024-05-13 14:12:06,170 - app - ERROR - Exception on /chat [POST]
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 650, in count_tokens
-    encoding = tiktoken.encoding_for_model(model_name)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\tiktoken\model.py", line 97, in encoding_for_model
-    return get_encoding(encoding_name_for_model(model_name))
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\tiktoken\model.py", line 84, in encoding_name_for_model
-    raise KeyError(
-KeyError: 'Could not automatically map gpt-4o-2024-05-13 to a tokeniser. Please use `tiktoken.get_encoding` to explicitly get the tokeniser you expect.'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
-    response = self.full_dispatch_request()
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
-    rv = self.handle_user_exception(e)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
-    return cors_after_request(app.make_response(f(*args, **kwargs)))
-                                                ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
-    rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
-    return current_app.ensure_sync(func)(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 589, in chat
-    prompt_tokens = count_tokens(model_name, messages)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 655, in count_tokens
-    encoding = tiktoken.get_encoding("gpt-4o")  # Use the encoding as per documentation
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\tiktoken\registry.py", line 68, in get_encoding
-    raise ValueError(
-ValueError: Unknown encoding gpt-4o. Plugins found: ['tiktoken_ext.openai_public']
-2024-05-13 14:14:10,986 - app - INFO - Received model: gemini-pro
-2024-05-13 14:14:10,987 - app - INFO - Received temperature: 0.3
-2024-05-13 14:14:12,416 - app - INFO - Response from model: Analyze the following argument: "All dogs are mammals. My pet is a mammal. Therefore, my pet is a dog."
-2024-05-13 14:14:12,416 - app - INFO - Prompt tokens: 0
-2024-05-13 14:14:12,416 - app - INFO - Completion tokens: 0
-2024-05-13 14:14:12,416 - app - INFO - Total tokens: 0
-2024-05-13 14:14:12,416 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Analyze the following argument: "All dogs are mammals. My pet is a mammal. Therefore, my pet is a dog."'}], 'max_tokens': 10}
-2024-05-13 14:14:13,133 - app - INFO - Response from OpenAI for summary: {
+2024-05-13 14:16:59,986 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Flawed logical deduction",
+        "content": "AI \u221e UI Development",
         "role": "assistant"
       }
     }
   ],
-  "created": 1715634852,
-  "id": "chatcmpl-9OXHoSA1GDzaH6GBinrZlyn3g4Ur1",
+  "created": 1715635019,
+  "id": "chatcmpl-9OXKVmVqPCXZocuevo7H1MTLRzlmZ",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
     "completion_tokens": 5,
-    "prompt_tokens": 69,
-    "total_tokens": 74
+    "prompt_tokens": 2230,
+    "total_tokens": 2235
   }
 }
-2024-05-13 14:14:13,133 - app - INFO - Generated conversation summary: Flawed logical deduction
-2024-05-13 14:14:13,133 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Analyze the following argument: "All dogs are mammals. My pet is a mammal. Therefore, my pet is a dog."'}]
-2024-05-13 14:14:26,728 - app - INFO - Received model: gpt-4o-2024-05-13
-2024-05-13 14:14:26,729 - app - INFO - Received temperature: 0.3
-2024-05-13 14:14:27,711 - app - INFO - Response from model: Certainly! Here's a test sentence for you:
-
-"The quick brown fox jumps over the lazy dog."
-
-This sentence is often used because it contains every letter of the English alphabet.
-2024-05-13 14:14:27,713 - app - INFO - Prompt tokens: 0
-2024-05-13 14:14:27,714 - app - INFO - Completion tokens: 0
-2024-05-13 14:14:27,715 - app - INFO - Total tokens: 0
-2024-05-13 14:14:27,716 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for you:\n\n"The quick brown fox jumps over the lazy dog."\n\nThis sentence is often used because it contains every letter of the English alphabet.'}], 'max_tokens': 10}
-2024-05-13 14:14:28,028 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "Alphabet Pangram Explanation",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1715634867,
-  "id": "chatcmpl-9OXI3PAkgUK2BKxRMk8e4VU2ESx76",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 5,
-    "prompt_tokens": 77,
-    "total_tokens": 82
-  }
-}
-2024-05-13 14:14:28,032 - app - INFO - Generated conversation summary: Alphabet Pangram Explanation
-2024-05-13 14:14:28,037 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you:\n\n"The quick brown fox jumps over the lazy dog."\n\nThis sentence is often used because it contains every letter of the English alphabet.'}]
-2024-05-13 14:16:41,472 - app - INFO - Received model: gpt-4o-2024-05-13
-2024-05-13 14:16:41,473 - app - INFO - Received temperature: 0.7
