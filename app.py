@@ -70,7 +70,10 @@ def generate_image():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+       # Set host to '0.0.0.0' to make the server externally visible
+       # Get the port from the environment variable or default to 5000
+       port = int(os.getenv('PORT', 5000))
+       app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 def get_websites(system_message_id):
@@ -711,8 +714,5 @@ def get_active_conversation():
     return jsonify({'conversationId': conversation_id})
 
 
-if __name__ == '__main__':
-    port = int(os.getenv('PORT', 8080))  # Get port from PORT environment variable or default to 8080
-    app.run(debug=True, host='0.0.0.0', port=port)
 
 
