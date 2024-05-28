@@ -75,7 +75,7 @@ if __name__ == '__main__':
        # Set host to '0.0.0.0' to make the server externally visible
        # Get the port from the environment variable or default to 5000
        port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000. I switched it back. Still didn't work.
-       app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
+       app.run(host='0.0.0.0', port=port, debug=True)  # Set debug to False for production
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 def get_websites(system_message_id):
@@ -468,7 +468,11 @@ if openai.api_key is None:
 @app.route('/')
 def home():
     app.logger.info("Home route accessed")
+    app.logger.info(f"Request Path: {request.path}")
+    app.logger.info(f"Request Headers: {request.headers}")
+    app.logger.info(f"Request Data: {request.data}")
     app.logger.info(f"User authenticated: {current_user.is_authenticated}")
+    app.logger.info(f"Session contents: {session}")
     # Check if user is authenticated
     if current_user.is_authenticated:
         app.logger.info("User is authenticated")
