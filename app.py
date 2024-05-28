@@ -16,6 +16,7 @@ import logging
 import anthropic
 import tiktoken 
 import google.generativeai as genai
+import logging
 
 import requests
 import json
@@ -30,6 +31,7 @@ from auth import auth as auth_blueprint  # Import the auth blueprint
 
 app = Flask(__name__)
 
+logging.basicConfig(level=logging.INFO)
 
 app.logger.setLevel(logging.INFO)  # Set logging level to INFO
 handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3) # Create log file with max size of 10KB and max number of 3 files
@@ -72,7 +74,7 @@ def generate_image():
 if __name__ == '__main__':
        # Set host to '0.0.0.0' to make the server externally visible
        # Get the port from the environment variable or default to 5000
-       port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000
+       port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000. I switched it back. Still didn't work.
        app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
@@ -465,16 +467,20 @@ if openai.api_key is None:
 
 @app.route('/')
 def home():
+    app.logger.info("Home route accessed")
     # Check if user is authenticated
     if current_user.is_authenticated:
+        app.logger.info("User is authenticated")
         # Clear conversation-related session data for a fresh start
         if 'conversation_id' in session:
             del session['conversation_id']
         # If logged in, show the main chat page or dashboard
         return render_template('chat.html', conversation=None)
     else:
+        app.logger.info("User is not authenticated, redirecting to login")
         # If not logged in, redirect to the login page
         return redirect(url_for('auth.login'))
+
 
 
 @app.route('/clear-session', methods=['POST'])
