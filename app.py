@@ -40,6 +40,13 @@ handler.setFormatter(formatter)
 app.logger.addHandler(handler)
 app.register_blueprint(auth_blueprint)  
 
+# Add stream handler for console output
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+app.logger.addHandler(console_handler)
+
+app.logger.info("Logging is set up.")
 
 # Initialize the login manager
 login_manager = LoginManager()
