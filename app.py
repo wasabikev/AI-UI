@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, url_for, redirect, s
 from flask_cors import CORS
 from text_processing import format_text
 from flask_login import LoginManager, current_user, login_required
+from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
 load_dotenv()
