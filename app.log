@@ -64,3 +64,5 @@
 2024-05-27 16:27:48,781 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Examine the validity of the following argument: "All dogs are mammals. My pet is a dog. Therefore, my pet is a mammal."'}]
 2024-05-27 17:17:34,980 - app - INFO - Home route accessed
 2024-05-27 17:17:34,986 - app - INFO - User is authenticated
+2024-05-27 17:36:48,711 - app - INFO - Home route accessed
+2024-05-27 17:36:48,715 - app - INFO - User is authenticated

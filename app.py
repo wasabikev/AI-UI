@@ -468,6 +468,7 @@ if openai.api_key is None:
 @app.route('/')
 def home():
     app.logger.info("Home route accessed")
+    app.logger.info(f"User authenticated: {current_user.is_authenticated}")
     # Check if user is authenticated
     if current_user.is_authenticated:
         app.logger.info("User is authenticated")
@@ -481,6 +482,15 @@ def home():
         # If not logged in, redirect to the login page
         return redirect(url_for('auth.login'))
 
+@app.errorhandler(404)
+def not_found_error(error):
+    app.logger.error(f"404 Error: {error}, Path: {request.path}")
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    app.logger.error(f"500 Error: {error}, Path: {request.path}, Details: {error}")
+    return render_template('500.html'), 500
 
 
 @app.route('/clear-session', methods=['POST'])
