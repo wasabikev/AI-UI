@@ -66,3 +66,27 @@
 2024-05-27 17:17:34,986 - app - INFO - User is authenticated
 2024-05-27 17:36:48,711 - app - INFO - Home route accessed
 2024-05-27 17:36:48,715 - app - INFO - User is authenticated
+2024-05-27 17:56:53,563 - app - INFO - Home route accessed
+2024-05-27 17:56:53,564 - app - INFO - Request Path: /
+2024-05-27 17:56:53,565 - app - INFO - Request Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Cache-Control: max-age=0
+Sec-Ch-Ua: "Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Ch-Ua-Platform: "Windows"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Sec-Fetch-Site: none
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJwlzj0OwjAMQOG7ZGZI_BM7vUzlxLZgbemEuDuVmN8bvk_Z84jzWbb3ccWj7C8vW4HsoFZtMHIjqNnrRAVzFF0hATKtjxEcIkxs6Qxulbz1oeqUiqEOZrGwgSSx1nrv1KWTWrLGXLNCmlIb3GStu6AxTgoaWG7Idcbx12D5_gB1yy5q.ZlUezA.EetsFdK4YHwLqDyC0KYcxMrMFJw
+
+
+2024-05-27 17:56:53,567 - app - INFO - Request Data: b''
+2024-05-27 17:56:53,571 - app - INFO - User authenticated: True
+2024-05-27 17:56:53,571 - app - INFO - Session contents: <SecureCookieSession {'_fresh': True, '_id': '2f628a0a95351420f60b382ad378ce7e27ba699e5e77545afd52da04d16988d4f83e8d2aaec3127f458009e5467648af58ebcb02fa8419517cc6763a53b4e493', '_user_id': '3'}>
+2024-05-27 17:56:53,572 - app - INFO - User is authenticated
