@@ -162,20 +162,29 @@ h2 {
 }
 
 .website-item {
-    padding: 5px 10px; /* Adds padding inside each website item */
-    margin-left: -30px; /* Adds left margin to shift content away from the edge */
-    border-bottom: 1px solid #ccc; /* Adds a subtle line beneath each item */
-    display: block; /* Ensures the item takes up the full width it can */
-    width: calc(100% + 10px); /*  Reduces width to prevent flush with the right side */
+    padding: 5px 10px;
+    margin-left: -30px;
+    border-bottom: 1px solid #ccc;
+    display: flex; /* Use flexbox for layout */
+    justify-content: space-between; /* Align items to the left and right */
+    align-items: center; /* Center items vertically */
+    width: calc(100% + 10px);
+}
+
+.website-item span {
+    flex-grow: 1; /* Allow the span to grow and fill available space */
+    overflow: hidden; /* Prevent the text from overflowing */
+    text-overflow: ellipsis; /* Add ellipsis (...) for long text */
+    white-space: nowrap; /* Prevent line breaks */
 }
 
 .websiteSettings-button {
     background: none;
     border: none;
-    color: #fff;  /* Adjust color to fit your design */
+    color: #fff;
     cursor: pointer;
-    margin-left: 15px; /* Adds more space between the URL and the button */
-
+    margin-left: 10px; /* Adjust the margin as needed */
+    flex-shrink: 0; /* Prevent the button from shrinking */
 }
 
 .websiteSettings-button i {

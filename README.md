@@ -40,12 +40,33 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 
 ### app.py
 
-- `get_response_from_model(model, messages, temperature)': Routes the request to the appropriate API based on the selected model (OpenAI or Anthropic).
+- `get_response_from_model(model, messages, temperature)': Routes the request to the appropriate API based on the selected model (OpenAI, Anthropic, and Gemini Pro... more to come.)
 - `chat()`: Endpoint for processing and responding to user messages from AI models
 - `get_conversations()`: Retrieves a list of conversations for the current user.
 - `get_conversation()`: Fetches details of a specific conversation.
 - `update_conversation_title()`: Endpoint to update a conversation's title.
 - `delete_conversation()`: Endpoint to remove a conversation from the database.
+- `get_active_conversation()`: Retrieves the active conversation ID from the session.
+- `get_websites(system_message_id)`: Retrieves all websites associated with a specific system message.
+- `add_website()`: Adds a new website URL to a system message.
+- `remove_website(website_id)`: Removes a website from a system message.
+- `reindex_website(website_id)`: Initiates the re-indexing process for a website.
+- `get_current_model()`: Retrieves the current model associated with the default system message.
+- `create_system_message()`: Creates a new system message (admin only).
+- `get_system_messages()`: Retrieves all system messages.
+- `update_system_message(message_id)`: Updates an existing system message (admin only).
+- `delete_system_message(message_id)`: Deletes a system message (admin only).
+- `get_folders()`: Retrieves all folders.
+- `create_folder()`: Creates a new folder.
+- `get_folder_conversations(folder_id)`: Retrieves conversations within a specific folder.
+- `create_conversation_in_folder(folder_id)`: Creates a new conversation within a folder.
+- `update_conversation_title(conversation_id)`: Updates the title of a conversation.
+- `delete_conversation(conversation_id)`: Deletes a conversation.
+- `clear_session()`: Clears the session data.
+- `generate_summary(messages)`: Generates a summary title for a conversation based on the recent messages.
+- `reset_conversation()`: Resets the current conversation.
+- `get_response_from_model(model, messages, temperature)`: Routes the request to the appropriate API based on the selected model.
+- `count_tokens(model_name, messages)`: Counts the number of tokens in the messages based on the model.
 
 ### main.js
 
@@ -98,12 +119,16 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 **MathJax**: Renders mathematical notation written in LaTeX within the chat interface.
 **Chart.js**: Enables graphical representation of data, potentially useful for visual AI data analysis.
 **DOMPurify**: Sanitizes HTML and prevents XSS attacks.
+**tiktoken**: A tokenizer library used for counting tokens in messages based on the selected model.
+**google.generativeai**: A library for interacting with Google's Generative AI models (e.g., Gemini).
 
 ## Feature Roadmap
 **Support for Additional AI Models**: Integrate more models from different providers to enhance versatility.
 **Expansion of System Message Modal**: Enhance the system message modal to serve as a central hub for orchestrating various layers of interaction, including but not limited to system messages, temperature settings, and the integration of controls for adding websites, files, graph databases, and advanced AI parameters like top-k settings.
 **Enhanced Security Features**: Implement advanced authentication and authorization features to secure user interactions.
-
+**Folder Management**: Enhance the folder management system to allow users to organize conversations into folders for better organization and retrieval.
+**Website Indexing**: Implement a feature to index websites associated with system messages, enabling users to retrieve relevant information from external sources during conversations.
+**Token Usage Tracking**: Extend the token usage tracking functionality to provide detailed insights into token consumption across different models and conversations.
 
 ## Setting up API Keys
 1. Create a new file called `.env` in the project's root directory.
