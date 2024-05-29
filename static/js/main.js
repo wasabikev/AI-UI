@@ -146,11 +146,12 @@ function loadWebsitesForSystemMessage(systemMessageId) {
                     
                     const textSpan = document.createElement('span');
                     textSpan.textContent = website.url;
+                    textSpan.title = website.url; // Add the title attribute with the full URL
                     div.appendChild(textSpan);
 
                     const settingsButton = document.createElement('button');
                     settingsButton.className = 'websiteSettings-button';
-                    settingsButton.innerHTML = '<i class="fa fa-ellipsis-h"></i>';
+                    settingsButton.innerHTML = '<i class="fas fa-wrench"></i>';
                     settingsButton.addEventListener('click', function() {
                         openModalAndShowGroup('websitesGroup');
                         document.getElementById('websiteURL').value = website.url; // Display the website URL in the input field

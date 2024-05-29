@@ -1,108 +1,73 @@
-2024-05-27 21:11:55,891 - app - INFO - Logging is set up.
-2024-05-27 21:12:09,642 - app - INFO - Home route accessed
-2024-05-27 21:12:09,649 - app - INFO - Request Path: /
-2024-05-27 21:12:09,649 - app - INFO - Request Headers: Host: 127.0.0.1:5000
-Connection: keep-alive
-Sec-Ch-Ua: "Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"
-Sec-Ch-Ua-Mobile: ?0
-Sec-Ch-Ua-Platform: "Windows"
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
-Sec-Fetch-Site: same-origin
-Sec-Fetch-Mode: navigate
-Sec-Fetch-User: ?1
-Sec-Fetch-Dest: document
-Referer: http://127.0.0.1:5000/c/406
-Accept-Encoding: gzip, deflate, br, zstd
-Accept-Language: en-US,en;q=0.9
-Cookie: session=.eJwljjsSwjAMBe_imsLWx5ZzGUa2pSFNMpMPDcPdCVDu21fsK9x9s_0RpmM77Rbu8whTAM8gGrUyciKInmNDAR1YpFsxKE1zrcZWChOrD4ahkUbKVWSQC5oMULWOCYoTS4zXnXLJJOos1nqL4CqUKqfS-2VQGRsZVQxXyLnb9q_5Yl-Xp227HvO6_FaK-f0By1w19Q.ZlVZFg.U902TvFNtIa-gtPYj4xinYdUdo0
-
+2024-05-29 05:53:35,515 - app - INFO - Response from model: The README file is quite comprehensive and covers the majority of the important aspects of the project. However, based on the provided `app.py` file, there are a few additions and updates that can be made to further enhance the README:
 
-2024-05-27 21:12:09,654 - app - INFO - Request Data: b''
-2024-05-27 21:12:09,657 - app - INFO - User authenticated: True
-2024-05-27 21:12:09,657 - app - INFO - Session contents: <SecureCookieSession {'_fresh': True, '_id': '2f628a0a95351420f60b382ad378ce7e27ba699e5e77545afd52da04d16988d4f83e8d2aaec3127f458009e5467648af58ebcb02fa8419517cc6763a53b4e493', '_user_id': '3', 'conversation_id': 406}>
-2024-05-27 21:12:09,659 - app - INFO - User is authenticated
-2024-05-27 21:12:19,904 - app - INFO - Received model: gpt-4-turbo-2024-04-09
-2024-05-27 21:12:19,906 - app - INFO - Received temperature: 0.7
-2024-05-27 21:12:22,985 - app - INFO - Response from model: Certainly! Here's a test sentence for you: "The quick brown fox jumps over the lazy dog." This sentence is commonly used as a pangram because it includes every letter of the English alphabet.
-2024-05-27 21:12:23,116 - app - INFO - Prompt tokens: 17
-2024-05-27 21:12:23,132 - app - INFO - Completion tokens: 40
-2024-05-27 21:12:23,133 - app - INFO - Total tokens: 57
-2024-05-27 21:12:23,133 - app - INFO - Sending summary request to OpenAI: {'model': 'gpt-3.5-turbo', 'messages': [{'role': 'system', 'content': 'Please create a very short (2-4 words) summary title for the following text:\nYou are a knowledgeable assistant that specializes in critical thinking and analysis. A test sentence please Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog." This sentence is commonly used as a pangram because it includes every letter of the English alphabet.'}], 'max_tokens': 10}
-2024-05-27 21:12:23,808 - app - INFO - Response from OpenAI for summary: {
+1. In the "Key Functions" section, under `app.py`, add the following function descriptions:
+
+```
+- `get_websites(system_message_id)`: Retrieves all websites associated with a specific system message.
+- `add_website()`: Adds a new website URL to a system message.
+- `remove_website(website_id)`: Removes a website from a system message.
+- `reindex_website(website_id)`: Initiates the re-indexing process for a website.
+- `get_current_model()`: Retrieves the current model associated with the default system message.
+- `create_system_message()`: Creates a new system message (admin only).
+- `get_system_messages()`: Retrieves all system messages.
+- `update_system_message(message_id)`: Updates an existing system message (admin only).
+- `delete_system_message(message_id)`: Deletes a system message (admin only).
+- `get_folders()`: Retrieves all folders.
+- `create_folder()`: Creates a new folder.
+- `get_folder_conversations(folder_id)`: Retrieves conversations within a specific folder.
+- `create_conversation_in_folder(folder_id)`: Creates a new conversation within a folder.
+- `update_conversation_title(conversation_id)`: Updates the title of a conversation.
+- `delete_conversation(conversation_id)`: Deletes a conversation.
+- `clear_session()`: Clears the session data.
+- `generate_summary(messages)`: Generates a summary title for a conversation based on the recent messages.
+- `reset_conversation()`: Resets the current conversation.
+- `get_response_from_model(model, messages, temperature)`: Routes the request to the appropriate API based on the selected model.
+- `count_tokens(model_name, messages)`: Counts the number of tokens in the messages based on the model.
+- `get_active_conversation()`: Retrieves the active conversation ID from the session.
+```
+
+2. In the "External Libraries and Scripts" section, add the following libraries:
+
+```
+- **tiktoken**: A tokenizer library used for counting tokens in messages based on the selected model.
+- **google.generativeai**: A library for interacting with Google's Generative AI models (e.g., Gemini).
+```
+
+3. In the "Feature Roadmap" section, consider adding the following items based on the `app.py` functionality:
+
+```
+- **Folder Management**: Enhance the folder management system to allow users to organize conversations into folders for better organization and retrieval.
+- **Website Indexing**: Implement a feature to index websites associated with system messages, enabling users to retrieve relevant information from external sources during conversations.
+- **Token Usage Tracking**: Extend the token usage tracking functionality to provide detailed insights into token consumption across different models and conversations.
+```
+
+These additions will provide a more comprehensive overview of the key functions, libraries, and potential future enhancements based on the current state of the `app.py` file.
+
+Remember to integrate these updates into the existing README structure to maintain consistency and readability.
+2024-05-29 05:53:35,705 - app - INFO - Prompt tokens: 8625
+2024-05-29 05:53:35,706 - app - INFO - Completion tokens: 647
+2024-05-29 05:53:35,707 - app - INFO - Total tokens: 9272
+2024-05-29 05:53:35,708 - app - INFO - Conversation history truncated for summary generation
+2024-05-29 05:53:36,509 - app - INFO - Response from OpenAI for summary: {
   "choices": [
     {
       "finish_reason": "stop",
       "index": 0,
       "logprobs": null,
       "message": {
-        "content": "Critical Thinking Expert",
+        "content": "Updating AI \u221e UI README",
         "role": "assistant"
       }
     }
   ],
-  "created": 1716869538,
-  "id": "chatcmpl-9TiU6DnkSy6GhPvMmp6vI8y3C1jOZ",
+  "created": 1716987214,
+  "id": "chatcmpl-9UD66gUNXFJRtyRV55OYBgJMyNkuQ",
   "model": "gpt-3.5-turbo-0125",
   "object": "chat.completion",
   "system_fingerprint": null,
   "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 82,
-    "total_tokens": 85
+    "completion_tokens": 6,
+    "prompt_tokens": 782,
+    "total_tokens": 788
   }
 }
-2024-05-27 21:12:23,814 - app - INFO - Generated conversation summary: Critical Thinking Expert
-2024-05-27 21:12:23,821 - app - INFO - Received messages: [{'role': 'system', 'content': 'You are a knowledgeable assistant that specializes in critical thinking and analysis.'}, {'role': 'user', 'content': 'A test sentence please'}, {'role': 'assistant', 'content': 'Certainly! Here\'s a test sentence for you: "The quick brown fox jumps over the lazy dog." This sentence is commonly used as a pangram because it includes every letter of the English alphabet.'}]
-2024-05-27 21:12:30,089 - app - INFO - Home route accessed
-2024-05-27 21:12:30,090 - app - INFO - Request Path: /
-2024-05-27 21:12:30,091 - app - INFO - Request Headers: Host: 127.0.0.1:5000
-Connection: keep-alive
-Sec-Ch-Ua: "Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"
-Sec-Ch-Ua-Mobile: ?0
-Sec-Ch-Ua-Platform: "Windows"
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
-Sec-Fetch-Site: same-origin
-Sec-Fetch-Mode: navigate
-Sec-Fetch-User: ?1
-Sec-Fetch-Dest: document
-Referer: http://127.0.0.1:5000/c/407
-Accept-Encoding: gzip, deflate, br, zstd
-Accept-Language: en-US,en;q=0.9
-Cookie: session=.eJwljjsSwjAMBe_imsLWx5JzGUa25SFNMpMPDcPdCVDu21fsK9zH5vsjTMd2-i3c5x6mACODWrTCyIkgjhwrKlhH0ebiINVyKc4uwsQ2OkO3SD3lotppKLp2MPOGCWQQa4zXnbJkUhusXluNMEwpFU7S2mXQGCs5FQxXyLn79q_5YluXp2-7HfO6_FaK8v4Ay1419g.ZlVZpw.Hvr3eVXIBTluO-hxT949NEEsX1c
-
-
-2024-05-27 21:12:30,095 - app - INFO - Request Data: b''
-2024-05-27 21:12:30,097 - app - INFO - User authenticated: True
-2024-05-27 21:12:30,098 - app - INFO - Session contents: <SecureCookieSession {'_fresh': True, '_id': '2f628a0a95351420f60b382ad378ce7e27ba699e5e77545afd52da04d16988d4f83e8d2aaec3127f458009e5467648af58ebcb02fa8419517cc6763a53b4e493', '_user_id': '3', 'conversation_id': 407}>
-2024-05-27 21:12:30,099 - app - INFO - User is authenticated
-2024-05-27 21:13:19,722 - app - INFO - Received model: claude-3-opus-20240229
-2024-05-27 21:13:19,723 - app - INFO - Received temperature: 0.7
-2024-05-27 21:13:19,725 - app - INFO - Using existing conversation with id 406.
-2024-05-27 21:13:36,485 - app - INFO - Response from model: No, if you are using `gunicorn` to run your application, you should update the "Run Command" in the Digital Ocean control panel to match the command specified in your `Procfile`.
-
-Since you updated your `Procfile` to use `gunicorn` with the following line:
-
-```
-web: gunicorn app:app --bind 0.0.0.0:$PORT
-```
-
-You should update the "Run Command" in the Digital Ocean control panel to:
-
-```
-gunicorn app:app --bind 0.0.0.0:$PORT
-```
-
-This command instructs `gunicorn` to run your Flask application defined in the `app.py` file, binding it to the `0.0.0.0` host and the port specified by the `$PORT` environment variable.
-
-Make sure to save the changes in the Digital Ocean control panel after updating the "Run Command".
-
-By aligning the "Run Command" with the `Procfile` command, you ensure that your application is started correctly using `gunicorn` in the Digital Ocean environment.
-
-Remember to redeploy your application after making these changes for them to take effect.
-2024-05-27 21:13:36,502 - app - INFO - Prompt tokens: 10783
-2024-05-27 21:13:36,503 - app - INFO - Completion tokens: 239
-2024-05-27 21:13:36,504 - app - INFO - Total tokens: 11022
