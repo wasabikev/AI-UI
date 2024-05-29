@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, url_for, redirect, s
 from flask_cors import CORS
 from text_processing import format_text
 from flask_login import LoginManager, current_user, login_required
+from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -16,11 +17,13 @@ import logging
 import anthropic
 import tiktoken 
 import google.generativeai as genai
+import logging
 
 import requests
 import json
 
-from models import db, Folder, Conversation, User, SystemMessage
+from models import db, Folder, Conversation, User, SystemMessage, Website
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler # for log file rotation
 from werkzeug.security import generate_password_hash
 from google.generativeai import GenerativeModel
@@ -29,19 +32,111 @@ from auth import auth as auth_blueprint  # Import the auth blueprint
 
 app = Flask(__name__)
 
-app.logger.setLevel(logging.INFO)  # Set logging level to INFO
-handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3) # Create log file with max size of 10KB and max number of 3 files
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-app.logger.addHandler(handler)
-app.register_blueprint(auth_blueprint)  
+# Set the desired logging level (e.g., logging.WARNING for less verbose output)
+logging.basicConfig(level=logging.WARNING)
 
+app.logger.setLevel(logging.WARNING)  # Set the desired logging level for the app logger
+
+# Create a file handler for logging to a file (optional)
+file_handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3)
+file_handler.setLevel(logging.WARNING)  # Set the desired logging level for the file handler
+file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+app.logger.addHandler(file_handler)
+
+app.register_blueprint(auth_blueprint)
+
+# Remove the console handler if you don't want logging output in the console
+# console_handler = logging.StreamHandler()
+# console_handler.setLevel(logging.INFO)
+# console_handler.setFormatter(formatter)
+# app.logger.addHandler(console_handler)
+
+app.logger.info("Logging is set up.")
 
 # Initialize the login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 CORS(app)  # Cross-Origin Resource Sharing
+
+@app.route('/health')
+def health_check():
+    return 'OK', 200
+
+@app.route('/generate-image', methods=['POST'])
+def generate_image():
+    data = request.json
+    prompt = data.get('prompt', '')
+
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    try:
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size="256x256"
+        )
+        image_url = response['data'][0]['url']
+        return jsonify({"image_url": image_url})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+       # Set host to '0.0.0.0' to make the server externally visible
+       # Get the port from the environment variable or default to 5000
+       port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000. I switched it back. Still didn't work.
+       app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
+
+@app.route('/get-websites/<int:system_message_id>', methods=['GET'])
+def get_websites(system_message_id):
+    websites = Website.query.filter_by(system_message_id=system_message_id).all()
+    return jsonify({'websites': [website.to_dict() for website in websites]}), 200
+
+@app.route('/add-website', methods=['POST'])
+def add_website():
+    data = request.get_json()
+    url = data.get('url')
+    system_message_id = data.get('system_message_id')
+
+    if not url:
+        return jsonify({'success': False, 'message': 'URL is required'}), 400
+
+    if not system_message_id:
+        return jsonify({'success': False, 'message': 'System message ID is required'}), 400
+
+    # Validate URL format here (optional, can be done in the frontend too)
+    if not url.startswith('http://') and not url.startswith('https://'):
+        return jsonify({'success': False, 'message': 'Invalid URL format'}), 400
+
+    new_website = Website(url=url, system_message_id=system_message_id)
+    db.session.add(new_website)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Website added successfully', 'website': new_website.to_dict()}), 201
+
+@app.route('/remove-website/<int:website_id>', methods=['DELETE'])
+def remove_website(website_id):
+    website = Website.query.get_or_404(website_id)
+    db.session.delete(website)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Website removed successfully'}), 200
+
+@app.route('/reindex-website/<int:website_id>', methods=['POST'])
+def reindex_website(website_id):
+    website = Website.query.get_or_404(website_id)
+    # Trigger re-indexing logic here (e.g., update indexed_at, change status)
+    website.indexed_at = datetime.now(timezone.utc)
+    website.indexing_status = 'In Progress'
+    db.session.commit()
+
+    return jsonify({'message': 'Re-indexing initiated', 'website': website.to_dict()}), 200
+
+
+
+
 
 # User loader function
 @login_manager.user_loader
@@ -385,16 +480,34 @@ if openai.api_key is None:
 
 @app.route('/')
 def home():
+    app.logger.info("Home route accessed")
+    app.logger.info(f"Request Path: {request.path}")
+    app.logger.info(f"Request Headers: {request.headers}")
+    app.logger.info(f"Request Data: {request.data}")
+    app.logger.info(f"User authenticated: {current_user.is_authenticated}")
+    app.logger.info(f"Session contents: {session}")
     # Check if user is authenticated
     if current_user.is_authenticated:
+        app.logger.info("User is authenticated")
         # Clear conversation-related session data for a fresh start
         if 'conversation_id' in session:
             del session['conversation_id']
         # If logged in, show the main chat page or dashboard
         return render_template('chat.html', conversation=None)
     else:
+        app.logger.info("User is not authenticated, redirecting to login")
         # If not logged in, redirect to the login page
         return redirect(url_for('auth.login'))
+
+@app.errorhandler(404)
+def not_found_error(error):
+    app.logger.error(f"404 Error: {error}, Path: {request.path}")
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    app.logger.error(f"500 Error: {error}, Path: {request.path}, Details: {error}")
+    return render_template('500.html'), 500
 
 
 @app.route('/clear-session', methods=['POST'])
@@ -453,7 +566,7 @@ def get_response_from_model(model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
     """
-    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09"]:
+    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13"]:
         # OpenAI models
         payload = {
             "model": model,
@@ -497,16 +610,13 @@ def get_response_from_model(model, messages, temperature):
         model_name = model  # Use the provided model name for Anthropic
     elif model.startswith("gemini-"):
         # Gemini models
-        client = Completion.from_service_account_json(
-            os.environ.get("GOOGLE_API_KEY")
-        )
-        response = client.generate_text(
-            model=model,
-            prompt="\n".join([m['content'] for m in messages]),
-            temperature=temperature,
-            max_output_tokens=2000
-        )
-        chat_output = response.result
+        gemini_model = GenerativeModel(model_name=model)
+        contents = [{
+            "role": "user",
+            "parts": [{"text": "\n".join([m['content'] for m in messages])}]
+        }]
+        response = gemini_model.generate_content(contents, generation_config={"temperature": temperature})
+        chat_output = response.text
         model_name = model
     else:
         chat_output = "Sorry, the selected model is not supported yet."
@@ -603,18 +713,32 @@ def chat():
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
-        encoding = tiktoken.encoding_for_model(model_name)
+        if model_name == "gpt-4o-2024-05-13":
+            # Temporarily return "0" for token count for the gpt-4o-2024-05-13 model
+            return 0
+        try:
+            encoding = tiktoken.encoding_for_model(model_name)
+        except KeyError:
+            raise ValueError(f"Tokenizer not found for model: {model_name}")
+        
+        num_tokens = 0
+        for message in messages:
+            num_tokens += len(encoding.encode(message['content']))
+        return num_tokens
+
     elif model_name.startswith("claude-"):
-        encoding = tiktoken.get_encoding("cl100k_base")  # Use the cl100k_base encoding for Anthropic models
+        encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = 0
+        for message in messages:
+            num_tokens += len(encoding.encode(message['content']))
+        return num_tokens
+
+    elif model_name == "gemini-pro":
+        # Return "0" for token count for the gemini-pro model
+        return 0
+
     else:
         raise ValueError(f"Unsupported model: {model_name}")
-    
-    num_tokens = 0
-    for message in messages:
-        num_tokens += len(encoding.encode(message['content']))
-    
-    return num_tokens
-
 
 
 @app.route('/get_active_conversation', methods=['GET'])
@@ -623,8 +747,5 @@ def get_active_conversation():
     return jsonify({'conversationId': conversation_id})
 
 
-if __name__ == '__main__':
-    port = int(os.getenv('PORT', 8080))  # Get port from PORT environment variable or default to 8080
-    app.run(debug=False, host='0.0.0.0', port=port)
 
 

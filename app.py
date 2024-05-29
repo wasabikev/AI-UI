@@ -83,7 +83,7 @@ if __name__ == '__main__':
        # Set host to '0.0.0.0' to make the server externally visible
        # Get the port from the environment variable or default to 5000
        port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000. I switched it back. Still didn't work.
-       app.run(host='0.0.0.0', port=port, debug=True)  # Set debug to False for production
+       app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 def get_websites(system_message_id):
@@ -494,15 +494,6 @@ def home():
         # If not logged in, redirect to the login page
         return redirect(url_for('auth.login'))
 
-@app.errorhandler(404)
-def not_found_error(error):
-    app.logger.error(f"404 Error: {error}, Path: {request.path}")
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    app.logger.error(f"500 Error: {error}, Path: {request.path}, Details: {error}")
-    return render_template('500.html'), 500
 
 
 @app.route('/clear-session', methods=['POST'])

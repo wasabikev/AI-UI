@@ -1,68 +1,87 @@
-2024-05-27 21:07:21,343 - app - INFO - Response from model: Based on the provided information and code, here are a few suggestions to resolve the issue:
+2024-05-29 05:23:51,281 - app - ERROR - Exception on /favicon.ico [GET]
+Traceback (most recent call last):
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1458, in dispatch_request
+    self.raise_routing_exception(req)
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1440, in raise_routing_exception
+    raise request.routing_exception  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\ctx.py", line 353, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\werkzeug\routing\map.py", line 652, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
 
-1. Check the Flask app's host and port settings:
-   - In your `app.py` file, you have specified the host as `'0.0.0.0'` and the port as `8080`. Make sure these settings match the configuration in your Digital Ocean app.
-   - If the port is set to `8080` in your Digital Ocean app, ensure that the `PORT` environment variable is set to `8080` or remove the `PORT` environment variable altogether.
+During handling of the above exception, another exception occurred:
 
-2. Update the `Procfile`:
-   - Your current `Procfile` contains the following line:
-     ```
-     web: flask run --host=0.0.0.0 --port=${PORT:-8080}
-     ```
-   - Modify it to use `gunicorn` instead of `flask run`:
-     ```
-     web: gunicorn app:app --bind 0.0.0.0:$PORT
-     ```
-   - Make sure you have `gunicorn` installed by adding it to your `requirements.txt` file.
+Traceback (most recent call last):
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask_cors\extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1341, in handle_user_exception
+    return self.handle_http_exception(e)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\app.py", line 1281, in handle_http_exception
+    return self.ensure_sync(handler)(e)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\app.py", line 500, in not_found_error
+    return render_template('404.html'), 404
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\templating.py", line 150, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\jinja2\environment.py", line 1081, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\jinja2\environment.py", line 1010, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\jinja2\environment.py", line 969, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\templating.py", line 64, in get_source
+    return self._get_source_fast(environment, template)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kevina\Documents\~LLMS and AI\chatbot\venv\Lib\site-packages\flask\templating.py", line 98, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: 404.html
+2024-05-29 05:23:51,305 - app - ERROR - 500 Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application., Path: /favicon.ico, Details: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+2024-05-29 05:24:58,595 - app - INFO - Logging is set up.
+2024-05-29 05:25:03,999 - app - INFO - Home route accessed
+2024-05-29 05:25:04,001 - app - INFO - Request Path: /
+2024-05-29 05:25:04,002 - app - INFO - Request Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Sec-Ch-Ua: "Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Ch-Ua-Platform: "Windows"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36
+Sec-Purpose: prefetch;prerender
+Purpose: prefetch
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Sec-Fetch-Site: none
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJwljkEOwjAMBP-SM4fEsWOnn6mcxBaVUCu1wAXxdwocZ2cP8wqz73Zcw-R6O-wS5mWEKYAXEI1aKVNCiF5iywI6Mks3NuCmpVYjYyYk9UEwNOJIpYoMdMkmA1St5wTsSBLjecfCBUWdxFpvEVwFU6XEvZ8mK-WGhjWHM-Rx2P6v-WLf1qfth96Xbf2tGOX9AQPBNkI.ZlceVw.6T_Cisv9OQtxSxyCgXZYeN15vrc
+
 
-3. Check the application's entry point:
-   - In your Digital Ocean app settings, the "Run Command" is set to `python app.py`. However, based on your code, the Flask app is created in the `app.py` file itself.
-   - Update the "Run Command" to `gunicorn app:app --bind 0.0.0.0:$PORT` to match the `Procfile` changes.
-
-4. Review the application's file structure:
-   - Ensure that your `app.py` file is located in the root directory of your project.
-   - Make sure that the `templates` directory (containing HTML files) and the `static` directory (containing CSS, JavaScript, and other static files) are also located in the root directory.
-
-5. Check the application's dependencies:
-   - Review your `requirements.txt` file and ensure that all the necessary dependencies are listed.
-   - Include `gunicorn` in the `requirements.txt` file if it's not already present.
-
-6. Verify the database connection:
-   - Make sure your `DATABASE_URL` environment variable is correctly set in your Digital Ocean app's settings.
-   - Double-check that your application can connect to the database using the provided URL.
-
-7. Monitor the application logs:
-   - Keep an eye on the "Runtime Logs" in your Digital Ocean app to identify any error messages or stack traces.
-   - Look for any specific error messages related to the database connection, missing dependencies, or other issues.
-
-After making the necessary changes, redeploy your application and test it again. If the issue persists, further investigation may be required based on the specific error messages or logs generated by your application.
-
-Remember to test your changes locally before deploying to the production environment to ensure that the application runs as expected.
-2024-05-27 21:07:21,524 - app - INFO - Prompt tokens: 9849
-2024-05-27 21:07:21,524 - app - INFO - Completion tokens: 600
-2024-05-27 21:07:21,524 - app - INFO - Total tokens: 10449
-2024-05-27 21:07:21,524 - app - INFO - Conversation history truncated for summary generation
-2024-05-27 21:07:22,210 - app - INFO - Response from OpenAI for summary: {
-  "choices": [
-    {
-      "finish_reason": "stop",
-      "index": 0,
-      "logprobs": null,
-      "message": {
-        "content": "AI UI Development",
-        "role": "assistant"
-      }
-    }
-  ],
-  "created": 1716869236,
-  "id": "chatcmpl-9TiPEUr4i9VSmioyjnSSSKWmSnWsD",
-  "model": "gpt-3.5-turbo-0125",
-  "object": "chat.completion",
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 3,
-    "prompt_tokens": 757,
-    "total_tokens": 760
-  }
-}
-2024-05-27 21:07:22,221 - app - INFO - Generated conversation summary: AI UI Development
+2024-05-29 05:25:04,012 - app - INFO - Request Data: b''
+2024-05-29 05:25:04,019 - app - INFO - User authenticated: True
+2024-05-29 05:25:04,020 - app - INFO - Session contents: <SecureCookieSession {'_fresh': False, '_id': '2f628a0a95351420f60b382ad378ce7e27ba699e5e77545afd52da04d16988d4f83e8d2aaec3127f458009e5467648af58ebcb02fa8419517cc6763a53b4e493', '_user_id': '3', 'conversation_id': 408}>
+2024-05-29 05:25:04,022 - app - INFO - User is authenticated
+2024-05-29 05:25:04,426 - app - ERROR - 404 Error: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again., Path: /favicon.ico
