@@ -32,10 +32,12 @@ from auth import auth as auth_blueprint  # Import the auth blueprint
 
 app = Flask(__name__)
 
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 
-app.logger.setLevel(logging.INFO)  # Set logging level to INFO
-handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3) # Create log file with max size of 10KB and max number of 3 files
+
+app.logger.setLevel(logging.DEBUG)  # Set logging level to INFO
+handler = RotatingFileHandler("app.log", maxBytes=100000, backupCount=3) 
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 app.logger.addHandler(handler)
@@ -83,7 +85,19 @@ if __name__ == '__main__':
        # Set host to '0.0.0.0' to make the server externally visible
        # Get the port from the environment variable or default to 5000
        port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000. I switched it back. Still didn't work.
-       app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
+       app.run(host='0.0.0.0', port=port, debug=True)  # Set debug to False for production
+
+@app.route('/view-logs')
+def view_logs():
+    logs_content = "<link rel='stylesheet' type='text/css' href='/static/css/styles.css'><div class='logs-container'>"
+    try:
+        with open('app.log', 'r') as log_file:
+            logs_content += f"<div class='log-entry'><div class='log-title'>--- app.log ---</div><pre>"
+            logs_content += log_file.read() + "</pre></div>\n"
+    except FileNotFoundError:
+        logs_content += "<div class='log-entry'><div class='log-title'>No log file found.</div></div>"
+    logs_content += "</div>"
+    return logs_content
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 def get_websites(system_message_id):

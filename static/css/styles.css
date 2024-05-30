@@ -88,6 +88,37 @@ h2 {
     height: 400px;  /* Orchestration content groups real estate available */
 }
 
+/********** view-logs Styles *****************/
+
+.log-entry {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 20px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+.log-entry:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.log-entry:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+.log-title {
+    color: blue;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.logs-container {
+    max-height: 90vh;  /* or adjust based on your layout needs */
+    overflow-y: auto;  /* enables vertical scrolling */
+    padding: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
 
 /********** Modal Header and Footer Styles *****************/
 
