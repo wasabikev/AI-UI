@@ -1,3 +1,5 @@
 private/
 .env
 venv/
+app.log
+app.log.*
