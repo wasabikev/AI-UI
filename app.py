@@ -712,33 +712,12 @@ def chat():
     })
 
 def count_tokens(model_name, messages):
-    if model_name.startswith("gpt-"):
-        if model_name == "gpt-4o-2024-05-13":
-            # Temporarily return "0" for token count for the gpt-4o-2024-05-13 model
-            return 0
-        try:
-            encoding = tiktoken.encoding_for_model(model_name)
-        except KeyError:
-            raise ValueError(f"Tokenizer not found for model: {model_name}")
-        
-        num_tokens = 0
-        for message in messages:
-            num_tokens += len(encoding.encode(message['content']))
-        return num_tokens
-
-    elif model_name.startswith("claude-"):
-        encoding = tiktoken.get_encoding("cl100k_base")
-        num_tokens = 0
-        for message in messages:
-            num_tokens += len(encoding.encode(message['content']))
-        return num_tokens
-
-    elif model_name == "gemini-pro":
-        # Return "0" for token count for the gemini-pro model
-        return 0
-
-    else:
-        raise ValueError(f"Unsupported model: {model_name}")
+    # Mock token count based on the number of words in each message
+    # This is just for testing purposes to bypass tiktoken usage
+    num_tokens = 0
+    for message in messages:
+        num_tokens += len(message['content'].split())
+    return num_tokens
 
 
 @app.route('/get_active_conversation', methods=['GET'])
