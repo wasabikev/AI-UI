@@ -22,9 +22,10 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 
 ## Key Components
 
-- **Backend**: The server is built with Flask and handles API routes, database interactions, and communication with LLM APIs.
+- **Backend**: The server is built with Flask and handles API routes, database interactions, and communication with LLM APIs. Prod utilizes Gunicorn.
 - **Frontend**: The frontend is developed using HTML, CSS, JavaScript, Bootstrap, and additional libraries such as Prism.js and Marked.js for enhanced functionality.
 - **Database**: PostgreSQL is used for storing user data, conversation history, and system messages.
+- **System Message Modal**: The system message modal serves as a central hub for orchestrating various layers of interaction, including system message content, model selection, temperature settings, and the integration of controls for adding websites and files.
 
 ## Main Files & Their Roles
 
@@ -48,6 +49,7 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `delete_conversation()`: Endpoint to remove a conversation from the database.
 - `get_active_conversation()`: Retrieves the active conversation ID from the session.
 - `get_websites(system_message_id)`: Retrieves all websites associated with a specific system message.
+- `add_website_to_system_message(system_message_id)`: Adds a website URL to the source configuration of a specific system message.
 - `add_website()`: Adds a new website URL to a system message.
 - `remove_website(website_id)`: Removes a website from a system message.
 - `reindex_website(website_id)`: Initiates the re-indexing process for a website.
@@ -65,7 +67,7 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `clear_session()`: Clears the session data.
 - `generate_summary(messages)`: Generates a summary title for a conversation based on the recent messages.
 - `reset_conversation()`: Resets the current conversation.
-- `get_response_from_model(model, messages, temperature)`: Routes the request to the appropriate API based on the selected model.
+- `get_response_from_model(model, messages, temperature)`: Routes the request to the appropriate API based on the selected model (OpenAI, Anthropic, and Gemini models).
 - `count_tokens(model_name, messages)`: Counts the number of tokens in the messages based on the model.
 
 ### main.js
@@ -90,6 +92,22 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `createMessageElement(message)`: Creates and returns a message element for the chat interface based on the message role and content.
 - `displaySystemMessage(systemMessage)`: Updates the chat interface to display a system message, including its description, associated model name, and temperature setting. It removes any existing system messages, prepends the new system message to the chat, and updates the internal messages array to include this system message. This function ensures that system messages are prominently displayed at the top of the chat interface.
 - `openModalAndShowGroup(targetGroup)` and `toggleContentGroup(groupID)`: These functions manage the visibility of content groups within modals. openModalAndShowGroup is used to open a modal and display a specific content group by hiding others and showing the targeted one. toggleContentGroup handles the visibility toggle of content groups within a modal, ensuring only the selected group is visible while others are hidden. Both functions are essential for dynamic UI interactions within modals, allowing for context-specific displays.
+- `saveWebsiteURL(websiteURL, systemMessageId)`: Saves a website URL associated with a particular system message to the backend. Handles POST request and error management.
+
+### Global Variables
+
+messages: An array that stores the conversation messages.
+systemMessages: An array that stores the system messages.
+model: Stores the selected model name.
+activeConversationId: Keeps track of the currently selected conversation.
+currentSystemMessage: Stores the default system message.
+currentSystemMessageDescription: Stores the description of the current system message.
+initialTemperature: Stores the initial temperature setting.
+isSaved: A flag to track whether the system message changes have been saved.
+activeSystemMessageId: Tracks the currently active system message ID.
+showTemperature: Tracks the visibility of the temperature settings.
+selectedTemperature: Stores the default temperature value.
+activeWebsiteId: Stores the currently active website ID for the Websites Group.
 
 ### models.py
 
