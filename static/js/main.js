@@ -1,14 +1,14 @@
-let messages = [];
+let messages = []; // An array that stores the converstation messages
 
 
-let systemMessages = [];
+let systemMessages = []; // An array that stores the system message
 
 
 let model; // This variable stores the selected model name
-let activeConversationId = null; // This will keep track of the currently selected conversation
-let currentSystemMessage; // Default system message
-let currentSystemMessageDescription; // Description of the current system message
-let initialTemperature;
+let activeConversationId = null; // This keeps track of the currently selected conversation.
+let currentSystemMessage; // Stores the currently selected system message.
+let currentSystemMessageDescription; // Stores the description of the current system message.
+let initialTemperature; // Stores the initial temperature setting.
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
 let showTemperature = false;  // Tracks the visibility of the temperature settings
@@ -37,6 +37,61 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error('Error during system message fetch and display:', error);
     });
 });
+
+document.getElementById('indexWebsiteButton').addEventListener('click', function() {
+    const websiteId = activeWebsiteId; // Use the global variable for the active website ID
+    
+    // Make an API call to fetch the website details based on the websiteId
+    fetch(`/get-website/${websiteId}`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error("Website not found. Please check the website ID.");
+                } else {
+                    throw new Error(`Failed to fetch website details: ${response.status} (${response.statusText})`);
+                }
+            }
+            return response.json();
+        })
+        .then(data => {
+            const url = data.website.url; // Get the URL of the website from the response
+
+            // Make the API call to index the website
+            fetch('/index-website', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url }), // fetch the URL from database
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load resource: the server responded with a status of ${response.status} (${response.statusText})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('indexingStatus').innerText = 'Indexed';
+                    document.getElementById('indexedAt').innerText = new Date().toISOString();
+                } else {
+                    document.getElementById('lastError').innerText = data.message;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Display the error message to the user
+                document.getElementById('lastError').innerText = error.message;
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching website details:', error);
+            // Display an error message to the user
+            document.getElementById('lastError').innerText = error.message;
+        });
+});
+
+
 
 function handleAddWebsiteButtonClick() {
     // Switch to the websitesGroup
