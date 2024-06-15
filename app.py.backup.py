@@ -18,6 +18,7 @@ import anthropic
 import tiktoken 
 import google.generativeai as genai
 import logging
+import subprocess # imported to support Scrapy
 
 import requests
 import json
@@ -30,27 +31,38 @@ from google.generativeai import GenerativeModel
 
 from auth import auth as auth_blueprint  # Import the auth blueprint
 
+# Set debug directly here. Switch to False for production.
+debug_mode = True
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG if debug_mode else logging.INFO)
+handler = RotatingFileHandler("app.log", maxBytes=100000, backupCount=3)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO if debug_mode else logging.WARNING)
+console_handler.setFormatter(formatter)
+
+
+## Application Setup
 app = Flask(__name__)
+CORS(app)  # Cross-Origin Resource Sharing
+app.config['DEBUG'] = debug_mode
 
-# Set the desired logging level (e.g., logging.WARNING for less verbose output)
-logging.basicConfig(level=logging.WARNING)
+# Enable auto-reload of templates
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-app.logger.setLevel(logging.WARNING)  # Set the desired logging level for the app logger
+# Set up database
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Create a file handler for logging to a file (optional)
-file_handler = RotatingFileHandler("app.log", maxBytes=10000, backupCount=3)
-file_handler.setLevel(logging.WARNING)  # Set the desired logging level for the file handler
-file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(file_formatter)
-app.logger.addHandler(file_handler)
+# Secret key for session handling
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') 
 
-app.register_blueprint(auth_blueprint)
-
-# Remove the console handler if you don't want logging output in the console
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.INFO)
-# console_handler.setFormatter(formatter)
-# app.logger.addHandler(console_handler)
+# Initialize database
+db.init_app(app)
+migrate = Migrate(app, db)
 
 app.logger.info("Logging is set up.")
 
@@ -58,37 +70,62 @@ app.logger.info("Logging is set up.")
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-CORS(app)  # Cross-Origin Resource Sharing
 
 @app.route('/health')
 def health_check():
     return 'OK', 200
 
-@app.route('/generate-image', methods=['POST'])
-def generate_image():
-    data = request.json
-    prompt = data.get('prompt', '')
-
-    if not prompt:
-        return jsonify({"error": "Prompt is required"}), 400
-
+@app.route('/get-website/<int:website_id>', methods=['GET'])
+def get_website(website_id):
+    app.logger.debug(f"Attempting to fetch website with ID: {website_id}")
     try:
-        response = openai.Image.create(
-            prompt=prompt,
-            n=1,
-            size="256x256"
-        )
-        image_url = response['data'][0]['url']
-        return jsonify({"image_url": image_url})
-
+        website = Website.query.get(website_id)
+        app.logger.debug(f"SQL Query: {str(Website.query.get(website_id))}")  # Log the query
+        if not website:
+            app.logger.warning(f"No website found with ID: {website_id}")
+            return jsonify({'error': 'Website not found'}), 404
+        app.logger.debug(f"Website data: {website.to_dict()}")
+        return jsonify({'website': website.to_dict()}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"Exception occurred: {e}")
+        return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-       # Set host to '0.0.0.0' to make the server externally visible
-       # Get the port from the environment variable or default to 5000
-       port = int(os.getenv('PORT', 8080)) # Was 8080, then got updated to 5000. I switched it back. Still didn't work.
-       app.run(host='0.0.0.0', port=port, debug=False)  # Set debug to False for production
+@app.route('/index-website', methods=['POST'])
+def index_website():
+    data = request.get_json()
+    app.logger.debug(f"Received indexing request with data: {data}")
+    url = data.get('url')
+    if not url:
+        app.logger.error("URL is missing from request data")
+        return jsonify({'success': False, 'message': 'URL is required'}), 400
+
+    allowed_domain = data.get('allowed_domain', '')  # Ensure it's defined if needed
+    custom_settings = data.get('custom_settings', {})
+
+    # Run Scrapy spider
+    process = subprocess.Popen(
+        ['scrapy', 'runspider', 'webscraper/spiders/flexible_spider.py',
+         '-a', f'url={url}', '-a', f'allowed_domain={allowed_domain}',
+         '-a', f'custom_settings={json.dumps(custom_settings)}'],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    stdout, stderr = process.communicate()
+
+    if process.returncode != 0:
+        return jsonify({'success': False, 'message': 'Error during scraping',
+                        'error': stderr.decode('utf-8')}), 500
+
+    # Extract content from Scrapy output
+    try:
+        scraped_content = json.loads(stdout.decode('utf-8'))
+        text_content = scraped_content[0]['content']
+    except json.JSONDecodeError as e:
+        app.logger.error(f"Error decoding JSON from scraping output: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error processing scraping data'}), 500
+
+    # Assuming preprocessing and storage in a vector database are handled here.
+    return jsonify({'success': True, 'message': 'Website indexed successfully', 'content': text_content}), 200
+
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 def get_websites(system_message_id):
@@ -134,9 +171,38 @@ def reindex_website(website_id):
 
     return jsonify({'message': 'Re-indexing initiated', 'website': website.to_dict()}), 200
 
+@app.route('/generate-image', methods=['POST'])
+def generate_image():
+    data = request.json
+    prompt = data.get('prompt', '')
+
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    try:
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size="256x256"
+        )
+        image_url = response['data'][0]['url']
+        return jsonify({"image_url": image_url})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
-
+@app.route('/view-logs')
+def view_logs():
+    logs_content = "<link rel='stylesheet' type='text/css' href='/static/css/styles.css'><div class='logs-container'>"
+    try:
+        with open('app.log', 'r') as log_file:
+            logs_content += f"<div class='log-entry'><div class='log-title'>--- app.log ---</div><pre>"
+            logs_content += log_file.read() + "</pre></div>\n"
+    except FileNotFoundError:
+        logs_content += "<div class='log-entry'><div class='log-title'>No log file found.</div></div>"
+    logs_content += "</div>"
+    return logs_content
 
 # User loader function
 @login_manager.user_loader
@@ -144,19 +210,7 @@ def load_user(user_id):
     from models import User  # Import here to avoid circular dependencies
     return User.query.get(int(user_id))
 
-# Enable auto-reload of templates
-app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-# Set up database
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Secret key for session handling
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY') 
-
-# Initialize database
-db.init_app(app)
-migrate = Migrate(app, db)
 
 # Configure authentication using your API key
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
@@ -499,15 +553,6 @@ def home():
         # If not logged in, redirect to the login page
         return redirect(url_for('auth.login'))
 
-@app.errorhandler(404)
-def not_found_error(error):
-    app.logger.error(f"404 Error: {error}, Path: {request.path}")
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    app.logger.error(f"500 Error: {error}, Path: {request.path}, Details: {error}")
-    return render_template('500.html'), 500
 
 
 @app.route('/clear-session', methods=['POST'])
@@ -713,9 +758,6 @@ def chat():
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
-        if model_name == "gpt-4o-2024-05-13":
-            # Temporarily return "0" for token count for the gpt-4o-2024-05-13 model
-            return 0
         try:
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
@@ -734,11 +776,20 @@ def count_tokens(model_name, messages):
         return num_tokens
 
     elif model_name == "gemini-pro":
-        # Return "0" for token count for the gemini-pro model
-        return 0
+        # Gemini uses a different tokenization approach
+        # You can use a custom tokenization method or library here
+        num_tokens = 0
+        for message in messages:
+            # Placeholder for Gemini tokenization logic
+            num_tokens += len(message['content'].split())  # Temporary word count
+        return num_tokens
 
     else:
-        raise ValueError(f"Unsupported model: {model_name}")
+        # Fallback to a generic tokenization method
+        num_tokens = 0
+        for message in messages:
+            num_tokens += len(message['content'].split())  # Fallback to word count
+        return num_tokens
 
 
 @app.route('/get_active_conversation', methods=['GET'])
@@ -746,6 +797,10 @@ def get_active_conversation():
     conversation_id = session.get('conversation_id')
     return jsonify({'conversationId': conversation_id})
 
-
+# This has to be at the bottom of the file
+if __name__ == '__main__':
+    # Set host to '0.0.0.0' to make the server externally visible
+    port = int(os.getenv('PORT', 8080))  # Needs to be set to 8080
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
 
 

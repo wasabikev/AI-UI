@@ -1,18 +1,19 @@
-let messages = [];
+let messages = []; // An array that stores the converstation messages
 
 
-let systemMessages = [];
+let systemMessages = []; // An array that stores the system message
 
 
 let model; // This variable stores the selected model name
-let activeConversationId = null; // This will keep track of the currently selected conversation
-let currentSystemMessage; // Default system message
-let currentSystemMessageDescription; // Description of the current system message
-let initialTemperature;
+let activeConversationId = null; // This keeps track of the currently selected conversation.
+let currentSystemMessage; // Stores the currently selected system message.
+let currentSystemMessageDescription; // Stores the description of the current system message.
+let initialTemperature; // Stores the initial temperature setting.
 let isSaved = false; // Flag to track whether the system message changes have been saved
 let activeSystemMessageId = null; // Variable to track the currently active system message ID
 let showTemperature = false;  // Tracks the visibility of the temperature settings
 let selectedTemperature = 0.7; // Default temperature value
+let activeWebsiteId = null;  // This will store the currently active website ID for the Websites Group
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -37,96 +38,235 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-function loadWebsitesForSystemMessage(systemMessageId) {
-    $.ajax({
-        url: '/get-websites/' + systemMessageId,
-        type: 'GET',
-        success: function(response) {
-            const websites = response.websites;
-            const sidebar = document.getElementById('modal-sidebar');
-            sidebar.innerHTML = '';  // Clear existing content
-            websites.forEach(website => {
-                const websiteElement = document.createElement('div');
-                websiteElement.textContent = website.url;  // Adjust as needed to include more details
-                sidebar.appendChild(websiteElement);
+document.getElementById('indexWebsiteButton').addEventListener('click', function() {
+    const websiteId = activeWebsiteId; // Use the global variable for the active website ID
+    
+    // Make an API call to fetch the website details based on the websiteId
+    fetch(`/get-website/${websiteId}`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error("Website not found. Please check the website ID.");
+                } else {
+                    throw new Error(`Failed to fetch website details: ${response.status} (${response.statusText})`);
+                }
+            }
+            return response.json();
+        })
+        .then(data => {
+            const url = data.website.url; // Get the URL of the website from the response
+
+            // Make the API call to index the website
+            fetch('/index-website', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url }), // fetch the URL from database
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load resource: the server responded with a status of ${response.status} (${response.statusText})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('indexingStatus').innerText = 'Indexed';
+                    document.getElementById('indexedAt').innerText = new Date().toISOString();
+                } else {
+                    document.getElementById('lastError').innerText = data.message;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Display the error message to the user
+                document.getElementById('lastError').innerText = error.message;
             });
-        },
-        error: function(xhr) {
-            console.error('Error fetching websites:', xhr.responseText);
-        }
-    });
-}
-
-
-document.addEventListener('DOMContentLoaded', function() {
-    const addWebsiteBtn = document.getElementById('submitWebsiteButton');
-    const removeWebsiteBtn = document.getElementById('removeWebsiteButton');
-    const reindexWebsiteBtn = document.getElementById('reindexWebsiteButton');
-
-    if (addWebsiteBtn) {
-        addWebsiteBtn.addEventListener('click', function() {
-            addWebsite();
+        })
+        .catch(error => {
+            console.error('Error fetching website details:', error);
+            // Display an error message to the user
+            document.getElementById('lastError').innerText = error.message;
         });
-    }
-
-    if (removeWebsiteBtn) {
-        removeWebsiteBtn.addEventListener('click', function() {
-            const websiteId = prompt("Enter the ID of the website to remove:");
-            if (websiteId) {
-                removeWebsite(websiteId);
-            }
-        });
-    }
-
-    if (reindexWebsiteBtn) {
-        reindexWebsiteBtn.addEventListener('click', function() {
-            const websiteId = prompt("Enter the ID of the website to re-index:");
-            if (websiteId) {
-                reindexWebsite(websiteId);
-            }
-        });
-    }
 });
 
 
-function addWebsite() {
-    const websiteInputElement = document.getElementById('websiteURL');
 
-    console.log(websiteInputElement); // Check if this logs the correct element or null
+function handleAddWebsiteButtonClick() {
+    // Switch to the websitesGroup
+    openModalAndShowGroup('websitesGroup');
 
-    if (!websiteInputElement) {
-        alert('Website input element not found');
-        return;
+    // Clear active website ID and website details
+    activeWebsiteId = null;
+    clearWebsiteDetails();
+    updateWebsiteControls();
+}
+
+
+function openModalAndShowGroup(groupID) {
+    // Hide all content groups
+    $('.modal-content-group').addClass('hidden');
+
+    // Show the selected group
+    $('#' + groupID).removeClass('hidden');
+}
+
+function updateWebsiteControls() {
+    const addWebsiteButton = document.getElementById('submitWebsiteButton');
+    const removeWebsiteButton = document.getElementById('removeWebsiteButton');
+    const indexWebsiteButton = document.getElementById('indexWebsiteButton');
+
+    if (activeWebsiteId) {
+        // Hide the Add Website button and show the Remove and Index buttons
+        addWebsiteButton.style.display = 'none';
+        removeWebsiteButton.style.display = 'inline-block';
+        indexWebsiteButton.style.display = 'visible';
+    } else {
+        // Show the Add Website button and hide the Remove and Index buttons
+        addWebsiteButton.style.display = 'inline-block';
+        removeWebsiteButton.style.display = 'none';
+        indexWebsiteButton.style.display = 'hidden';
     }
+}
 
-    const websiteURL = websiteInputElement.value;
+document.getElementById('submitWebsiteButton').addEventListener('click', function() {
+    const websiteURL = document.getElementById('websiteURL').value;
 
     if (!websiteURL) {
-        alert('Please enter a URL');
+        alert('Please enter a valid URL.');
         return;
     }
 
     if (!activeSystemMessageId) {
-        alert('No active system message selected');
+        alert('System message ID is required.');
         return;
     }
 
-    // AJAX call to the server to add the website
+    addWebsite(websiteURL, activeSystemMessageId).then(response => {
+        if (response.success) {
+            activeWebsiteId = response.website.id; // Set the active website ID
+            updateWebsiteControls(); // Update UI controls
+            // Repopulate the input field with the name of the newly added website
+            document.getElementById('websiteURL').value = response.website.url;
+            alert('Website added successfully.');
+            // Reload the websites for the current system message to update the sidebar
+            loadWebsitesForSystemMessage(activeSystemMessageId);
+            // Display the details of the newly added website
+            displayWebsiteDetails(response.website);
+        } else {
+            alert('Error adding website: ' + response.message);
+        }
+    }).catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the website.');
+    });
+});
+
+
+function addWebsite(url, systemMessageId) {
+    console.log("Adding website with URL:", url, "and system message ID:", systemMessageId);
+    return fetch('/add-website', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: url, system_message_id: systemMessageId })
+    })
+    .then(response => response.json());
+}
+
+
+
+function loadWebsitesForSystemMessage(systemMessageId) {
     $.ajax({
-        url: '/add-website',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({ url: websiteURL, system_message_id: activeSystemMessageId }),
+        url: `/get-websites/${systemMessageId}`,
+        type: 'GET',
+        dataType: 'json',
         success: function(response) {
-            alert('Website added successfully');
-            document.getElementById('websiteURL').value = ''; // Clear the input field
-            loadWebsites(); // Refresh the list of websites
+            const sidebar = document.getElementById('modal-sidebar');
+            if (!sidebar) {
+                console.error("Sidebar element not found in the DOM.");
+                return;
+            }
+
+            sidebar.innerHTML = '';
+
+            const websites = Array.isArray(response) ? response : response.websites;
+
+            if (websites && websites.length > 0) {
+                websites.forEach(website => {
+                    const div = document.createElement('div');
+                    div.className = 'website-item';
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = website.url;
+                    textSpan.title = website.url; // Add the title attribute with the full URL
+                    div.appendChild(textSpan);
+
+                    const settingsButton = document.createElement('button');
+                    settingsButton.className = 'websiteSettings-button';
+                    settingsButton.innerHTML = '<i class="fas fa-wrench"></i>';
+                    settingsButton.addEventListener('click', function() {
+                        openModalAndShowGroup('websitesGroup');
+                        document.getElementById('websiteURL').value = website.url; // Display the website URL in the input field
+                        activeWebsiteId = website.id; // Set the active website ID
+                        updateWebsiteControls(); // Update UI controls
+                        displayWebsiteDetails(website); // Display website details
+                    });
+                    div.appendChild(settingsButton);
+
+                    sidebar.appendChild(div);
+                });
+            } else {
+                sidebar.textContent = 'No websites for this system message.';
+                activeWebsiteId = null; // Clear the active website ID
+                clearWebsiteDetails(); // Clear the website details
+                updateWebsiteControls(); // Update UI controls
+            }
         },
         error: function(xhr) {
-            alert('Error adding website: ' + xhr.responseText);
+            console.error('Failed to fetch websites:', xhr.responseText);
+            if (sidebar) {
+                sidebar.textContent = 'Failed to load websites.';
+            }
         }
     });
 }
+
+
+
+function displayWebsiteDetails(website) {
+    document.getElementById('indexingStatus').textContent = website.indexing_status || 'N/A';
+    document.getElementById('indexedAt').textContent = website.indexed_at || 'N/A';
+    document.getElementById('lastError').textContent = website.last_error || 'N/A';
+    document.getElementById('indexingFrequency').textContent = website.indexing_frequency || 'N/A';
+    document.getElementById('createdAt').textContent = website.created_at ? formatDate(website.created_at) : 'N/A';
+    document.getElementById('updatedAt').textContent = website.updated_at ? formatDate(website.updated_at) : 'N/A';
+
+    // Show the Index Website button
+    document.getElementById('indexWebsiteButton').style.visibility = 'visible';
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString(); // Customize the format as needed
+}
+
+
+function clearWebsiteDetails() {
+    document.getElementById('indexingStatus').textContent = 'N/A';
+    document.getElementById('indexedAt').textContent = 'N/A';
+    document.getElementById('lastError').textContent = 'N/A';
+    document.getElementById('indexingFrequency').textContent = 'N/A';
+    document.getElementById('createdAt').textContent = 'N/A';
+    document.getElementById('updatedAt').textContent = 'N/A';
+    document.getElementById('websiteURL').value = '';
+
+    // Hide the Index Website button
+    document.getElementById('indexWebsiteButton').style.visibility = 'hidden';
+}
+
 
 function removeWebsite(websiteId) {
     if (!confirm('Are you sure you want to remove this website?')) {
@@ -139,13 +279,25 @@ function removeWebsite(websiteId) {
         type: 'DELETE',
         success: function(response) {
             alert('Website removed successfully');
-            loadWebsites(); // Refresh the list of websites
+            activeWebsiteId = null; // Clear the active website ID
+            clearWebsiteDetails(); // Clear the website details
+            updateWebsiteControls(); // Update UI controls
+            loadWebsitesForSystemMessage(activeSystemMessageId); // Refresh the list of websites
         },
         error: function(xhr) {
             alert('Error removing website: ' + xhr.responseText);
         }
     });
 }
+
+// Listener for the Remove Website button
+document.getElementById('removeWebsiteButton').addEventListener('click', function() {
+    if (activeWebsiteId) {
+        removeWebsite(activeWebsiteId);
+    } else {
+        alert('No website selected to remove.');
+    }
+});
 
 function reindexWebsite(websiteId) {
     // AJAX call to the server to re-index the website
@@ -207,6 +359,11 @@ function updateSystemMessageDropdown() {
             // Update the model dropdown in the modal and the global model variable
             updateModelDropdownInModal(message.model_name);
             model = message.model_name; // Update the global model variable
+
+            // Set the active system message ID globally
+            activeSystemMessageId = message.id;
+            // Load websites for the newly selected system message
+            loadWebsitesForSystemMessage(activeSystemMessageId);
         };
         dropdownMenu.appendChild(dropdownItem);
     });
@@ -510,55 +667,48 @@ function populateSystemMessageModal() {
     // Add each system message to the dropdown
     console.log('Populating system message modal...');
     systemMessages.forEach((message, index) => {
-        console.log('System message:', message);
-        console.log(`System message [${message.name}] temperature:`, message.temperature); 
         let dropdownItem = document.createElement('button');
         dropdownItem.className = 'dropdown-item';
         dropdownItem.textContent = message.name;
         dropdownItem.onclick = function() {
             // Update the dropdown button text and modal content
             dropdownButton.textContent = this.textContent; // Update the system message dropdown button text
-            console.log(`Setting name: ${message.name}`);
             document.getElementById('systemMessageName').value = message.name || '';
-            console.log(`Current name value in input: ${document.getElementById('systemMessageName').value}`);
             document.getElementById('systemMessageDescription').value = message.description || '';
             document.getElementById('systemMessageContent').value = message.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = message.id;
-            // Update the current system message description
+
+            // Update global and modal-specific variables
             currentSystemMessageDescription = message.description;
-            // Update the temperature display
-            console.log(`Dropdown item clicked for [${message.name}], setting temperature to:`, message.temperature);
             initialTemperature = message.temperature;
             selectedTemperature = message.temperature;
-            updateTemperatureSelectionInModal(message.temperature);
-            // Update the model dropdown in the modal and the global model variable
-            updateModelDropdownInModal(message.model_name);
             model = message.model_name; // Update the global model variable
-            console.log('Model updated to:', model);
+            activeSystemMessageId = message.id; // Update the active system message ID
 
-            editSystemMessage = message; // Set the editSystemMessage variable to the selected system message
+            // Update UI elements
+            updateTemperatureSelectionInModal(message.temperature);
+            updateModelDropdownInModal(message.model_name);
+
+            // Load websites for the selected system message
+            loadWebsitesForSystemMessage(message.id);
         };
         dropdownMenu.appendChild(dropdownItem);
     });
 
-    // Pre-select and display the default system message only if there's no active system message
-    if (!activeSystemMessageId) {
-        const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message");
-        if (defaultSystemMessage) {
-            dropdownButton.textContent = defaultSystemMessage.name;
-            document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
-            document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
-            document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
-
-            // Set the temperature to the default system message's temperature
-            initialTemperature = defaultSystemMessage.temperature;
-            updateTemperatureSelectionInModal(initialTemperature);
-
-            // Update the model variable and display the system message
-            model = defaultSystemMessage.model_name;
-            displaySystemMessage(defaultSystemMessage);
-        }
-    }    
+    // Handle default system message selection
+    if (!activeSystemMessageId && systemMessages.length > 0) {
+        const defaultSystemMessage = systemMessages[0]; // Assuming the first message is the default
+        activeSystemMessageId = defaultSystemMessage.id;
+        loadWebsitesForSystemMessage(defaultSystemMessage.id);
+        dropdownButton.textContent = defaultSystemMessage.name;
+        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
+        document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
+        document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
+        initialTemperature = defaultSystemMessage.temperature;
+        updateTemperatureSelectionInModal(initialTemperature);
+        updateModelDropdownInModal(defaultSystemMessage.model_name);
+        model = defaultSystemMessage.model_name;
+    }
 }
 
 function updateTemperatureDisplay() {
@@ -645,7 +795,7 @@ document.getElementById('delete-system-message-btn').addEventListener('click', f
     }
 });
 
-
+// New system message button actions
 document.getElementById('new-system-message-btn').addEventListener('click', function() {
     // Clear all the fields in the modal
     document.getElementById('systemMessageName').value = '';
@@ -659,10 +809,36 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
     document.getElementById('modalModelDropdownButton').textContent = 'GPT-3.5';
     document.getElementById('modalModelDropdownButton').dataset.apiName = 'gpt-3.5-turbo';
 
-    // Set the temperature to .07
+    // Set the temperature to 0.7
     document.querySelector('input[name="temperatureOptions"][value="0.7"]').checked = true;
     updateTemperatureDisplay();
+
+    // Clear the sidebar
+    const sidebar = document.getElementById('modal-sidebar');
+    if (sidebar) {
+        sidebar.innerHTML = ''; // Clear existing content
+    }
+
+    // Clear active website ID and website details
+    activeWebsiteId = null;
+    clearWebsiteDetails();
+    updateWebsiteControls();
+
+    // Switch to the systemMessageContentGroup
+    switchToSystemMessageContentGroup();
 });
+
+function switchToSystemMessageContentGroup() {
+    // Hide all content groups
+    const contentGroups = document.querySelectorAll('.modal-content-group');
+    contentGroups.forEach(group => group.classList.add('hidden'));
+
+    // Show the systemMessageContentGroup
+    const systemMessageContentGroup = document.getElementById('systemMessageContentGroup');
+    if (systemMessageContentGroup) {
+        systemMessageContentGroup.classList.remove('hidden');
+    }
+}
 
 $(window).on('load', function () {
     // Fetch the current model_name from the backend when the page loads
@@ -712,9 +888,8 @@ function modelNameMapping(modelName) {
     let mappedName;
     switch(modelName) {
         case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
-        case "gpt-4-0613": mappedName = "GPT-4 (8k)"; break;
-        case "gpt-4-1106-preview": mappedName = "GPT-4 (1106)"; break;
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
+        case "gpt-4o-2024-05-13": mappedName = "GPT-4o"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
         case "gemini-pro": mappedName = "Gemini Pro"; break;
         default: mappedName = "Unknown Model"; break;
@@ -736,7 +911,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview","gpt-4-turbo-2024-04-09","claude-3-opus-20240229","gemini-pro"];
+    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13","claude-3-opus-20240229","gemini-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown
@@ -796,6 +971,8 @@ $('#systemMessageModal').on('show.bs.modal', function () {
             console.log("System message name set to:", activeSystemMessage.name);
             // Ensure the model dropdown is set to the correct model
             updateModelDropdownInModal(activeSystemMessage.model_name);
+            // Load websites for the active system message
+            loadWebsitesForSystemMessage(activeSystemMessageId);
         }
     } else {
         // Optionally set a default name if no active message is found
@@ -833,8 +1010,14 @@ $('#systemMessageModal').on('hidden.bs.modal', function () {
 
     // Reset any specific flags or settings
     $(this).removeData('targetGroup'); // Remove the data attribute for safety
+
+    // Clear active website ID and website details
+    activeWebsiteId = null;
+    clearWebsiteDetails();
+    updateWebsiteControls();
 });
 
+// Handles switching between different layers of orchestration within the modal.
 function openModalAndShowGroup(targetGroup) {
     console.log("Opening modal with target group:", targetGroup);
 
@@ -1257,6 +1440,52 @@ $('#chat-form').on('submit', function (e) {
     userInputTextarea.css('height', defaultHeight);
 
     document.getElementById('loading').style.display = 'block';
+
+    // Check if the user input is a command to generate an image
+    if (userInput.toLowerCase().startsWith("generate image of")) {
+        let prompt = userInput.substring("generate image of".length).trim();
+        console.log('Generating image with prompt:', prompt);
+
+        fetch('/generate-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: prompt })
+        })
+        .then(response => {
+            console.log('Received response from /generate-image endpoint:', response);
+
+            document.getElementById('loading').style.display = 'none';
+
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+
+            return response.json();
+        })
+        .then(data => {
+            console.log("Complete server response from image generation:", data);
+            const imageElement = $('<img>').attr('src', data.image_url).addClass('img-fluid');
+            const botMessageDiv = $('<div class="chat-entry bot bot-message">')
+                .append('<i class="fas fa-robot"></i> ')
+                .append(imageElement);
+            $('#chat').append(botMessageDiv);
+
+            $('#chat').scrollTop($('#chat')[0].scrollHeight);
+            messages.push({ "role": "assistant", "content": data.image_url });
+
+            console.log('End of image generation handling');
+        })
+        .catch(error => {
+            console.error('Error processing image generation:', error);
+            document.getElementById('loading').style.display = 'none';
+        });
+
+        return; // Exit the function early since we handled the image generation
+    }
 
     let requestPayload = {
         messages: messages,
