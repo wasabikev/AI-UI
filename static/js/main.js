@@ -92,6 +92,30 @@ document.getElementById('indexWebsiteButton').addEventListener('click', function
 });
 
 
+function uploadFile() {
+    // Example function to handle file upload
+    var fileInput = document.getElementById('fileInput');
+    var file = fileFile.files[0];
+    // Handle the file upload process here
+    console.log('File uploaded:', file.name);
+}
+
+function handleAddFileButtonClick() {
+    // Open the modal and switch to the filesGroup
+    openModalAndShowGroup('filesGroup');
+
+    // Additional logic can be added here if there are any specific actions needed
+    // For example, clearing any previously selected files or resetting file input fields
+    resetFileInput();
+}
+
+function resetFileInput() {
+    // Reset the file input field
+    var fileInput = document.getElementById('fileInput');
+    fileInput.value = "";  // Clear any previously selected file
+}
+
+
 
 function handleAddWebsiteButtonClick() {
     // Switch to the websitesGroup
@@ -102,7 +126,6 @@ function handleAddWebsiteButtonClick() {
     clearWebsiteDetails();
     updateWebsiteControls();
 }
-
 
 function openModalAndShowGroup(groupID) {
     // Hide all content groups
@@ -891,6 +914,7 @@ function modelNameMapping(modelName) {
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
         case "gpt-4o-2024-05-13": mappedName = "GPT-4o"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
+        case "claude-3-5-sonnet-20240620": mappedName = "Claude 3.5 (Sonnet)"; break;
         case "gemini-pro": mappedName = "Gemini Pro"; break;
         default: mappedName = "Unknown Model"; break;
     }
@@ -911,7 +935,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13","claude-3-opus-20240229","gemini-pro"];
+    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13","claude-3-opus-20240229","claude-3-5-sonnet-20240620","gemini-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown

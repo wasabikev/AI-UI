@@ -4,6 +4,8 @@ from text_processing import format_text
 from flask_login import LoginManager, current_user, login_required
 from logging.handlers import RotatingFileHandler
 
+# from llama_index_util import add_to_index, query_index
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -17,7 +19,6 @@ import logging
 import anthropic
 import tiktoken 
 import google.generativeai as genai
-import logging
 import subprocess # imported to support Scrapy
 
 import requests
@@ -29,9 +30,16 @@ from logging.handlers import RotatingFileHandler # for log file rotation
 from werkzeug.security import generate_password_hash
 from google.generativeai import GenerativeModel
 
+from openai import OpenAI
+client = OpenAI()
+
+# Initialize OpenAI client
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if openai.api_key is None:
+    raise ValueError("OPENAI_API_KEY environment variable not set")
+
 from auth import auth as auth_blueprint  # Import the auth blueprint
-
-
+  
 # Set debug directly here. Switch to False for production.
 debug_mode = True
 
@@ -45,8 +53,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO if debug_mode else logging.WARNING)
 console_handler.setFormatter(formatter)
 
-
-## Application Setup
+# Application Setup
 app = Flask(__name__)
 CORS(app)  # Cross-Origin Resource Sharing
 app.config['DEBUG'] = debug_mode
@@ -80,12 +87,24 @@ app.logger.info("Logging is set up.")
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+@app.route('/add', methods=['POST'])
+def add_data():
+    data = request.json.get('data')
+    add_to_index(data)
+    return jsonify({'message': 'Data added to index'}), 200
+
+@app.route('/query', methods=['GET'])
+def query():
+    query = request.args.get('query')
+    results = query_index(query)
+    return jsonify({'results': results}), 200
 
 @app.route('/health')
 def health_check():
     return 'OK', 200
 
 @app.route('/get-website/<int:website_id>', methods=['GET'])
+@login_required
 def get_website(website_id):
     app.logger.debug(f"Attempting to fetch website with ID: {website_id}")
     try:
@@ -102,15 +121,12 @@ def get_website(website_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/test-website', methods=['GET'])
+@login_required
 def test_website():
     return jsonify({'message': 'Route is working'}), 200
 
-## Using the Scrapy shell enables you to test scraping commands
-## scrapy shell https://urbanshoreline.org/ 
-
-## scrapy runspider webscraper/spiders/flexible_spider.py -a url=https://urbanshoreline.org/ -a allowed_domain=urbanshoreline.org
-
 @app.route('/index-website', methods=['POST'])
+@login_required
 def index_website():
     data = request.get_json()
     app.logger.debug(f"Received indexing request with data: {data}")
@@ -155,8 +171,8 @@ def index_website():
         app.logger.error("No data received from spider")
         return jsonify({'success': False, 'message': 'No data received from spider'}), 500
 
-
 @app.route('/scrape', methods=['POST'])
+@login_required
 def scrape():
     data = request.get_json()
     url = data.get('url')
@@ -180,13 +196,14 @@ def scrape():
         app.logger.error("Failed to decode JSON from spider output")
         return jsonify({'error': 'Failed to decode JSON from spider output'}), 500
 
-
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
+@login_required
 def get_websites(system_message_id):
     websites = Website.query.filter_by(system_message_id=system_message_id).all()
     return jsonify({'websites': [website.to_dict() for website in websites]}), 200
 
 @app.route('/add-website', methods=['POST'])
+@login_required
 def add_website():
     data = request.get_json()
     url = data.get('url')
@@ -209,6 +226,7 @@ def add_website():
     return jsonify({'success': True, 'message': 'Website added successfully', 'website': new_website.to_dict()}), 201
 
 @app.route('/remove-website/<int:website_id>', methods=['DELETE'])
+@login_required
 def remove_website(website_id):
     website = Website.query.get_or_404(website_id)
     db.session.delete(website)
@@ -216,6 +234,7 @@ def remove_website(website_id):
     return jsonify({'success': True, 'message': 'Website removed successfully'}), 200
 
 @app.route('/reindex-website/<int:website_id>', methods=['POST'])
+@login_required
 def reindex_website(website_id):
     website = Website.query.get_or_404(website_id)
     # Trigger re-indexing logic here (e.g., update indexed_at, change status)
@@ -226,6 +245,7 @@ def reindex_website(website_id):
     return jsonify({'message': 'Re-indexing initiated', 'website': website.to_dict()}), 200
 
 @app.route('/generate-image', methods=['POST'])
+@login_required
 def generate_image():
     data = request.json
     prompt = data.get('prompt', '')
@@ -245,8 +265,8 @@ def generate_image():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/view-logs')
+@login_required
 def view_logs():
     logs_content = "<link rel='stylesheet' type='text/css' href='/static/css/styles.css'><div class='logs-container'>"
     try:
@@ -263,8 +283,6 @@ def view_logs():
 def load_user(user_id):
     from models import User  # Import here to avoid circular dependencies
     return User.query.get(int(user_id))
-
-
 
 # Configure authentication using your API key
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
@@ -333,6 +351,7 @@ def init_app():
                 print(f"Error creating default system message: {e}")
 
 @app.route('/api/system-messages/<int:system_message_id>/add-website', methods=['POST'])
+@login_required
 def add_website_to_system_message(system_message_id):
     data = request.json
     website_url = data.get('websiteURL')
@@ -346,8 +365,6 @@ def add_website_to_system_message(system_message_id):
         return jsonify({'message': 'Website URL added successfully'}), 200
     else:
         return jsonify({'error': 'System message not found'}), 404
-
-
 
 @app.route('/get-current-model', methods=['GET'])
 @login_required
@@ -421,12 +438,10 @@ def delete_system_message(message_id):
     db.session.commit()
     return jsonify({'message': 'System message deleted successfully'})
 
-
 @app.route('/trigger-flash')
 def trigger_flash():
     flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
     return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
-
 
 @app.route('/chat/<int:conversation_id>')
 @login_required
@@ -434,12 +449,10 @@ def chat_interface(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
     return render_template('chat.html', conversation=conversation)
 
-
 # Fetch all conversations from the database and convert them to a list of dictionaries
 def get_conversations_from_db():
     conversations = Conversation.query.all()
     return [conv.to_dict() for conv in conversations]
-
 
 @app.route('/database')
 def database():
@@ -450,7 +463,6 @@ def database():
     except Exception as e:
         print(e)  # For debugging purposes
         return "Error fetching data from the database", 500
-
 
 @app.cli.command("clear-db")
 def clear_db():
@@ -502,7 +514,6 @@ def get_conversations():
                            "temperature": c.temperature} 
                           for c in conversations]  
     return jsonify(conversations_dict)
-
 
 # Fetch a specific conversation from the database to display in the chat interface
 @app.route('/conversations/<int:conversation_id>', methods=['GET'])
@@ -581,11 +592,6 @@ def delete_conversation(conversation_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
-if openai.api_key is None:
-    raise ValueError("OPENAI_API_KEY environment variable not set")
-
 @app.route('/')
 def home():
     app.logger.info("Home route accessed")
@@ -607,14 +613,10 @@ def home():
         # If not logged in, redirect to the login page
         return redirect(url_for('auth.login'))
 
-
-
 @app.route('/clear-session', methods=['POST'])
 def clear_session():
     session.clear()
-    
     return jsonify({"message": "Session cleared"}), 200
-
 
 def estimate_token_count(text):
     # Simplistic estimation. You may need a more accurate method.
@@ -633,14 +635,15 @@ def generate_summary(messages):
         "messages": [
             {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text:\n" + conversation_history}
         ],
-        "max_tokens": 10
+        "max_tokens": 10,
+        "temperature": 0.5  # Adjust the temperature if needed
     }
 
     app.logger.info(f"Sending summary request to OpenAI: {summary_request_payload}")
 
     try:
-        response = openai.ChatCompletion.create(**summary_request_payload)
-        summary = response['choices'][0]['message']['content'].strip()
+        response = client.chat.completions.create(**summary_request_payload)
+        summary = response.choices[0].message.content.strip()
         app.logger.info(f"Response from OpenAI for summary: {response}")
         app.logger.info(f"Generated conversation summary: {summary}")
     except Exception as e:
@@ -659,23 +662,22 @@ def reset_conversation():
         del session['conversation_id']
     return jsonify({"message": "Conversation reset successful"})
 
-
-
-def get_response_from_model(model, messages, temperature):
+def get_response_from_model(client, model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
     """
     if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13"]:
-        # OpenAI models
+        # OpenAI chat models
         payload = {
             "model": model,
             "messages": messages,
-            "temperature": temperature
+            "temperature": temperature,
+            "max_tokens": 1500  # You can adjust max_tokens as needed
         }
-        response = openai.ChatCompletion.create(**payload)
-        chat_output = response['choices'][0]['message']['content']
-        model_name = response['model']  # Extract the model name from the API response
-    elif model == "claude-3-opus-20240229":
+        response = client.chat.completions.create(**payload)
+        chat_output = response.choices[0].message.content.strip()
+        model_name = response.model
+    elif model in ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620"]:
         # Anthropic model
         client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
@@ -724,6 +726,7 @@ def get_response_from_model(model, messages, temperature):
     return chat_output, model_name
 
 
+
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
@@ -748,7 +751,7 @@ def chat():
             conversation = None
 
     # Use the abstracted function to get a response from the appropriate model
-    chat_output, model_name = get_response_from_model(model, messages, temperature)
+    chat_output, model_name = get_response_from_model(client, model, messages, temperature)
     app.logger.info("Response from model: {}".format(chat_output))
 
     # Count tokens in the entire conversation history
@@ -812,14 +815,10 @@ def chat():
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
-        try:
-            encoding = tiktoken.encoding_for_model(model_name)
-        except KeyError:
-            raise ValueError(f"Tokenizer not found for model: {model_name}")
-        
+        # Using a simple word count for GPT models for now
         num_tokens = 0
         for message in messages:
-            num_tokens += len(encoding.encode(message['content']))
+            num_tokens += len(message['content'].split())
         return num_tokens
 
     elif model_name.startswith("claude-"):
@@ -845,7 +844,6 @@ def count_tokens(model_name, messages):
             num_tokens += len(message['content'].split())  # Fallback to word count
         return num_tokens
 
-
 @app.route('/get_active_conversation', methods=['GET'])
 def get_active_conversation():
     conversation_id = session.get('conversation_id')
@@ -856,5 +854,3 @@ if __name__ == '__main__':
     # Set host to '0.0.0.0' to make the server externally visible
     port = int(os.getenv('PORT', 8080))  # Needs to be set to 8080
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
-
-
