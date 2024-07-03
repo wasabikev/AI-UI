@@ -106,6 +106,7 @@
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4o-2024-05-13">GPT-4o</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-5-sonnet-20240620">Claude 3.5 (Sonnet)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gemini-pro">Gemini Pro</a></li>
                                 </ul>
                             </div>
@@ -173,13 +174,13 @@
                                 <button id="addWebsiteButton" type="button" class="btn btn-secondary" onclick="handleAddWebsiteButtonClick()">+ Website</button>
 
                                 <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
-                                <button id="addFilesButton" type="button" class="btn btn-secondary">+ File</button>
+                                <button id="addFilesButton" type="button" class="btn btn-secondary" onclick="handleAddFileButtonClick()">+ File</button>
                             </div>
                             <div class="modal-sidebar" id="modal-sidebar">
                                 <!-- Dynamic content will be loaded here -->
                             </div>
                         </div>
-                    </div>  
+                    </div>  <!--  End modal sidebar Container -->
                    
                     <div class="modal-main">
 
@@ -369,9 +370,9 @@
                                 <div class="col-md-12">
                                     <div id="filesGroup" class="modal-content-group hidden">
                                         <div class="form-group" style="margin-top: -7px;">
-                                            <label for="fileInput">Upload File</label>
-                                            <input type="file" class="form-control-file" id="fileInput">
-                                            <button type="button" class="btn btn-secondary mt-2" onclick="uploadFile()">Upload File</button>
+                                            <label for="fileInput" class="modal-label">Upload File</label>
+
+                                            <button type="button" class="btn btn-secondary mt-2 website-control-btn" onclick="uploadFile()">Upload File</button>
                                         </div>
                                     </div> <!-- End of files group -->
                                 </div> <!-- End of Bootstrap column -->
