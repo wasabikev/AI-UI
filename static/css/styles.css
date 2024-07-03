@@ -263,6 +263,44 @@ h2 {
     margin-bottom: 15px; /* Adjust the value as needed for desired spacing */
 }
 
+/************ filesGroup Content Group Styles *****************/
+
+#filesGroup {
+    color: white; /* Ensures all text within the group is white */
+}
+
+.file-control-btn {
+    margin-top: 25px; /* Adjust the top margin as needed */
+    margin-right: 10px; /* Right margin to space out buttons horizontally */
+    /* Add any other specific styles for file control buttons here */
+}
+
+.file-control-btn:last-child {
+    margin-right: 0;
+}
+
+.detail-item {
+    margin-bottom: 15px; /* Adjust the value as needed for desired spacing */
+}
+
+.drop-area {
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    background: #f8f9fa;
+}
+
+.drop-area:hover {
+    background-color: #e9ecef;
+    cursor: pointer;
+}
+
+.drop-area p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
 /************ System Message Content Group Styles *****************/
 
 #systemMessageContent {
