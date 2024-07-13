@@ -91,13 +91,191 @@ document.getElementById('indexWebsiteButton').addEventListener('click', function
         });
 });
 
+// Functions related to the file upload feature
+
+function removeFile(fileId) {
+    if (!confirm('Are you sure you want to remove this file?')) {
+        return;
+    }
+
+    const fileListError = document.getElementById('fileListError');
+    const fileUploadStatus = document.getElementById('fileUploadStatus');
+
+    fetch(`/remove_file/${fileId}`, {
+        method: 'DELETE',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            fileUploadStatus.textContent = 'File removed successfully';
+            fileUploadStatus.style.display = 'inline';
+            setTimeout(() => {
+                fileUploadStatus.style.display = 'none';
+            }, 3000);
+
+            // Refresh the file list
+            initializeAndUpdateFileList(activeSystemMessageId);
+        } else {
+            throw new Error(data.error || 'Failed to remove file');
+        }
+    })
+    .catch(error => {
+        console.error('Error removing file:', error);
+        fileListError.textContent = `Failed to remove file: ${error.message}`;
+        fileListError.style.display = 'block';
+        setTimeout(() => {
+            fileListError.style.display = 'none';
+        }, 5000);
+    });
+}
 
 function uploadFile() {
-    // Example function to handle file upload
-    var fileInput = document.getElementById('fileInput');
-    var file = fileFile.files[0];
-    // Handle the file upload process here
-    console.log('File uploaded:', file.name);
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.txt,.pdf,.docx'; // Add or modify accepted file types as needed
+    
+    const fileUploadStatus = document.getElementById('fileUploadStatus');
+    
+    fileInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('system_message_id', activeSystemMessageId);
+
+            // Show "File upload in progress" message
+            fileUploadStatus.textContent = 'File upload in progress...';
+            fileUploadStatus.style.display = 'inline';
+
+            fetch('/upload_file', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Show "File upload complete" message
+                    fileUploadStatus.textContent = 'File upload complete';
+                    setTimeout(() => {
+                        fileUploadStatus.style.display = 'none';
+                    }, 3000); // Hide the message after 3 seconds
+                    fetchFileList(activeSystemMessageId);
+                    updateMoreFilesIndicator();
+                } else {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                fileUploadStatus.textContent = 'File upload failed';
+                setTimeout(() => {
+                    fileUploadStatus.style.display = 'none';
+                }, 3000); // Hide the message after 3 seconds
+                const fileListError = document.getElementById('fileListError');
+                fileListError.textContent = 'Failed to upload file: ' + error.message;
+                fileListError.style.display = 'block';
+            });
+        }
+    };
+
+    fileInput.click();
+}
+
+function initializeAndUpdateFileList(systemMessageId) {
+    fetchFileList(systemMessageId);
+}
+
+function fetchFileList(systemMessageId) {
+    const fileList = document.getElementById('fileList');
+    const noFilesMessage = document.getElementById('noFilesMessage');
+    const fileListError = document.getElementById('fileListError');
+    const fileListContainer = document.getElementById('fileListContainer');
+    if (!fileListContainer) {
+        console.error('File list container not found');
+        return;
+    }
+    const moreFilesIndicator = document.getElementById('moreFilesIndicator');
+
+    // Reset all displays
+    fileList.innerHTML = '';
+    fileList.style.display = 'none';
+    noFilesMessage.style.display = 'none';
+    fileListError.style.display = 'none';
+    moreFilesIndicator.style.display = 'none';
+
+    fetch(`/get_files/${systemMessageId}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.files && data.files.length > 0) {
+            data.files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item d-flex justify-content-between align-items-center';
+                fileItem.innerHTML = `
+                    <span class="file-name">${file.filename}</span>
+                    <button class="btn btn-sm btn-danger" onclick="removeFile(${file.id})">Remove</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+            fileList.style.display = 'block';
+            noFilesMessage.style.display = 'none';
+
+        } else {
+            fileList.style.display = 'none';
+            noFilesMessage.style.display = 'block';
+        }
+        fileListContainer.style.display = 'block';
+        updateMoreFilesIndicator();
+    })
+    .catch(error => {
+        console.error('Error fetching file list:', error);
+        fileListError.textContent = `Error fetching file list: ${error.message}`;
+        fileListError.style.display = 'block';
+        updateMoreFilesIndicator();
+    });
+
+    // Add scroll event listener to show/hide indicator based on scroll position
+    fileListContainer.addEventListener('scroll', () => {
+        if (fileListContainer.scrollHeight > fileListContainer.clientHeight) {
+            if (fileListContainer.scrollTop + fileListContainer.clientHeight >= fileListContainer.scrollHeight - 20) {
+                moreFilesIndicator.style.display = 'none';
+            } else {
+                moreFilesIndicator.style.display = 'block';
+            }
+        }
+    });
+}
+
+function updateMoreFilesIndicator() {
+    const fileListContainer = document.getElementById('fileListContainer');
+    const moreFilesIndicator = document.getElementById('moreFilesIndicator');
+    
+    if (fileListContainer && moreFilesIndicator) {
+        if (fileListContainer.scrollHeight > fileListContainer.clientHeight) {
+            if (fileListContainer.scrollTop + fileListContainer.clientHeight >= fileListContainer.scrollHeight - 20) {
+                moreFilesIndicator.style.display = 'none';
+            } else {
+                moreFilesIndicator.style.display = 'block';
+            }
+        } else {
+            moreFilesIndicator.style.display = 'none';
+        }
+    }
 }
 
 function handleAddFileButtonClick() {
@@ -714,6 +892,12 @@ function populateSystemMessageModal() {
 
             // Load websites for the selected system message
             loadWebsitesForSystemMessage(message.id);
+
+            // Fetch and display file list for the selected system message
+            fetchFileList(message.id);
+
+            // Initialize and update file list
+            initializeAndUpdateFileList(message.id);
         };
         dropdownMenu.appendChild(dropdownItem);
     });
@@ -731,6 +915,11 @@ function populateSystemMessageModal() {
         updateTemperatureSelectionInModal(initialTemperature);
         updateModelDropdownInModal(defaultSystemMessage.model_name);
         model = defaultSystemMessage.model_name;
+        
+        fetchFileList(defaultSystemMessage.id);// Fetch and display file list for the default system message
+
+        // Initialize and update file list for default message
+        initializeAndUpdateFileList(defaultSystemMessage.id);
     }
 }
 
@@ -1004,6 +1193,15 @@ $('#systemMessageModal').on('show.bs.modal', function () {
         console.log("No active system message. Setting default name.");
         // Set a default model or handle the case where no model is set
         updateModelDropdownInModal("default-model-name"); // Adjust "default-model-name" as needed
+    }
+});
+
+$('#systemMessageModal').on('shown.bs.modal', function () {
+    updateMoreFilesIndicator();
+    
+    // If there's an active system message, initialize and update the file list
+    if (activeSystemMessageId) {
+        initializeAndUpdateFileList(activeSystemMessageId);
     }
 });
 

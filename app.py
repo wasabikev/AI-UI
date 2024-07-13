@@ -24,11 +24,13 @@ import subprocess # imported to support Scrapy
 import requests
 import json
 
-from models import db, Folder, Conversation, User, SystemMessage, Website
+from models import db, Folder, Conversation, User, SystemMessage, Website, UploadedFile
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler # for log file rotation
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename # for secure file uploads
 from google.generativeai import GenerativeModel
+
 
 from openai import OpenAI
 client = OpenAI()
@@ -83,9 +85,91 @@ migrate = Migrate(app, db)
 
 app.logger.info("Logging is set up.")
 
+# Set up file upload folder
+UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
+
+# Ensure upload folder exists
+try:
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+except OSError as e:
+    print(f"Error creating upload folder: {e}")
+    
+
 # Initialize the login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload_file', methods=['POST'])
+@login_required
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file part'})
+    
+    file = request.files['file']
+    system_message_id = request.form.get('system_message_id')
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No selected file'})
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # Create a new UploadedFile record
+        new_file = UploadedFile(
+            filename=filename,
+            file_path=file_path,
+            system_message_id=system_message_id
+        )
+        
+        # Add and commit the new file to the database
+        db.session.add(new_file)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'File uploaded successfully'})
+    
+    return jsonify({'success': False, 'error': 'File type not allowed'})
+
+@app.route('/get_files/<int:system_message_id>')
+@login_required
+def get_files(system_message_id):
+    try:
+        files = UploadedFile.query.filter_by(system_message_id=system_message_id).all()
+        file_list = [{'id': file.id, 'filename': file.filename} for file in files]
+        return jsonify({'success': True, 'files': file_list})
+    except Exception as e:
+        app.logger.error(f"Error fetching files: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/remove_file/<int:file_id>', methods=['DELETE'])
+@login_required
+def remove_file(file_id):
+    file = UploadedFile.query.get_or_404(file_id)
+    
+    # Check if the current user has permission to remove this file
+    # You may want to add additional checks here based on your application's logic
+    
+    try:
+        # Remove the file from the filesystem
+        if os.path.exists(file.file_path):
+            os.remove(file.file_path)
+        
+        # Remove the file record from the database
+        db.session.delete(file)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'File removed successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/add', methods=['POST'])
 def add_data():
@@ -815,27 +899,82 @@ def chat():
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
-        # Using a simple word count for GPT models for now
+        try:
+            encoding = tiktoken.encoding_for_model(model_name)
+        except KeyError:
+            # Fallback to cl100k_base encoding if the specific model encoding is not found
+            encoding = tiktoken.get_encoding("cl100k_base")
+        
         num_tokens = 0
         for message in messages:
-            num_tokens += len(message['content'].split())
+            # Count tokens in the content
+            num_tokens += len(encoding.encode(message['content']))
+            
+            # Add tokens for role (and potentially name)
+            num_tokens += 4  # Every message follows <im_start>{role/name}\n{content}<im_end>\n
+            if 'name' in message:
+                num_tokens += len(encoding.encode(message['name']))
+        
+        # Add tokens for the messages separator
+        num_tokens += 2  # Every reply is primed with <im_start>assistant
+        
         return num_tokens
 
     elif model_name.startswith("claude-"):
         encoding = tiktoken.get_encoding("cl100k_base")
         num_tokens = 0
+        
         for message in messages:
-            num_tokens += len(encoding.encode(message['content']))
+            if isinstance(message, dict):
+                content = message.get('content', '')
+                role = message.get('role', '')
+            elif isinstance(message, str):
+                content = message
+                role = ''
+            else:
+                continue  # Skip if message is neither dict nor str
+
+            num_tokens += len(encoding.encode(content))
+            
+            if role:
+                num_tokens += len(encoding.encode(role))
+            
+            if role == 'user':
+                num_tokens += len(encoding.encode("Human: "))
+            elif role == 'assistant':
+                num_tokens += len(encoding.encode("Assistant: "))
+            
+            num_tokens += 2  # Each message ends with '\n\n'
+        
+        # Add tokens for the system message if present
+        if messages and isinstance(messages[0], dict) and messages[0].get('role') == 'system':
+            num_tokens += len(encoding.encode("\n\nHuman: "))
+        
         return num_tokens
 
     elif model_name == "gemini-pro":
-        # Gemini uses a different tokenization approach
-        # You can use a custom tokenization method or library here
-        num_tokens = 0
-        for message in messages:
-            # Placeholder for Gemini tokenization logic
-            num_tokens += len(message['content'].split())  # Temporary word count
-        return num_tokens
+        try:
+            genai.configure(api_key="YOUR_GOOGLE_API_KEY")  # Replace with your actual API key
+            model = genai.GenerativeModel('gemini-pro')
+            
+            num_tokens = 0
+            for message in messages:
+                if isinstance(message, dict):
+                    content = message.get('content', '')
+                elif isinstance(message, str):
+                    content = message
+                else:
+                    continue
+
+                # Use the count_tokens method to get an estimate
+                token_count = model.count_tokens(content)
+                num_tokens += token_count.total_tokens
+
+            return num_tokens
+        except Exception as e:
+            print(f"Error counting tokens for Gemini: {e}")
+            # Fallback to word count if there's an error
+            return sum(len(m.get('content', '').split()) if isinstance(m, dict) else len(m.split()) for m in messages)
 
     else:
         # Fallback to a generic tokenization method

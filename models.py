@@ -111,6 +111,7 @@ class SystemMessage(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     source_config = db.Column(JSON)  # Field for storing RAG source configurations
+    uploaded_files = db.relationship('UploadedFile', back_populates='system_message', cascade='all, delete-orphan')
 
     creator = db.relationship('User', backref='created_system_messages')  # Relationship to the user table
 
@@ -159,3 +160,12 @@ class Website(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+
+class UploadedFile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(255), nullable=False)
+    system_message_id = db.Column(db.Integer, db.ForeignKey('system_message.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    system_message = db.relationship('SystemMessage', back_populates='uploaded_files')  
