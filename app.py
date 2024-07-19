@@ -4,7 +4,6 @@ from text_processing import format_text
 from flask_login import LoginManager, current_user, login_required
 from logging.handlers import RotatingFileHandler
 
-# from llama_index_util import add_to_index, query_index
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,6 +30,13 @@ from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename # for secure file uploads
 from google.generativeai import GenerativeModel
 
+# Imports for file uploads
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
+from llama_index.vector_stores.pinecone import PineconeVectorStore
+from llama_index.embeddings.openai import OpenAIEmbedding
+from file_processing import FileProcessor
+from embedding_store import EmbeddingStore
+from pinecone import Pinecone
 
 from openai import OpenAI
 client = OpenAI()
@@ -39,6 +45,13 @@ client = OpenAI()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if openai.api_key is None:
     raise ValueError("OPENAI_API_KEY environment variable not set")
+
+# Initialize Pinecone
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+db_url = os.getenv('DATABASE_URL')
+
+embedding_store = EmbeddingStore(db_url)
+file_processor = FileProcessor(embedding_store)
 
 from auth import auth as auth_blueprint  # Import the auth blueprint
   
@@ -106,6 +119,15 @@ login_manager.init_app(app)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+@app.route('/query_documents', methods=['POST'])
+@login_required
+def query_documents():
+    query = request.json.get('query')
+    file_processor = FileProcessor(embedding_store)
+    results = file_processor.query_index(query)
+    return jsonify({'results': results})
+
 @app.route('/upload_file', methods=['POST'])
 @login_required
 def upload_file():
@@ -123,6 +145,17 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
         
+        try:
+            # Get the storage context for this system message
+            storage_context = embedding_store.get_storage_context(system_message_id)
+            
+            # Process and index the file
+            index = file_processor.process_file(file_path, storage_context)
+            app.logger.info("File processed successfully")
+        except Exception as e:
+            app.logger.error(f"Error processing file: {str(e)}")
+            return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'})
+        
         # Create a new UploadedFile record
         new_file = UploadedFile(
             filename=filename,
@@ -134,7 +167,7 @@ def upload_file():
         db.session.add(new_file)
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'File uploaded successfully'})
+        return jsonify({'success': True, 'message': 'File uploaded and indexed successfully'})
     
     return jsonify({'success': False, 'error': 'File type not allowed'})
 
@@ -158,6 +191,18 @@ def remove_file(file_id):
     # You may want to add additional checks here based on your application's logic
     
     try:
+        # Get the system message ID associated with this file
+        system_message_id = file.system_message_id
+
+        # Get the storage context for this system message
+        storage_context = embedding_store.get_storage_context(system_message_id)
+
+        # Remove the file's content from the vector store
+        vector_store = storage_context.vector_store
+        
+        # Assuming the file's content was indexed using its path as a unique identifier
+        vector_store.delete(file.file_path)
+
         # Remove the file from the filesystem
         if os.path.exists(file.file_path):
             os.remove(file.file_path)
@@ -166,22 +211,12 @@ def remove_file(file_id):
         db.session.delete(file)
         db.session.commit()
         
+        app.logger.info(f"File {file_id} removed successfully from filesystem, database, and vector store.")
         return jsonify({'success': True, 'message': 'File removed successfully'})
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Error removing file {file_id}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/add', methods=['POST'])
-def add_data():
-    data = request.json.get('data')
-    add_to_index(data)
-    return jsonify({'message': 'Data added to index'}), 200
-
-@app.route('/query', methods=['GET'])
-def query():
-    query = request.args.get('query')
-    results = query_index(query)
-    return jsonify({'results': results}), 200
 
 @app.route('/health')
 def health_check():
@@ -750,7 +785,7 @@ def get_response_from_model(client, model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
     """
-    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13"]:
+    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09", "gpt-4o-2024-05-13"]:
         # OpenAI chat models
         payload = {
             "model": model,
@@ -784,12 +819,16 @@ def get_response_from_model(client, model, messages, temperature):
         if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
             anthropic_messages.insert(0, {"role": "user", "content": ""})
 
+        # Set max_tokens based on the model
+        max_tokens = 8192 if model == "claude-3-5-sonnet-20240620" else 4096
+
         # Send the conversation to the Anthropic Messages API
         response = client.messages.create(
             model=model,
             messages=anthropic_messages,
-            max_tokens=2000,  # Specify the maximum number of tokens to generate
-            temperature=temperature
+            max_tokens=max_tokens,
+            temperature=temperature,
+            extra_headers={"anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"} if model == "claude-3-5-sonnet-20240620" else None
         )
         chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
         model_name = model  # Use the provided model name for Anthropic
@@ -814,88 +853,98 @@ def get_response_from_model(client, model, messages, temperature):
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
-    messages = request.json.get('messages')
-    model = request.json.get('model')  # Fetch the model
-    temperature = request.json.get('temperature')  # Fetch the temperature
+    try:
+        messages = request.json.get('messages')
+        model = request.json.get('model')
+        temperature = request.json.get('temperature')
+        system_message_id = request.json.get('system_message_id')
+        if system_message_id is None:
+            app.logger.error("No system_message_id provided in the chat request")
+            return jsonify({'error': 'No system message ID provided'}), 400
+        conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
 
-    # Log the selected model and temperature
-    app.logger.info(f'Received model: {model}')
-    app.logger.info(f'Received temperature: {temperature}')
+        app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}')
 
-    conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
-    conversation = None
+        conversation = None
+        if conversation_id:
+            conversation = Conversation.query.get(conversation_id)
+            if conversation and conversation.user_id == current_user.id:
+                app.logger.info(f'Using existing conversation with id {conversation_id}.')
+            else:
+                app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
+                conversation = None
 
-    if conversation_id:
-        conversation = Conversation.query.get(conversation_id)
-        # Check if the conversation belongs to the current user
-        if conversation and conversation.user_id == current_user.id:
-            app.logger.info(f'Using existing conversation with id {conversation_id}.')
+        app.logger.info(f'Getting storage context for system_message_id: {system_message_id}')
+        storage_context = embedding_store.get_storage_context(system_message_id)
+        app.logger.info(f'Storage context retrieved: {storage_context}')
+
+        user_query = messages[-1]['content']
+        app.logger.info(f'User query: {user_query}')
+
+        try:
+            app.logger.info(f'Querying index with user query: {user_query[:50]}...')  # Log first 50 chars of query
+            relevant_info = file_processor.query_index(user_query, storage_context)
+            app.logger.info(f'Retrieved relevant info: {relevant_info[:100]}...')  # Log first 100 chars
+            if not relevant_info:
+                app.logger.warning('No relevant information found in the index.')
+        except Exception as e:
+            app.logger.error(f'Error querying index: {str(e)}')
+            relevant_info = "No relevant information found."
+
+        context_message = {"role": "system", "content": f"Relevant information: {relevant_info}"}
+        messages.insert(-1, context_message)
+
+        app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')  # Log all messages being sent to the model
+        chat_output, model_name = get_response_from_model(client, model, messages, temperature)
+        app.logger.info(f"Response from model: {chat_output[:100]}...")  # Log first 100 chars
+
+        prompt_tokens = count_tokens(model_name, messages)
+        completion_tokens = count_tokens(model_name, [{"content": chat_output}])
+        total_tokens = prompt_tokens + completion_tokens
+
+        app.logger.info(f'Tokens - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}')
+
+        new_message = {"role": "assistant", "content": chat_output}
+        messages.append(new_message)
+
+        if not conversation:
+            conversation = Conversation(
+                history=json.dumps(messages), 
+                temperature=temperature,
+                user_id=current_user.id,
+                token_count=total_tokens
+            )
+            conversation_title = generate_summary(messages)
+            conversation.title = conversation_title
+            db.session.add(conversation)
+            app.logger.info(f'Created new conversation with title: {conversation_title}')
         else:
-            app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
-            conversation = None
+            conversation.history = json.dumps(messages)
+            conversation.temperature = temperature
+            conversation.token_count += total_tokens
+            app.logger.info(f'Updated existing conversation with id: {conversation.id}')
 
-    # Use the abstracted function to get a response from the appropriate model
-    chat_output, model_name = get_response_from_model(client, model, messages, temperature)
-    app.logger.info("Response from model: {}".format(chat_output))
+        conversation.model_name = model
 
-    # Count tokens in the entire conversation history
-    prompt_tokens = count_tokens(model_name, messages)
+        db.session.commit()
+        session['conversation_id'] = conversation.id
 
-    # Count tokens in the assistant's output
-    completion_tokens = count_tokens(model_name, [{"content": chat_output}])
+        app.logger.info(f'Chat response prepared. Conversation ID: {conversation.id}, Title: {conversation.title}')
 
-    # Calculate total tokens
-    total_tokens = prompt_tokens + completion_tokens
+        return jsonify({
+            'chat_output': chat_output,
+            'conversation_id': conversation.id,
+            'conversation_title': conversation.title,
+            'usage': {
+                'prompt_tokens': prompt_tokens,
+                'completion_tokens': completion_tokens,
+                'total_tokens': total_tokens
+            }
+        })
 
-    # Log the token counts
-    app.logger.info(f'Prompt tokens: {prompt_tokens}')
-    app.logger.info(f'Completion tokens: {completion_tokens}')
-    app.logger.info(f'Total tokens: {total_tokens}')
-
-    new_message = {"role": "assistant", "content": chat_output}
-    messages.append(new_message)  # Append AI's message to the list
-
-    if not conversation:
-        # Create a new Conversation object with the temperature and token counts
-        conversation = Conversation(history=json.dumps(messages), 
-                                    temperature=temperature,
-                                    user_id=current_user.id,
-                                    token_count=total_tokens)
-
-        # Generate the title for the conversation
-        conversation_title = generate_summary(messages)  # Uses GPT-3.5-turbo by default
-
-        # Update the title of the conversation
-        conversation.title = conversation_title
-        
-        db.session.add(conversation)
-    else:
-        # Update existing conversation
-        conversation.history = json.dumps(messages)
-        conversation.temperature = temperature
-        conversation.token_count = conversation.token_count + total_tokens  # Update the token count
-
-    # Update the model name of the conversation
-    conversation.model_name = model
-
-    db.session.commit()
-
-    # Log the messages to ensure they are received correctly
-    app.logger.info(f'Received messages: {messages}')
-                                          
-    # Store/update the conversation ID in session
-    session['conversation_id'] = conversation.id
-
-    return jsonify({
-        'chat_output': chat_output,
-        'conversation_id': conversation.id,
-        'conversation_title': conversation.title,
-        'usage': {
-            'prompt_tokens': prompt_tokens,
-            'completion_tokens': completion_tokens,
-            'total_tokens': total_tokens
-        }
-    })
+    except Exception as e:
+        app.logger.error(f'Unexpected error in chat route: {str(e)}')
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):

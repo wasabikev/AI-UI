@@ -944,7 +944,7 @@ function displaySystemMessage(systemMessage) {
     const temperatureDisplay = systemMessage.temperature;
     const descriptionContent = `<span class="no-margin">${renderOpenAI(systemMessage.description)}</span>`;
     const renderedContent = `
-    <div class="chat-entry system system-message">
+    <div class="chat-entry system system-message" data-system-message-id="${systemMessage.id}">
         <strong>System:</strong>${systemMessageButton}${descriptionContent}<br>
         <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
     </div>`;
@@ -962,6 +962,10 @@ function displaySystemMessage(systemMessage) {
             content: systemMessage.content
         });
     }
+
+    // Set the activeSystemMessageId
+    activeSystemMessageId = systemMessage.id;
+    console.log('Active System Message ID set to:', activeSystemMessageId);
 }
 
 
@@ -1712,7 +1716,8 @@ $('#chat-form').on('submit', function (e) {
     let requestPayload = {
         messages: messages,
         model: model,
-        temperature: selectedTemperature
+        temperature: selectedTemperature,
+        system_message_id: activeSystemMessageId
     };
 
     if (activeConversationId !== null) {
