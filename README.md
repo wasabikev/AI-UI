@@ -18,14 +18,17 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **System Message Customization**: Offers a comprehensive system message management interface, allowing users to create, update, delete, and select system messages with customizable content, model names, and temperature settings.
 - **Flexible AI Behavior**: Users can adjust the "temperature" setting to influence the variability of AI responses and select from different AI models to tailor interactions to their needs.
 - **Dynamic UI and Real-time Feedback**: Features a dynamic user interface that updates in real-time, providing an interactive and responsive user experience.
-
+- **Rich Text Editor**: Incorporates a text area that automatically adjusts its height based on content, providing a seamless user experience for message input.
+**Embedding Storage**: Utilizes Pinecone for efficient storage and retrieval of embeddings, enabling advanced search and similarity matching capabilities.
+**File Upload and Processing**: Supports processing of various file types and text content, creating searchable indexes for enhanced information retrieval.
 
 ## Key Components
 
 - **Backend**: The server is built with Flask and handles API routes, database interactions, and communication with LLM APIs. Prod utilizes Gunicorn.
 - **Frontend**: The frontend is developed using HTML, CSS, JavaScript, Bootstrap, and additional libraries such as Prism.js and Marked.js for enhanced functionality.
-- **Database**: PostgreSQL is used for storing user data, conversation history, and system messages.
-- **System Message Modal**: The system message modal serves as a central hub for orchestrating various layers of interaction, including system message content, model selection, temperature settings, and the integration of controls for adding websites and files.
+- **Database**: PostgreSQL is used for storing user data, conversation history, and system messages. Pinecone is used for vector storage.
+- **System Message Modal**: The system message modal serves as a central hub for orchestrating various layers of interaction, including system message content, model selection, temperature settings, and the integration of controls for adding websites and files. Intended for expansion of additional orchestration layers.
+
 
 ## Main Files & Their Roles
 
@@ -69,6 +72,8 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `reset_conversation()`: Resets the current conversation.
 - `get_response_from_model(model, messages, temperature)`: Routes the request to the appropriate API based on the selected model (OpenAI, Anthropic, and Gemini models).
 - `count_tokens(model_name, messages)`: Counts the number of tokens in the messages based on the model.
+- `get_files()`: Retrieves a list of files associated with a specific system message.
+- `remove_file()`: Removes a file from the filesystem, database, and vector store.
 
 ### main.js
 
@@ -94,6 +99,12 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - `openModalAndShowGroup(targetGroup)` and `toggleContentGroup(groupID)`: These functions manage the visibility of content groups within modals. openModalAndShowGroup is used to open a modal and display a specific content group by hiding others and showing the targeted one. toggleContentGroup handles the visibility toggle of content groups within a modal, ensuring only the selected group is visible while others are hidden. Both functions are essential for dynamic UI interactions within modals, allowing for context-specific displays.
 - `saveWebsiteURL(websiteURL, systemMessageId)`: Saves a website URL associated with a particular system message to the backend. Handles POST request and error management.
 
+### embedding_store.py
+`__init__(self, db_url)`: Initializes the EmbeddingStore with Pinecone configuration.`generate_db_identifier(self, db_url)`: Generates a unique identifier for the database.`get_embed_model(self)`: Returns the OpenAI embedding model.`get_storage_context(self, system_message_id)`: Creates and returns a storage context for a given system message.`generate_namespace(self, system_message_id)`: Generates a unique namespace for a system message.
+
+### file_processing.py
+`process_file(self, file_path, storage_context)`: Processes a file and creates an index.`process_text(self, text_content, metadata, storage_context)`: Processes text content and creates an index.`_create_index(self, documents, storage_context)`: Creates an index from documents.`query_index(self, query_text, storage_context)`: Performs a RAG query on the index.
+
 ### Global Variables
 
 messages: An array that stores the conversation messages.
@@ -117,6 +128,8 @@ activeWebsiteId: Stores the currently active website ID for the Websites Group.
 - `Folder`: Manages groups of conversations, allowing users to categorize and organize conversations into folders for better usability and management.
 - `UserUsage`: Tracks the usage details of users, including the API used, tokens consumed, session timings, and cost. This model helps in monitoring and managing the resource utilization by individual users.
 
+
+
 ### Modal-Based User Interface Guidelines
 
 - In our project, we prioritize a modal-based approach for user interfaces when requesting input or displaying information that requires user interaction. This approach ensures a consistent, accessible, and user-friendly experience across the application. 
@@ -139,6 +152,10 @@ activeWebsiteId: Stores the currently active website ID for the Websites Group.
 **DOMPurify**: Sanitizes HTML and prevents XSS attacks.
 **tiktoken**: A tokenizer library used for counting tokens in messages based on the selected model.
 **google.generativeai**: A library for interacting with Google's Generative AI models (e.g., Gemini).
+**Pinecone**: Vector database for efficient storage and retrieval of embeddings.
+**LlamaIndex**: Framework for building RAG applications and connecting LLMs with external data.
+
+## Setting up API Keys
 
 ## Feature Roadmap
 **Support for Additional AI Models**: Integrate more models from different providers to enhance versatility.

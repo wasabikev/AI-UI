@@ -1324,10 +1324,19 @@ function copyCodeToClipboard(button) {
 }
 
 function createMessageElement(message) {
-    // Handle the system message differently to include the model name and temperature
-    if (message.role === 'system') {
+    if (message.content.includes("<Added Context Provided by Vector Search>")) {
+        // This is a vector search result, apply the vector search styling
+        const vectorSearchContent = message.content.replace("<Added Context Provided by Vector Search>", "").replace("</Added Context Provided by Vector Search>", "").trim();
+        const vectorSearchHTML = `
+            <div class="chat-entry vector-search">
+                <img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon">
+                <strong>Vector Search Results:</strong><br>
+                <pre>${vectorSearchContent}</pre>
+            </div>`;
+        return $(vectorSearchHTML);
+    } else if (message.role === 'system') {
+        // Handle system messages as before
         let systemMessageContent = renderOpenAI(message.content);
-        // Prepare the display content for system message
         const systemMessageHTML = `
             <div class="chat-entry system system-message">
                 <strong>System:</strong> ${systemMessageContent}<br>
@@ -1335,14 +1344,13 @@ function createMessageElement(message) {
             </div>`;
         return $(systemMessageHTML);
     } else {
+        // Handle user and assistant messages as before
         const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
         const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
         let processedContent;
         if (message.role === 'user') {
-            // Escape HTML entities in user input to prevent rendering
             processedContent = escapeHtml(message.content);
         } else {
-            // Use renderOpenAI to process both Markdown and code
             processedContent = renderOpenAI(message.content);
         }
         const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
@@ -1747,6 +1755,16 @@ $('#chat-form').on('submit', function (e) {
     })
     .then(data => {
         console.log("Complete server response:", data);
+
+        // Display vector search results
+        if (data.vector_search_results) {
+            const vectorSearchDiv = $('<div class="chat-entry vector-search">')
+                .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
+                .append('<strong>Vector Search Results:</strong><br>')
+                .append($('<pre>').text(data.vector_search_results));
+            $('#chat').append(vectorSearchDiv);
+        }
+
         const renderedBotOutput = renderOpenAI(data.chat_output);
         const botMessageDiv = $('<div class="chat-entry bot bot-message">')
             .append('<i class="fas fa-robot"></i> ')

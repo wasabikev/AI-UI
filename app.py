@@ -145,17 +145,6 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
         
-        try:
-            # Get the storage context for this system message
-            storage_context = embedding_store.get_storage_context(system_message_id)
-            
-            # Process and index the file
-            index = file_processor.process_file(file_path, storage_context)
-            app.logger.info("File processed successfully")
-        except Exception as e:
-            app.logger.error(f"Error processing file: {str(e)}")
-            return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'})
-        
         # Create a new UploadedFile record
         new_file = UploadedFile(
             filename=filename,
@@ -163,9 +152,20 @@ def upload_file():
             system_message_id=system_message_id
         )
         
-        # Add and commit the new file to the database
+        # Add and commit the new file to the database to get the id
         db.session.add(new_file)
         db.session.commit()
+        
+        try:
+            # Get the storage context for this system message
+            storage_context = embedding_store.get_storage_context(system_message_id)
+            
+            # Process and index the file
+            index = file_processor.process_file(file_path, storage_context, new_file.id)
+            app.logger.info("File processed successfully")
+        except Exception as e:
+            app.logger.error(f"Error processing file: {str(e)}")
+            return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'})
         
         return jsonify({'success': True, 'message': 'File uploaded and indexed successfully'})
     
@@ -187,9 +187,6 @@ def get_files(system_message_id):
 def remove_file(file_id):
     file = UploadedFile.query.get_or_404(file_id)
     
-    # Check if the current user has permission to remove this file
-    # You may want to add additional checks here based on your application's logic
-    
     try:
         # Get the system message ID associated with this file
         system_message_id = file.system_message_id
@@ -200,8 +197,11 @@ def remove_file(file_id):
         # Remove the file's content from the vector store
         vector_store = storage_context.vector_store
         
-        # Assuming the file's content was indexed using its path as a unique identifier
-        vector_store.delete(file.file_path)
+        # Get the namespace for this system message
+        namespace = embedding_store.generate_namespace(system_message_id)
+        
+        # Delete vectors for the file
+        delete_vectors_for_file(vector_store, file.id, namespace)
 
         # Remove the file from the filesystem
         if os.path.exists(file.file_path):
@@ -217,6 +217,38 @@ def remove_file(file_id):
         db.session.rollback()
         app.logger.error(f"Error removing file {file_id}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+    
+def delete_vectors_for_file(vector_store, file_id, namespace):
+    try:
+        # Get the Pinecone index from the vector store
+        pinecone_index = vector_store._pinecone_index
+
+        # Query for vectors related to this file
+        query_response = pinecone_index.query(
+            namespace=namespace,
+            vector=[0] * 1536,  # Dummy vector of zeros
+            # This query is a workaround for Serverless and Starter Pinecone indexes, which don't support
+            # metadata filtering during deletion. We're fetching a large number of vectors and filtering
+            # them client-side to find those associated with the file we want to delete. (higher values may slow down the query).
+            top_k=10000,  # Adjust this value based on your needs
+            include_metadata=True
+        )
+
+        # Filter the results to only include vectors with matching file_id
+        vector_ids = [
+            match.id for match in query_response.matches 
+            if match.metadata.get('file_id') == str(file_id)
+        ]
+
+        if vector_ids:
+            # Delete the vectors
+            delete_response = pinecone_index.delete(ids=vector_ids, namespace=namespace)
+            app.logger.info(f"Deleted {len(vector_ids)} vectors for file ID: {file_id}. Delete response: {delete_response}")
+        else:
+            app.logger.warning(f"No vectors found for file ID: {file_id}")
+    except Exception as e:
+        app.logger.error(f"Error deleting vectors for file ID {file_id}: {str(e)}")
+        raise
 
 @app.route('/health')
 def health_check():
@@ -891,8 +923,11 @@ def chat():
             app.logger.error(f'Error querying index: {str(e)}')
             relevant_info = "No relevant information found."
 
-        context_message = {"role": "system", "content": f"Relevant information: {relevant_info}"}
-        messages.insert(-1, context_message)
+        context_message = {
+            "role": "system", 
+            "content": f"<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
+        }
+        messages.append(context_message)
 
         app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')  # Log all messages being sent to the model
         chat_output, model_name = get_response_from_model(client, model, messages, temperature)
@@ -935,6 +970,7 @@ def chat():
             'chat_output': chat_output,
             'conversation_id': conversation.id,
             'conversation_title': conversation.title,
+            'vector_search_results': relevant_info,  # Include the vector search results in the response
             'usage': {
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens,
