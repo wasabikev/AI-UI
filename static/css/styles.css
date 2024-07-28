@@ -32,6 +32,40 @@ h2 {
     display: none;
 }
 
+/********** Vector Search Results Styles *****************/
+
+.chat-entry.vector-search {
+    background-color: #E4EFF2;
+    padding-left: 30px;
+    padding-top: 15px;
+    padding-bottom: 10px;
+    padding-right: 200px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+
+.chat-entry.vector-search .pinecone-icon {
+    width: 40px;
+    height: 40px;
+    margin-left: 10px;
+    margin-right: 5px;
+    margin-top: 3px;
+}
+
+
+.chat-entry.vector-search pre {
+    white-space: pre-wrap;
+    padding-left: 20px;
+    word-wrap: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: inherit; /* Use the same font as the rest of the chat */
+    font-size: inherit; /* Match the font size */
+}
+
 
 /*********** System Message Modal Styles *****************/
 
@@ -642,6 +676,7 @@ pre code {
     margin-top: 0px;
     margin-bottom: 0px;
     border-radius: 4px;
+    border-bottom: 1px solid #ddd; /* thin grey border */
     width: 100%;
 }
 

@@ -54,7 +54,8 @@ class EmbeddingStore:
             vector_store = PineconeVectorStore(
                 pinecone_index=pinecone_index,
                 text_key="content",
-                namespace=namespace
+                namespace=namespace,
+                metadata_filters={"file_id": "str"}  # Ensure file_id is always a string and enables filtering
             )
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
             print(f"Created storage context for system message ID: {system_message_id}, namespace: {namespace}")
