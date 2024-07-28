@@ -3,28 +3,19 @@
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Document
 from llama_index.core.node_parser import SimpleNodeParser
 from llama_index.core.ingestion import IngestionPipeline
-from llm_whisper_processor import LLMWhisperProcessor
 
 class FileProcessor:
     def __init__(self, embedding_store):
         self.embedding_store = embedding_store
-        self.llm_whisper = LLMWhisperProcessor()
 
     def process_file(self, file_path, storage_context, file_id):
         try:
-            # Check if the file is a PDF
-            if file_path.lower().endswith('.pdf'):
-                # Use LLMWhisperer for PDF files
-                extracted_text = self.llm_whisper.process_file(file_path)
-                if extracted_text is None:
-                    return None
-                documents = [Document(text=extracted_text, metadata={'file_id': str(file_id)})]
-            else:
-                # Use original logic for non-PDF files
-                documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
-                # Add file_id to metadata for each document
-                for doc in documents:
-                    doc.metadata['file_id'] = str(file_id)
+            # Load document
+            documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
+            
+            # Add file_id to metadata for each document
+            for doc in documents:
+                doc.metadata['file_id'] = str(file_id)
             
             return self._create_index(documents, storage_context)
         except ImportError as e:
@@ -83,6 +74,3 @@ class FileProcessor:
         except Exception as e:
             print(f"Error querying index: {e}")
             return None
-
-    def highlight_text(self, whisper_hash, search_text):
-        return self.llm_whisper.highlight_text(whisper_hash, search_text)
