@@ -192,9 +192,6 @@ function uploadFile() {
     fileInput.click();
 }
 
-function initializeAndUpdateFileList(systemMessageId) {
-    fetchFileList(systemMessageId);
-}
 
 function fetchFileList(systemMessageId) {
     const fileList = document.getElementById('fileList');
@@ -896,8 +893,6 @@ function populateSystemMessageModal() {
             // Fetch and display file list for the selected system message
             fetchFileList(message.id);
 
-            // Initialize and update file list
-            initializeAndUpdateFileList(message.id);
         };
         dropdownMenu.appendChild(dropdownItem);
     });
@@ -918,8 +913,6 @@ function populateSystemMessageModal() {
         
         fetchFileList(defaultSystemMessage.id);// Fetch and display file list for the default system message
 
-        // Initialize and update file list for default message
-        initializeAndUpdateFileList(defaultSystemMessage.id);
     }
 }
 
