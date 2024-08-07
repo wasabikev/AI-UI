@@ -923,11 +923,9 @@ def chat():
             app.logger.error(f'Error querying index: {str(e)}')
             relevant_info = "No relevant information found."
 
-        context_message = {
-            "role": "system", 
-            "content": f"<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
-        }
-        messages.append(context_message)
+        # Append vector search results to the user query instead of as a separate system message
+        user_query += f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
+        messages[-1]['content'] = user_query
 
         app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')  # Log all messages being sent to the model
         chat_output, model_name = get_response_from_model(client, model, messages, temperature)

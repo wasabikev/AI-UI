@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify, render_template, url_for, redirect, session
+from flask import Flask, request, jsonify, render_template, url_for, redirect, session, abort
 from flask_cors import CORS
 from text_processing import format_text
 from flask_login import LoginManager, current_user, login_required
 from logging.handlers import RotatingFileHandler
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -17,20 +18,43 @@ import logging
 import anthropic
 import tiktoken 
 import google.generativeai as genai
-import logging
 import subprocess # imported to support Scrapy
 
 import requests
 import json
 
-from models import db, Folder, Conversation, User, SystemMessage, Website
+from models import db, Folder, Conversation, User, SystemMessage, Website, UploadedFile
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler # for log file rotation
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename # for secure file uploads
 from google.generativeai import GenerativeModel
 
-from auth import auth as auth_blueprint  # Import the auth blueprint
+# Imports for file uploads
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
+from llama_index.vector_stores.pinecone import PineconeVectorStore
+from llama_index.embeddings.openai import OpenAIEmbedding
+from file_processing import FileProcessor
+from embedding_store import EmbeddingStore
+from pinecone import Pinecone
 
+from openai import OpenAI
+client = OpenAI()
+
+# Initialize OpenAI client
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if openai.api_key is None:
+    raise ValueError("OPENAI_API_KEY environment variable not set")
+
+# Initialize Pinecone
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+db_url = os.getenv('DATABASE_URL')
+
+embedding_store = EmbeddingStore(db_url)
+file_processor = FileProcessor(embedding_store)
+
+from auth import auth as auth_blueprint  # Import the auth blueprint
+  
 # Set debug directly here. Switch to False for production.
 debug_mode = True
 
@@ -44,11 +68,19 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO if debug_mode else logging.WARNING)
 console_handler.setFormatter(formatter)
 
-
-## Application Setup
+# Application Setup
 app = Flask(__name__)
 CORS(app)  # Cross-Origin Resource Sharing
 app.config['DEBUG'] = debug_mode
+
+# Add handlers to the app's logger
+app.logger.addHandler(handler)
+app.logger.addHandler(console_handler)
+
+# Ensure that all log messages are propagated to the app's logger
+app.logger.propagate = False
+
+app.register_blueprint(auth_blueprint)  # Registers auth with Flask application
 
 # Enable auto-reload of templates
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -66,21 +98,170 @@ migrate = Migrate(app, db)
 
 app.logger.info("Logging is set up.")
 
+# Set up file upload folder
+UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
+
+# Ensure upload folder exists
+try:
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+except OSError as e:
+    print(f"Error creating upload folder: {e}")
+    
+
 # Initialize the login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/query_documents', methods=['POST'])
+@login_required
+def query_documents():
+    query = request.json.get('query')
+    file_processor = FileProcessor(embedding_store)
+    results = file_processor.query_index(query)
+    return jsonify({'results': results})
+
+@app.route('/upload_file', methods=['POST'])
+@login_required
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file part'})
+    
+    file = request.files['file']
+    system_message_id = request.form.get('system_message_id')
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No selected file'})
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # Create a new UploadedFile record
+        new_file = UploadedFile(
+            filename=filename,
+            file_path=file_path,
+            system_message_id=system_message_id
+        )
+        
+        # Add and commit the new file to the database to get the id
+        db.session.add(new_file)
+        db.session.commit()
+        
+        try:
+            # Get the storage context for this system message
+            storage_context = embedding_store.get_storage_context(system_message_id)
+            
+            # Process and index the file
+            index = file_processor.process_file(file_path, storage_context, new_file.id)
+            app.logger.info("File processed successfully")
+        except Exception as e:
+            app.logger.error(f"Error processing file: {str(e)}")
+            return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'})
+        
+        return jsonify({'success': True, 'message': 'File uploaded and indexed successfully'})
+    
+    return jsonify({'success': False, 'error': 'File type not allowed'})
+
+@app.route('/get_files/<int:system_message_id>')
+@login_required
+def get_files(system_message_id):
+    try:
+        files = UploadedFile.query.filter_by(system_message_id=system_message_id).all()
+        file_list = [{'id': file.id, 'filename': file.filename} for file in files]
+        return jsonify({'success': True, 'files': file_list})
+    except Exception as e:
+        app.logger.error(f"Error fetching files: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/remove_file/<int:file_id>', methods=['DELETE'])
+@login_required
+def remove_file(file_id):
+    file = UploadedFile.query.get_or_404(file_id)
+    
+    try:
+        # Get the system message ID associated with this file
+        system_message_id = file.system_message_id
+
+        # Get the storage context for this system message
+        storage_context = embedding_store.get_storage_context(system_message_id)
+
+        # Remove the file's content from the vector store
+        vector_store = storage_context.vector_store
+        
+        # Get the namespace for this system message
+        namespace = embedding_store.generate_namespace(system_message_id)
+        
+        # Delete vectors for the file
+        delete_vectors_for_file(vector_store, file.id, namespace)
+
+        # Remove the file from the filesystem
+        if os.path.exists(file.file_path):
+            os.remove(file.file_path)
+        
+        # Remove the file record from the database
+        db.session.delete(file)
+        db.session.commit()
+        
+        app.logger.info(f"File {file_id} removed successfully from filesystem, database, and vector store.")
+        return jsonify({'success': True, 'message': 'File removed successfully'})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error removing file {file_id}: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+def delete_vectors_for_file(vector_store, file_id, namespace):
+    try:
+        # Get the Pinecone index from the vector store
+        pinecone_index = vector_store._pinecone_index
+
+        # Query for vectors related to this file
+        query_response = pinecone_index.query(
+            namespace=namespace,
+            vector=[0] * 1536,  # Dummy vector of zeros
+            # This query is a workaround for Serverless and Starter Pinecone indexes, which don't support
+            # metadata filtering during deletion. We're fetching a large number of vectors and filtering
+            # them client-side to find those associated with the file we want to delete. (higher values may slow down the query).
+            top_k=10000,  # Adjust this value based on your needs
+            include_metadata=True
+        )
+
+        # Filter the results to only include vectors with matching file_id
+        vector_ids = [
+            match.id for match in query_response.matches 
+            if match.metadata.get('file_id') == str(file_id)
+        ]
+
+        if vector_ids:
+            # Delete the vectors
+            delete_response = pinecone_index.delete(ids=vector_ids, namespace=namespace)
+            app.logger.info(f"Deleted {len(vector_ids)} vectors for file ID: {file_id}. Delete response: {delete_response}")
+        else:
+            app.logger.warning(f"No vectors found for file ID: {file_id}")
+    except Exception as e:
+        app.logger.error(f"Error deleting vectors for file ID {file_id}: {str(e)}")
+        raise
 
 @app.route('/health')
 def health_check():
     return 'OK', 200
 
 @app.route('/get-website/<int:website_id>', methods=['GET'])
+@login_required
 def get_website(website_id):
     app.logger.debug(f"Attempting to fetch website with ID: {website_id}")
     try:
-        website = Website.query.get(website_id)
-        app.logger.debug(f"SQL Query: {str(Website.query.get(website_id))}")  # Log the query
+        query = Website.query.get(website_id)
+        app.logger.debug(f"Query executed: {query}")  # Log the actual query object
+        website = query
         if not website:
             app.logger.warning(f"No website found with ID: {website_id}")
             return jsonify({'error': 'Website not found'}), 404
@@ -90,7 +271,13 @@ def get_website(website_id):
         app.logger.error(f"Exception occurred: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/test-website', methods=['GET'])
+@login_required
+def test_website():
+    return jsonify({'message': 'Route is working'}), 200
+
 @app.route('/index-website', methods=['POST'])
+@login_required
 def index_website():
     data = request.get_json()
     app.logger.debug(f"Received indexing request with data: {data}")
@@ -99,7 +286,7 @@ def index_website():
         app.logger.error("URL is missing from request data")
         return jsonify({'success': False, 'message': 'URL is required'}), 400
 
-    allowed_domain = data.get('allowed_domain', '')  # Ensure it's defined if needed
+    allowed_domain = data.get('allowed_domain', '')
     custom_settings = data.get('custom_settings', {})
 
     # Run Scrapy spider
@@ -111,28 +298,63 @@ def index_website():
     )
     stdout, stderr = process.communicate()
 
+    stdout_decoded = stdout.decode('utf-8', errors='replace')
+    stderr_decoded = stderr.decode('utf-8', errors='replace')
+    app.logger.debug("STDOUT: %s", stdout_decoded)
+    app.logger.debug("STDERR: %s", stderr_decoded)
+
     if process.returncode != 0:
-        return jsonify({'success': False, 'message': 'Error during scraping',
-                        'error': stderr.decode('utf-8')}), 500
+        app.logger.error("Scraping failed with error: %s", stderr_decoded)
+        return jsonify({'success': False, 'message': 'Error during scraping', 'error': stderr_decoded}), 500
 
-    # Extract content from Scrapy output
+    if stdout_decoded:
+        try:
+            scraped_content = json.loads(stdout_decoded)
+            if 'content' in scraped_content:
+                return jsonify({'success': True, 'message': 'Website indexed successfully', 'content': scraped_content['content']}), 200
+            else:
+                app.logger.error("Expected key 'content' not found in JSON output")
+                return jsonify({'success': False, 'message': 'Expected data not found in the scraped output'}), 500
+        except json.JSONDecodeError as e:
+            app.logger.error("Error decoding JSON from scraping output: %s", str(e))
+            return jsonify({'success': False, 'message': 'Invalid JSON data received', 'details': stdout_decoded}), 500
+    else:
+        app.logger.error("No data received from spider")
+        return jsonify({'success': False, 'message': 'No data received from spider'}), 500
+
+@app.route('/scrape', methods=['POST'])
+@login_required
+def scrape():
+    data = request.get_json()
+    url = data.get('url')
+    allowed_domain = data.get('allowed_domain', '')
+
+    command = [
+        'scrapy', 'runspider', 'webscraper/spiders/flexible_spider.py',
+        '-a', f'url={url}', '-a', f'allowed_domain={allowed_domain}'
+    ]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+
+    if process.returncode != 0:
+        app.logger.error(f"Spider error: {stderr.decode()}")
+        return jsonify({'error': 'Failed to scrape the website'}), 500
+
     try:
-        scraped_content = json.loads(stdout.decode('utf-8'))
-        text_content = scraped_content[0]['content']
-    except json.JSONDecodeError as e:
-        app.logger.error(f"Error decoding JSON from scraping output: {str(e)}")
-        return jsonify({'success': False, 'message': 'Error processing scraping data'}), 500
-
-    # Assuming preprocessing and storage in a vector database are handled here.
-    return jsonify({'success': True, 'message': 'Website indexed successfully', 'content': text_content}), 200
-
+        result = json.loads(stdout.decode())
+        return jsonify({'data': result['content']}), 200
+    except json.JSONDecodeError:
+        app.logger.error("Failed to decode JSON from spider output")
+        return jsonify({'error': 'Failed to decode JSON from spider output'}), 500
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
+@login_required
 def get_websites(system_message_id):
     websites = Website.query.filter_by(system_message_id=system_message_id).all()
     return jsonify({'websites': [website.to_dict() for website in websites]}), 200
 
 @app.route('/add-website', methods=['POST'])
+@login_required
 def add_website():
     data = request.get_json()
     url = data.get('url')
@@ -155,6 +377,7 @@ def add_website():
     return jsonify({'success': True, 'message': 'Website added successfully', 'website': new_website.to_dict()}), 201
 
 @app.route('/remove-website/<int:website_id>', methods=['DELETE'])
+@login_required
 def remove_website(website_id):
     website = Website.query.get_or_404(website_id)
     db.session.delete(website)
@@ -162,6 +385,7 @@ def remove_website(website_id):
     return jsonify({'success': True, 'message': 'Website removed successfully'}), 200
 
 @app.route('/reindex-website/<int:website_id>', methods=['POST'])
+@login_required
 def reindex_website(website_id):
     website = Website.query.get_or_404(website_id)
     # Trigger re-indexing logic here (e.g., update indexed_at, change status)
@@ -172,6 +396,7 @@ def reindex_website(website_id):
     return jsonify({'message': 'Re-indexing initiated', 'website': website.to_dict()}), 200
 
 @app.route('/generate-image', methods=['POST'])
+@login_required
 def generate_image():
     data = request.json
     prompt = data.get('prompt', '')
@@ -191,8 +416,8 @@ def generate_image():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/view-logs')
+@login_required
 def view_logs():
     logs_content = "<link rel='stylesheet' type='text/css' href='/static/css/styles.css'><div class='logs-container'>"
     try:
@@ -209,8 +434,6 @@ def view_logs():
 def load_user(user_id):
     from models import User  # Import here to avoid circular dependencies
     return User.query.get(int(user_id))
-
-
 
 # Configure authentication using your API key
 genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
@@ -279,6 +502,7 @@ def init_app():
                 print(f"Error creating default system message: {e}")
 
 @app.route('/api/system-messages/<int:system_message_id>/add-website', methods=['POST'])
+@login_required
 def add_website_to_system_message(system_message_id):
     data = request.json
     website_url = data.get('websiteURL')
@@ -292,8 +516,6 @@ def add_website_to_system_message(system_message_id):
         return jsonify({'message': 'Website URL added successfully'}), 200
     else:
         return jsonify({'error': 'System message not found'}), 404
-
-
 
 @app.route('/get-current-model', methods=['GET'])
 @login_required
@@ -367,12 +589,10 @@ def delete_system_message(message_id):
     db.session.commit()
     return jsonify({'message': 'System message deleted successfully'})
 
-
 @app.route('/trigger-flash')
 def trigger_flash():
     flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
     return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
-
 
 @app.route('/chat/<int:conversation_id>')
 @login_required
@@ -380,12 +600,10 @@ def chat_interface(conversation_id):
     conversation = Conversation.query.get_or_404(conversation_id)
     return render_template('chat.html', conversation=conversation)
 
-
 # Fetch all conversations from the database and convert them to a list of dictionaries
 def get_conversations_from_db():
     conversations = Conversation.query.all()
     return [conv.to_dict() for conv in conversations]
-
 
 @app.route('/database')
 def database():
@@ -396,7 +614,6 @@ def database():
     except Exception as e:
         print(e)  # For debugging purposes
         return "Error fetching data from the database", 500
-
 
 @app.cli.command("clear-db")
 def clear_db():
@@ -448,7 +665,6 @@ def get_conversations():
                            "temperature": c.temperature} 
                           for c in conversations]  
     return jsonify(conversations_dict)
-
 
 # Fetch a specific conversation from the database to display in the chat interface
 @app.route('/conversations/<int:conversation_id>', methods=['GET'])
@@ -527,11 +743,6 @@ def delete_conversation(conversation_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
-if openai.api_key is None:
-    raise ValueError("OPENAI_API_KEY environment variable not set")
-
 @app.route('/')
 def home():
     app.logger.info("Home route accessed")
@@ -553,14 +764,10 @@ def home():
         # If not logged in, redirect to the login page
         return redirect(url_for('auth.login'))
 
-
-
 @app.route('/clear-session', methods=['POST'])
 def clear_session():
     session.clear()
-    
     return jsonify({"message": "Session cleared"}), 200
-
 
 def estimate_token_count(text):
     # Simplistic estimation. You may need a more accurate method.
@@ -579,14 +786,15 @@ def generate_summary(messages):
         "messages": [
             {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text:\n" + conversation_history}
         ],
-        "max_tokens": 10
+        "max_tokens": 10,
+        "temperature": 0.5  # Adjust the temperature if needed
     }
 
     app.logger.info(f"Sending summary request to OpenAI: {summary_request_payload}")
 
     try:
-        response = openai.ChatCompletion.create(**summary_request_payload)
-        summary = response['choices'][0]['message']['content'].strip()
+        response = client.chat.completions.create(**summary_request_payload)
+        summary = response.choices[0].message.content.strip()
         app.logger.info(f"Response from OpenAI for summary: {response}")
         app.logger.info(f"Generated conversation summary: {summary}")
     except Exception as e:
@@ -605,23 +813,22 @@ def reset_conversation():
         del session['conversation_id']
     return jsonify({"message": "Conversation reset successful"})
 
-
-
-def get_response_from_model(model, messages, temperature):
+def get_response_from_model(client, model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
     """
-    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13"]:
-        # OpenAI models
+    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09", "gpt-4o-2024-05-13"]:
+        # OpenAI chat models
         payload = {
             "model": model,
             "messages": messages,
-            "temperature": temperature
+            "temperature": temperature,
+            "max_tokens": 1500  # You can adjust max_tokens as needed
         }
-        response = openai.ChatCompletion.create(**payload)
-        chat_output = response['choices'][0]['message']['content']
-        model_name = response['model']  # Extract the model name from the API response
-    elif model == "claude-3-opus-20240229":
+        response = client.chat.completions.create(**payload)
+        chat_output = response.choices[0].message.content.strip()
+        model_name = response.model
+    elif model in ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620"]:
         # Anthropic model
         client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
@@ -644,12 +851,16 @@ def get_response_from_model(model, messages, temperature):
         if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
             anthropic_messages.insert(0, {"role": "user", "content": ""})
 
+        # Set max_tokens based on the model
+        max_tokens = 8192 if model == "claude-3-5-sonnet-20240620" else 4096
+
         # Send the conversation to the Anthropic Messages API
         response = client.messages.create(
             model=model,
             messages=anthropic_messages,
-            max_tokens=2000,  # Specify the maximum number of tokens to generate
-            temperature=temperature
+            max_tokens=max_tokens,
+            temperature=temperature,
+            extra_headers={"anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"} if model == "claude-3-5-sonnet-20240620" else None
         )
         chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
         model_name = model  # Use the provided model name for Anthropic
@@ -670,119 +881,185 @@ def get_response_from_model(model, messages, temperature):
     return chat_output, model_name
 
 
+
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
-    messages = request.json.get('messages')
-    model = request.json.get('model')  # Fetch the model
-    temperature = request.json.get('temperature')  # Fetch the temperature
+    try:
+        messages = request.json.get('messages')
+        model = request.json.get('model')
+        temperature = request.json.get('temperature')
+        system_message_id = request.json.get('system_message_id')
+        if system_message_id is None:
+            app.logger.error("No system_message_id provided in the chat request")
+            return jsonify({'error': 'No system message ID provided'}), 400
+        conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
 
-    # Log the selected model and temperature
-    app.logger.info(f'Received model: {model}')
-    app.logger.info(f'Received temperature: {temperature}')
+        app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}')
 
-    conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
-    conversation = None
+        conversation = None
+        if conversation_id:
+            conversation = Conversation.query.get(conversation_id)
+            if conversation and conversation.user_id == current_user.id:
+                app.logger.info(f'Using existing conversation with id {conversation_id}.')
+            else:
+                app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
+                conversation = None
 
-    if conversation_id:
-        conversation = Conversation.query.get(conversation_id)
-        # Check if the conversation belongs to the current user
-        if conversation and conversation.user_id == current_user.id:
-            app.logger.info(f'Using existing conversation with id {conversation_id}.')
-        else:
-            app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
-            conversation = None
+        app.logger.info(f'Getting storage context for system_message_id: {system_message_id}')
+        storage_context = embedding_store.get_storage_context(system_message_id)
+        app.logger.info(f'Storage context retrieved: {storage_context}')
 
-    # Use the abstracted function to get a response from the appropriate model
-    chat_output, model_name = get_response_from_model(model, messages, temperature)
-    app.logger.info("Response from model: {}".format(chat_output))
+        user_query = messages[-1]['content']
+        app.logger.info(f'User query: {user_query}')
 
-    # Count tokens in the entire conversation history
-    prompt_tokens = count_tokens(model_name, messages)
+        try:
+            app.logger.info(f'Querying index with user query: {user_query[:50]}...')  # Log first 50 chars of query
+            relevant_info = file_processor.query_index(user_query, storage_context)
+            app.logger.info(f'Retrieved relevant info: {relevant_info[:100]}...')  # Log first 100 chars
+            if not relevant_info:
+                app.logger.warning('No relevant information found in the index.')
+        except Exception as e:
+            app.logger.error(f'Error querying index: {str(e)}')
+            relevant_info = "No relevant information found."
 
-    # Count tokens in the assistant's output
-    completion_tokens = count_tokens(model_name, [{"content": chat_output}])
-
-    # Calculate total tokens
-    total_tokens = prompt_tokens + completion_tokens
-
-    # Log the token counts
-    app.logger.info(f'Prompt tokens: {prompt_tokens}')
-    app.logger.info(f'Completion tokens: {completion_tokens}')
-    app.logger.info(f'Total tokens: {total_tokens}')
-
-    new_message = {"role": "assistant", "content": chat_output}
-    messages.append(new_message)  # Append AI's message to the list
-
-    if not conversation:
-        # Create a new Conversation object with the temperature and token counts
-        conversation = Conversation(history=json.dumps(messages), 
-                                    temperature=temperature,
-                                    user_id=current_user.id,
-                                    token_count=total_tokens)
-
-        # Generate the title for the conversation
-        conversation_title = generate_summary(messages)  # Uses GPT-3.5-turbo by default
-
-        # Update the title of the conversation
-        conversation.title = conversation_title
-        
-        db.session.add(conversation)
-    else:
-        # Update existing conversation
-        conversation.history = json.dumps(messages)
-        conversation.temperature = temperature
-        conversation.token_count = conversation.token_count + total_tokens  # Update the token count
-
-    # Update the model name of the conversation
-    conversation.model_name = model
-
-    db.session.commit()
-
-    # Log the messages to ensure they are received correctly
-    app.logger.info(f'Received messages: {messages}')
-                                          
-    # Store/update the conversation ID in session
-    session['conversation_id'] = conversation.id
-
-    return jsonify({
-        'chat_output': chat_output,
-        'conversation_id': conversation.id,
-        'conversation_title': conversation.title,
-        'usage': {
-            'prompt_tokens': prompt_tokens,
-            'completion_tokens': completion_tokens,
-            'total_tokens': total_tokens
+        context_message = {
+            "role": "system", 
+            "content": f"<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
         }
-    })
+        messages.append(context_message)
+
+        app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')  # Log all messages being sent to the model
+        chat_output, model_name = get_response_from_model(client, model, messages, temperature)
+        app.logger.info(f"Response from model: {chat_output[:100]}...")  # Log first 100 chars
+
+        prompt_tokens = count_tokens(model_name, messages)
+        completion_tokens = count_tokens(model_name, [{"content": chat_output}])
+        total_tokens = prompt_tokens + completion_tokens
+
+        app.logger.info(f'Tokens - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}')
+
+        new_message = {"role": "assistant", "content": chat_output}
+        messages.append(new_message)
+
+        if not conversation:
+            conversation = Conversation(
+                history=json.dumps(messages), 
+                temperature=temperature,
+                user_id=current_user.id,
+                token_count=total_tokens
+            )
+            conversation_title = generate_summary(messages)
+            conversation.title = conversation_title
+            db.session.add(conversation)
+            app.logger.info(f'Created new conversation with title: {conversation_title}')
+        else:
+            conversation.history = json.dumps(messages)
+            conversation.temperature = temperature
+            conversation.token_count += total_tokens
+            app.logger.info(f'Updated existing conversation with id: {conversation.id}')
+
+        conversation.model_name = model
+
+        db.session.commit()
+        session['conversation_id'] = conversation.id
+
+        app.logger.info(f'Chat response prepared. Conversation ID: {conversation.id}, Title: {conversation.title}')
+
+        return jsonify({
+            'chat_output': chat_output,
+            'conversation_id': conversation.id,
+            'conversation_title': conversation.title,
+            'vector_search_results': relevant_info,  # Include the vector search results in the response
+            'usage': {
+                'prompt_tokens': prompt_tokens,
+                'completion_tokens': completion_tokens,
+                'total_tokens': total_tokens
+            }
+        })
+
+    except Exception as e:
+        app.logger.error(f'Unexpected error in chat route: {str(e)}')
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
         try:
             encoding = tiktoken.encoding_for_model(model_name)
         except KeyError:
-            raise ValueError(f"Tokenizer not found for model: {model_name}")
+            # Fallback to cl100k_base encoding if the specific model encoding is not found
+            encoding = tiktoken.get_encoding("cl100k_base")
         
         num_tokens = 0
         for message in messages:
+            # Count tokens in the content
             num_tokens += len(encoding.encode(message['content']))
+            
+            # Add tokens for role (and potentially name)
+            num_tokens += 4  # Every message follows <im_start>{role/name}\n{content}<im_end>\n
+            if 'name' in message:
+                num_tokens += len(encoding.encode(message['name']))
+        
+        # Add tokens for the messages separator
+        num_tokens += 2  # Every reply is primed with <im_start>assistant
+        
         return num_tokens
 
     elif model_name.startswith("claude-"):
         encoding = tiktoken.get_encoding("cl100k_base")
         num_tokens = 0
+        
         for message in messages:
-            num_tokens += len(encoding.encode(message['content']))
+            if isinstance(message, dict):
+                content = message.get('content', '')
+                role = message.get('role', '')
+            elif isinstance(message, str):
+                content = message
+                role = ''
+            else:
+                continue  # Skip if message is neither dict nor str
+
+            num_tokens += len(encoding.encode(content))
+            
+            if role:
+                num_tokens += len(encoding.encode(role))
+            
+            if role == 'user':
+                num_tokens += len(encoding.encode("Human: "))
+            elif role == 'assistant':
+                num_tokens += len(encoding.encode("Assistant: "))
+            
+            num_tokens += 2  # Each message ends with '\n\n'
+        
+        # Add tokens for the system message if present
+        if messages and isinstance(messages[0], dict) and messages[0].get('role') == 'system':
+            num_tokens += len(encoding.encode("\n\nHuman: "))
+        
         return num_tokens
 
     elif model_name == "gemini-pro":
-        # Gemini uses a different tokenization approach
-        # You can use a custom tokenization method or library here
-        num_tokens = 0
-        for message in messages:
-            # Placeholder for Gemini tokenization logic
-            num_tokens += len(message['content'].split())  # Temporary word count
-        return num_tokens
+        try:
+            genai.configure(api_key="YOUR_GOOGLE_API_KEY")  # Replace with your actual API key
+            model = genai.GenerativeModel('gemini-pro')
+            
+            num_tokens = 0
+            for message in messages:
+                if isinstance(message, dict):
+                    content = message.get('content', '')
+                elif isinstance(message, str):
+                    content = message
+                else:
+                    continue
+
+                # Use the count_tokens method to get an estimate
+                token_count = model.count_tokens(content)
+                num_tokens += token_count.total_tokens
+
+            return num_tokens
+        except Exception as e:
+            print(f"Error counting tokens for Gemini: {e}")
+            # Fallback to word count if there's an error
+            return sum(len(m.get('content', '').split()) if isinstance(m, dict) else len(m.split()) for m in messages)
 
     else:
         # Fallback to a generic tokenization method
@@ -790,7 +1067,6 @@ def count_tokens(model_name, messages):
         for message in messages:
             num_tokens += len(message['content'].split())  # Fallback to word count
         return num_tokens
-
 
 @app.route('/get_active_conversation', methods=['GET'])
 def get_active_conversation():
@@ -802,5 +1078,3 @@ if __name__ == '__main__':
     # Set host to '0.0.0.0' to make the server externally visible
     port = int(os.getenv('PORT', 8080))  # Needs to be set to 8080
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
-
-

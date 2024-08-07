@@ -19,8 +19,8 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 - **Flexible AI Behavior**: Users can adjust the "temperature" setting to influence the variability of AI responses and select from different AI models to tailor interactions to their needs.
 - **Dynamic UI and Real-time Feedback**: Features a dynamic user interface that updates in real-time, providing an interactive and responsive user experience.
 - **Rich Text Editor**: Incorporates a text area that automatically adjusts its height based on content, providing a seamless user experience for message input.
-**Embedding Storage**: Utilizes Pinecone for efficient storage and retrieval of embeddings, enabling advanced search and similarity matching capabilities.
-**File Upload and Processing**: Supports processing of various file types and text content, creating searchable indexes for enhanced information retrieval.
+- **Embedding Storage**: Utilizes Pinecone for efficient storage and retrieval of embeddings, enabling advanced search and similarity matching capabilities.
+- **File Upload and Processing**: Supports processing of various file types and text content, creating searchable indexes for enhanced information retrieval.
 
 ## Key Components
 
@@ -154,6 +154,7 @@ activeWebsiteId: Stores the currently active website ID for the Websites Group.
 **google.generativeai**: A library for interacting with Google's Generative AI models (e.g., Gemini).
 **Pinecone**: Vector database for efficient storage and retrieval of embeddings.
 **LlamaIndex**: Framework for building RAG applications and connecting LLMs with external data.
+**Unstract LLMWhisperer**: An API for extracting and structuring text from complex PDF documents, enhancing the accuracy and efficiency of document processing for LLMs.
 
 ## Setting up API Keys
 
