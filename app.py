@@ -923,7 +923,7 @@ def chat():
             app.logger.error(f'Error querying index: {str(e)}')
             relevant_info = "No relevant information found."
 
-        # Append vector search results to the user query instead of as a separate system message
+        # Append vector search results to the user query instead of as a separate system message (Update needed)
         user_query += f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
         messages[-1]['content'] = user_query
 
