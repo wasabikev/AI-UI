@@ -914,22 +914,36 @@ def chat():
         app.logger.info(f'User query: {user_query}')
 
         try:
-            app.logger.info(f'Querying index with user query: {user_query[:50]}...')  # Log first 50 chars of query
+            app.logger.info(f'Querying index with user query: {user_query[:50]}...')
             relevant_info = file_processor.query_index(user_query, storage_context)
-            app.logger.info(f'Retrieved relevant info: {relevant_info[:100]}...')  # Log first 100 chars
-            if not relevant_info:
+            app.logger.info(f'Retrieved relevant info: {relevant_info[:100]}...')
+            if not relevant_info or relevant_info.strip() == "":
                 app.logger.warning('No relevant information found in the index.')
+                relevant_info = None
         except Exception as e:
             app.logger.error(f'Error querying index: {str(e)}')
-            relevant_info = "No relevant information found."
+            relevant_info = None
 
-        # Append vector search results to the user query instead of as a separate system message (Update needed)
-        user_query += f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
-        messages[-1]['content'] = user_query
+        # Update the system message with the vector search results only if relevant_info is not None
+        system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
+        if relevant_info:
+            vector_search_content = f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
+            
+            if system_message:
+                system_message['content'] += vector_search_content
+            else:
+                # If there's no system message, create one
+                messages.insert(0, {
+                    "role": "system",
+                    "content": vector_search_content.strip()
+                })
+        
+        # Log the updated system message
+        app.logger.info(f"Updated system message: {system_message['content'] if system_message else 'No system message'}")
 
-        app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')  # Log all messages being sent to the model
+        app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')
         chat_output, model_name = get_response_from_model(client, model, messages, temperature)
-        app.logger.info(f"Response from model: {chat_output[:100]}...")  # Log first 100 chars
+        app.logger.info(f"Response from model: {chat_output[:100]}...")
 
         prompt_tokens = count_tokens(model_name, messages)
         completion_tokens = count_tokens(model_name, [{"content": chat_output}])
@@ -968,13 +982,14 @@ def chat():
             'chat_output': chat_output,
             'conversation_id': conversation.id,
             'conversation_title': conversation.title,
-            'vector_search_results': relevant_info,  # Include the vector search results in the response
+            'vector_search_results': relevant_info if relevant_info else "No results found",
+            'system_message_content': system_message['content'] if system_message else None,
             'usage': {
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens,
                 'total_tokens': total_tokens
             }
-        })
+        })  
 
     except Exception as e:
         app.logger.error(f'Unexpected error in chat route: {str(e)}')

@@ -1317,22 +1317,34 @@ function copyCodeToClipboard(button) {
 }
 
 function createMessageElement(message) {
-    if (message.content.includes("<Added Context Provided by Vector Search>")) {
-        // This is a vector search result, apply the vector search styling
-        const vectorSearchContent = message.content.replace("<Added Context Provided by Vector Search>", "").replace("</Added Context Provided by Vector Search>", "").trim();
-        const vectorSearchHTML = `
-            <div class="chat-entry vector-search">
-                <img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon">
-                <strong>Vector Search Results:</strong><br>
-                <pre>${vectorSearchContent}</pre>
-            </div>`;
-        return $(vectorSearchHTML);
-    } else if (message.role === 'system') {
-        // Handle system messages as before
-        let systemMessageContent = renderOpenAI(message.content);
+    if (message.role === 'system') {
+        // Handle system messages
+        let systemMessageContent = message.content;
+
+        // Extract and format vector search results
+        const vectorSearchRegex = /<Added Context Provided by Vector Search>([\s\S]*?)<\/Added Context Provided by Vector Search>/g;
+        let match;
+        let vectorSearchResults = [];
+
+        while ((match = vectorSearchRegex.exec(systemMessageContent)) !== null) {
+            let content = match[1].trim();
+            if (content !== "Empty Response") {
+                vectorSearchResults.push(`<br><strong>Added Context:</strong><br> ${escapeHtml(content)}<br>`);
+            }
+        }
+
+        // Remove vector search tags from the system message
+        systemMessageContent = systemMessageContent.replace(vectorSearchRegex, '').trim();
+
+        // Render the main system message content
+        let renderedContent = renderOpenAI(systemMessageContent);
+
+        // Combine the main content with vector search results
+        let fullContent = renderedContent + vectorSearchResults.join('');
+
         const systemMessageHTML = `
             <div class="chat-entry system system-message">
-                <strong>System:</strong> ${systemMessageContent}<br>
+                <strong>System:</strong> ${fullContent}<br>
                 <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
             </div>`;
         return $(systemMessageHTML);
@@ -1350,6 +1362,7 @@ function createMessageElement(message) {
         return $(messageHTML);
     }
 }
+
 
 // Function to render Markdown and code snippets
 function renderMarkdownAndCode(content) {
@@ -1586,7 +1599,7 @@ function loadConversation(conversationId) {
             messages = data.history;
             console.log(`Received conversation data for id: ${conversationId}`);
             console.log('Token Count:', data.token_count);
-            console.log("Retrieved model name:", data.model_name); // Log the retrieved model name
+            console.log("Retrieved model name:", data.model_name);
 
             // Update the dropdown display based on the model name from the conversation
             const modelName = data.model_name;
@@ -1595,7 +1608,7 @@ function loadConversation(conversationId) {
             model = modelName;
 
             // Retrieve and handle the temperature setting
-            selectedTemperature = data.temperature || 0.3; // Use the temperature from the data, or default to 0.3 if it's null/undefined
+            selectedTemperature = data.temperature || 0.3;
 
             // Update the token data in the UI for restored conversations
             const tokens = {
@@ -1618,17 +1631,13 @@ function loadConversation(conversationId) {
             });
 
             // After all messages are added to the DOM, call MathJax to typeset the entire chat container
-            // We use setTimeout to delay the call to MathJax.typesetPromise to ensure the DOM is fully updated
             setTimeout(function() {
                 MathJax.typesetPromise().then(() => {
                     console.log('MathJax has finished typesetting.');
                 }).catch((err) => console.log('Error typesetting math content: ', err));
-            }, 0); // You can increase the delay if needed, but sometimes even a delay of 0 is enough
+            }, 0);
 
             Prism.highlightAll(); // Highlight code blocks after adding content to the DOM
-
-            // Important! Update the 'messages' array with the loaded conversation history
-            messages = data.history;
 
             console.log(`Chat updated with messages from conversation id: ${conversationId}`);
 
@@ -1643,15 +1652,17 @@ function loadConversation(conversationId) {
 
 
 
-
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
 
-// This function is called when the user submits the form.
 $('#chat-form').on('submit', function (e) {
     console.log('Chat form submitted with user input:', $('#user_input').val());
     e.preventDefault();
     var userInput = $('#user_input').val();
+
+    if (!messages) {
+        messages = [];
+    }
 
     var userInputDiv = $('<div class="chat-entry user user-message">')
         .append('<i class="far fa-user"></i> ')
@@ -1667,52 +1678,6 @@ $('#chat-form').on('submit', function (e) {
     userInputTextarea.css('height', defaultHeight);
 
     document.getElementById('loading').style.display = 'block';
-
-    // Check if the user input is a command to generate an image
-    if (userInput.toLowerCase().startsWith("generate image of")) {
-        let prompt = userInput.substring("generate image of".length).trim();
-        console.log('Generating image with prompt:', prompt);
-
-        fetch('/generate-image', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt: prompt })
-        })
-        .then(response => {
-            console.log('Received response from /generate-image endpoint:', response);
-
-            document.getElementById('loading').style.display = 'none';
-
-            if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(text);
-                });
-            }
-
-            return response.json();
-        })
-        .then(data => {
-            console.log("Complete server response from image generation:", data);
-            const imageElement = $('<img>').attr('src', data.image_url).addClass('img-fluid');
-            const botMessageDiv = $('<div class="chat-entry bot bot-message">')
-                .append('<i class="fas fa-robot"></i> ')
-                .append(imageElement);
-            $('#chat').append(botMessageDiv);
-
-            $('#chat').scrollTop($('#chat')[0].scrollHeight);
-            messages.push({ "role": "assistant", "content": data.image_url });
-
-            console.log('End of image generation handling');
-        })
-        .catch(error => {
-            console.error('Error processing image generation:', error);
-            document.getElementById('loading').style.display = 'none';
-        });
-
-        return; // Exit the function early since we handled the image generation
-    }
 
     let requestPayload = {
         messages: messages,
@@ -1750,12 +1715,18 @@ $('#chat-form').on('submit', function (e) {
         console.log("Complete server response:", data);
 
         // Display vector search results
-        if (data.vector_search_results) {
+        if (data.vector_search_results && data.vector_search_results !== "No results found") {
             const vectorSearchDiv = $('<div class="chat-entry vector-search">')
                 .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
-                .append('<strong>Vector Search Results:</strong><br>')
-                .append($('<pre>').text(data.vector_search_results));
+                .append('<strong>Semantic Search Results:</strong> ')
+                .append($('<span>').text(data.vector_search_results));
             $('#chat').append(vectorSearchDiv);
+        } else {
+            const noResultsDiv = $('<div class="chat-entry vector-search">')
+                .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
+                .append('<strong>Semantic Search Results:</strong> ')
+                .append($('<span>').text("No results found"));
+            $('#chat').append(noResultsDiv);
         }
 
         const renderedBotOutput = renderOpenAI(data.chat_output);
@@ -1765,7 +1736,19 @@ $('#chat-form').on('submit', function (e) {
         $('#chat').append(botMessageDiv);
 
         $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        
+        // Update messages array with the new assistant message
         messages.push({ "role": "assistant", "content": data.chat_output });
+
+        // Update the system message in the messages array only if there's new content
+        if (data.system_message_content) {
+            const systemMessageIndex = messages.findIndex(msg => msg.role === 'system');
+            if (systemMessageIndex !== -1) {
+                messages[systemMessageIndex].content = data.system_message_content;
+            } else {
+                messages.unshift({ "role": "system", "content": data.system_message_content });
+            }
+        }
 
         // Call MathJax to typeset the new message
         MathJax.typesetPromise().then(() => {
@@ -1796,8 +1779,6 @@ $('#chat-form').on('submit', function (e) {
         document.getElementById('loading').style.display = 'none';
     });
 });
-
-
 
 // This function checks if there's an active conversation in the session.
 function checkActiveConversation() {
