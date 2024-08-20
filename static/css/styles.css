@@ -122,6 +122,81 @@ h2 {
     height: 400px;  /* Orchestration content groups real estate available */
 }
 
+.toggle-switch {
+    position: relative;
+    width: 80px; /* Increased from 60px */
+    user-select: none;
+}
+
+.toggle-switch-checkbox {
+    display: none;
+}
+
+.toggle-switch-label {
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid #999999;
+    border-radius: 20px;
+}
+
+.toggle-switch-inner {
+    display: block;
+    width: 200%;
+    margin-left: -100%;
+    transition: margin 0.3s ease-in 0s;
+}
+
+.toggle-switch-inner:before, .toggle-switch-inner:after {
+    display: block;
+    float: left;
+    width: 50%;
+    height: 30px;
+    padding: 0;
+    line-height: 30px;
+    font-size: 12px; /* Slightly reduced font size */
+    color: white;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.toggle-switch-inner:before {
+    content: "ON";
+    padding-left: 12px; /* Adjusted padding */
+    background-color: #34A7C1;
+    color: #FFFFFF;
+}
+
+.toggle-switch-inner:after {
+    content: "OFF";
+    padding-right: 12px; /* Adjusted padding */
+    background-color: #EEEEEE;
+    color: #999999;
+    text-align: right;
+}
+
+.toggle-switch-switch {
+    display: block;
+    width: 22px; /* Slightly increased width */
+    margin: 4px;
+    background: #FFFFFF;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 46px; /* Adjusted to new width */
+    border: 2px solid #999999;
+    border-radius: 20px;
+    transition: all 0.3s ease-in 0s;
+}
+
+.toggle-switch-checkbox:checked + .toggle-switch-label .toggle-switch-inner {
+    margin-left: 0;
+}
+
+.toggle-switch-checkbox:checked + .toggle-switch-label .toggle-switch-switch {
+    right: 0px;
+}
+
 /********** view-logs Styles *****************/
 
 .log-entry {
@@ -274,6 +349,7 @@ h2 {
 
 #websitesGroup {
     color: white; /* Ensures all text within the group is white */
+    margin-bottom: -23px; /* Adjust the bottom margin as needed */
 }
 
 .website-control-btn {

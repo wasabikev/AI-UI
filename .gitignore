@@ -3,3 +3,13 @@ private/
 venv/
 app.log
 app.log.*
+
+uploads/
+processed_texts/
+
+styles.backup.css
+chat.backup.html
+app.py.backup.py
+auth.py.backup.py
+models.backup.py
+backup.js

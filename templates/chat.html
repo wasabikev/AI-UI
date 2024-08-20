@@ -328,10 +328,23 @@
                                 <!-- Websites Group -->
                                 <div class="col-md-12">
                                     <div id="websitesGroup" class="modal-content-group hidden">
+                                        <!-- Web Browsing Activation -->
+                                        <hr>
+                                        <div class="form-group">
+                                            <label for="enableWebSearch" class="mb-0">Enable Web Search</label>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="enableWebSearch" class="toggle-switch-checkbox" name="enableWebSearch">
+                                                <label class="toggle-switch-label" for="enableWebSearch">
+                                                    <span class="toggle-switch-inner"></span>
+                                                    <span class="toggle-switch-switch"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <hr>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group" style="margin-top: -7px;">
-                                                    <label for="websiteURL">Website URL</label>
+                                                    <label for="websiteURL">Scrape Website</label>
                                                     <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
                                                 </div>
                                             </div>
@@ -340,31 +353,21 @@
                                                 <button id="removeWebsiteButton" type="button" class="btn btn-info website-control-btn" style="display: none;">Remove Website</button>
                                             </div>
                                         </div>
-                                        <hr>
-                                        <div id="websiteDetails" class="mt-3">
-                                            <h5>Website Details</h5>
+                                        
+                                        <div id="websiteDetails">
+                                            <h5>Indexing Details</h5>
                                             <div class="detail-item" style="position: relative;">
                                                 <strong>Indexing Status:</strong> <span id="indexingStatus">N/A</span>
                                                 <button id="indexWebsiteButton" type="button" class="btn btn-info website-control-btn index-website-btn">Index Website</button>
                                             </div>
                                             <div class="detail-item">
-                                                <strong>Indexed At:</strong> <span id="indexedAt">N/A</span>
-                                            </div>
-                                            <div class="detail-item">
-                                                <strong>Last Error:</strong> <span id="lastError">N/A</span>
-                                            </div>
-                                            <div class="detail-item">
                                                 <strong>Indexing Frequency:</strong> <span id="indexingFrequency">N/A</span>
                                             </div>
-                                            <div class="detail-item">
-                                                <strong>Created At:</strong> <span id="createdAt">N/A</span>
-                                            </div>
-                                            <div class="detail-item">
-                                                <strong>Updated At:</strong> <span id="updatedAt">N/A</span>
-                                            </div>
                                         </div>
+                                        
                                     </div> <!-- End of websites group -->
                                 </div> <!-- End of Bootstrap column -->
+
                                                                 
                                 <!-- Files Group -->
                                 <div class="col-md-12">
