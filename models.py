@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import JSON  # Import JSON support
+from sqlalchemy import Boolean
 
 db = SQLAlchemy()
 
@@ -111,6 +112,7 @@ class SystemMessage(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     source_config = db.Column(JSON)  # Field for storing RAG source configurations
+    enable_web_search = db.Column(db.Boolean, default=False)  # Field for enabling web search
     uploaded_files = db.relationship('UploadedFile', back_populates='system_message', cascade='all, delete-orphan')
 
     creator = db.relationship('User', backref='created_system_messages')  # Relationship to the user table
@@ -129,7 +131,8 @@ class SystemMessage(db.Model):
             'created_by': self.created_by,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
-            'source_config': self.source_config,  # Include the source config in the dictionary representation
+            'source_config': self.source_config,
+            'enable_web_search': self.enable_web_search,  
         }
 
 class Website(db.Model):
