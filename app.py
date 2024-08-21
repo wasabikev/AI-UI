@@ -119,6 +119,17 @@ login_manager.init_app(app)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/api/system-messages/<int:system_message_id>/toggle-web-search', methods=['POST'])
+@login_required
+def toggle_web_search(system_message_id):
+    data = request.json
+    enable_web_search = data.get('enableWebSearch')
+    
+    system_message = SystemMessage.query.get_or_404(system_message_id)
+    system_message.enable_web_search = enable_web_search
+    db.session.commit()
+    
+    return jsonify({'message': 'Web search setting updated successfully'}), 200
 
 @app.route('/query_documents', methods=['POST'])
 @login_required
@@ -529,9 +540,9 @@ def get_current_model():
         return jsonify({'error': 'Default system message not found'}), 404
 
 @app.route('/system-messages', methods=['POST'])
-@login_required  # Ensure only authenticated users can perform this action
+@login_required
 def create_system_message():
-    if not current_user.is_admin:  # Ensure only admins can create system messages
+    if not current_user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
@@ -541,7 +552,8 @@ def create_system_message():
         description=data.get('description', ''),
         model_name=data.get('model_name', ''),
         temperature=data.get('temperature', 0.7),
-        created_by=current_user.id
+        created_by=current_user.id,
+        enable_web_search=data.get('enable_web_search', False)
     )
     db.session.add(new_system_message)
     db.session.commit()
@@ -557,7 +569,8 @@ def get_system_messages():
         'content': message.content,
         'description': message.description,
         'model_name': message.model_name,
-        'temperature': message.temperature
+        'temperature': message.temperature,
+        'enable_web_search': message.enable_web_search
     } for message in system_messages])
 
 @app.route('/system-messages/<int:message_id>', methods=['PUT'])
@@ -574,6 +587,7 @@ def update_system_message(message_id):
     system_message.description = data.get('description', system_message.description)
     system_message.model_name = data.get('model_name', system_message.model_name)
     system_message.temperature = data.get('temperature', system_message.temperature)
+    system_message.enable_web_search = data.get('enable_web_search', system_message.enable_web_search)
 
     db.session.commit()
     return jsonify(system_message.to_dict())
