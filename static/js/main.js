@@ -14,6 +14,7 @@ let activeSystemMessageId = null; // Variable to track the currently active syst
 let showTemperature = false;  // Tracks the visibility of the temperature settings
 let selectedTemperature = 0.7; // Default temperature value
 let activeWebsiteId = null;  // This will store the currently active website ID for the Websites Group
+let tempWebSearchState = false; // This will store the temporary web search state
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -37,6 +38,13 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error('Error during system message fetch and display:', error);
     });
 });
+
+document.getElementById('enableWebSearch').addEventListener('change', function() {
+    tempWebSearchState = this.checked;
+    console.log('Temporary web search state updated:', tempWebSearchState);
+});
+
+
 
 document.getElementById('indexWebsiteButton').addEventListener('click', function() {
     const websiteId = activeWebsiteId; // Use the global variable for the active website ID
@@ -190,6 +198,22 @@ function uploadFile() {
     };
 
     fileInput.click();
+}
+
+function initializeAndUpdateFileList(systemMessageId) {
+    console.log('Initializing and updating file list for system message ID:', systemMessageId);
+    
+    // Clear existing file list
+    const fileList = document.getElementById('fileList');
+    if (fileList) {
+        fileList.innerHTML = '';
+    }
+
+    // Fetch and display the file list
+    fetchFileList(systemMessageId);
+
+    // Update the more files indicator
+    updateMoreFilesIndicator();
 }
 
 
@@ -454,11 +478,7 @@ function formatDate(dateString) {
 
 function clearWebsiteDetails() {
     document.getElementById('indexingStatus').textContent = 'N/A';
-    document.getElementById('indexedAt').textContent = 'N/A';
-    document.getElementById('lastError').textContent = 'N/A';
     document.getElementById('indexingFrequency').textContent = 'N/A';
-    document.getElementById('createdAt').textContent = 'N/A';
-    document.getElementById('updatedAt').textContent = 'N/A';
     document.getElementById('websiteURL').value = '';
 
     // Hide the Index Website button
@@ -634,6 +654,75 @@ function updateStatus() {
     document.getElementById('statusUpdateForm').submit();
 }
 
+function updateTemperatureSelectionInModal(temperature) {
+    console.log("Updating temperature in modal to:", temperature);
+    selectedTemperature = temperature;
+    document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
+        radio.checked = parseFloat(radio.value) === parseFloat(temperature);
+    });
+    updateTemperatureDisplay(); // Update the display to reflect the change
+}
+
+function populateSystemMessageModal() {
+    let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
+    let dropdownButton = document.getElementById('systemMessageDropdown');
+
+    if (!dropdownMenu || !dropdownButton) {
+        console.error("Required elements not found in the DOM.");
+        return;
+    }
+
+    dropdownMenu.innerHTML = '';
+
+    console.log('Populating system message modal...');
+    systemMessages.forEach((message) => {
+        let dropdownItem = document.createElement('button');
+        dropdownItem.className = 'dropdown-item';
+        dropdownItem.textContent = message.name;
+        dropdownItem.onclick = function() {
+            dropdownButton.textContent = this.textContent;
+            document.getElementById('systemMessageName').value = message.name || '';
+            document.getElementById('systemMessageDescription').value = message.description || '';
+            document.getElementById('systemMessageContent').value = message.content || '';
+            document.getElementById('systemMessageModal').dataset.messageId = message.id;
+            document.getElementById('enableWebSearch').checked = message.enable_web_search;
+
+            currentSystemMessageDescription = message.description;
+            initialTemperature = message.temperature;
+            selectedTemperature = message.temperature;
+            model = message.model_name;
+            activeSystemMessageId = message.id;
+
+            updateTemperatureSelectionInModal(message.temperature);
+            updateModelDropdownInModal(message.model_name);
+            loadWebsitesForSystemMessage(message.id);
+            fetchFileList(message.id);
+        };
+        dropdownMenu.appendChild(dropdownItem);
+    });
+
+    if (!activeSystemMessageId && systemMessages.length > 0) {
+        const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message") || systemMessages[0];
+        activeSystemMessageId = defaultSystemMessage.id;
+        loadWebsitesForSystemMessage(defaultSystemMessage.id);
+        dropdownButton.textContent = defaultSystemMessage.name;
+        document.getElementById('systemMessageName').value = defaultSystemMessage.name;
+        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
+        document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
+        document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
+        document.getElementById('enableWebSearch').checked = defaultSystemMessage.enable_web_search;
+        initialTemperature = defaultSystemMessage.temperature;
+        updateTemperatureSelectionInModal(initialTemperature);
+        updateModelDropdownInModal(defaultSystemMessage.model_name);
+        model = defaultSystemMessage.model_name;
+        
+        fetchFileList(defaultSystemMessage.id);
+    }
+
+    // Reset the isSaved flag
+    isSaved = false;
+}
+
 function fetchAndProcessSystemMessages() {
     return new Promise((resolve, reject) => {
         fetch('/api/system_messages')
@@ -730,6 +819,7 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
     const messageContent = document.getElementById('systemMessageContent').value;
     const modelName = document.getElementById('modalModelDropdownButton').dataset.apiName;
     const temperature = selectedTemperature;
+    const enableWebSearch = tempWebSearchState;
 
     const messageId = document.getElementById('systemMessageModal').dataset.messageId;
 
@@ -738,183 +828,71 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         const existingMessage = systemMessages.find(message => message.name.toLowerCase() === messageName.toLowerCase());
         if (existingMessage) {
             showModalFlashMessage("Please select a different name. That name is already in use.", "warning");
-            return; // Stop the function from proceeding further
+            return;
         }
     }
 
-    if (messageId) {
-        // Updating an existing system message
-        $.ajax({
-            url: `/system-messages/${messageId}`,
-            method: 'PUT',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                name: messageName,
-                description: messageDescription,
-                content: messageContent,
-                model_name: modelName,
-                temperature: selectedTemperature
-            }),
-            success: function(response) {
-                console.log('System message updated successfully:', response);
+    const messageData = {
+        name: messageName,
+        description: messageDescription,
+        content: messageContent,
+        model_name: modelName,
+        temperature: temperature,
+        enable_web_search: enableWebSearch
+    };
 
-                // Set the isSaved flag to true here to indicate changes were saved
-                isSaved = true;
+    const url = messageId ? `/system-messages/${messageId}` : '/system-messages';
+    const method = messageId ? 'PUT' : 'POST';
 
-                // Set the activeSystemMessageId to the ID of the system message that was just saved
-                activeSystemMessageId = messageId;
+    $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify(messageData),
+        success: function(response) {
+            console.log('System message saved successfully:', response);
 
-                // Update the global model variable
-                model = modelName;
-                console.log('Global model variable updated to:', model);
+            // Set the isSaved flag to true
+            isSaved = true;
 
-                // Fetch and process system messages
-                fetchAndProcessSystemMessages().then(() => {
-                    // Update the selected temperature and the temperature display
-                    selectedTemperature = temperature;
-                    console.log("Temperature after AJAX response:", selectedTemperature);
-                    updateTemperatureDisplay();
+            // Update the global model variable
+            model = modelName;
+            console.log('Global model variable updated to:', model);
 
-                    // Update the model dropdown on the main page
-                    $('#dropdownMenuButton').text(modelNameMapping(modelName));
+            // Update the selected temperature and the temperature display
+            selectedTemperature = temperature;
+            console.log("Temperature after AJAX response:", selectedTemperature);
+            updateTemperatureDisplay();
 
-                    // Update the system message display with the updated system message object
-                const updatedSystemMessage = {
-                    id: messageId,
-                    name: messageName,
-                    description: messageDescription,
-                    content: messageContent,
-                    model_name: modelName,
-                    temperature: temperature
-                };
-                displaySystemMessage(updatedSystemMessage);
+            // Update the model dropdown on the main page
+            $('#dropdownMenuButton').text(modelNameMapping(modelName));
 
-                    $('#systemMessageModal').modal('hide');
-                });
-            },
-            error: function(error) {
-                console.error('Error updating system message:', error);
-            }
-        });
-    } else {
-        // Creating a new system message
-        $.ajax({
-            url: `/system-messages`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                name: messageName,
-                description: messageDescription,
-                content: messageContent,
-                model_name: modelName,
-                temperature: temperature
-            }),
-            success: function(response) {
-                console.log('System message created successfully:', response);
+            // Close the modal
+            $('#systemMessageModal').modal('hide');
 
-                // Fetch the updated list of system messages
-                fetchAndProcessSystemMessages().then(() => {
-                    // Assuming response contains the new system message ID, update activeSystemMessageId
-                    activeSystemMessageId = response.id;
+            // Fetch and process system messages, then update the UI
+            fetchAndProcessSystemMessages().then(() => {
+                // Find the updated or new message in the refreshed systemMessages array
+                const updatedMessage = systemMessages.find(msg => msg.id === (response.id || messageId));
+                if (updatedMessage) {
+                    // Set the activeSystemMessageId
+                    activeSystemMessageId = updatedMessage.id;
+                    // Display the updated system message
+                    displaySystemMessage(updatedMessage);
+                } else {
+                    console.error('Could not find the updated system message in the array');
+                }
+            });
+        },
+        error: function(error) {
+            console.error('Error saving system message:', error);
+            showModalFlashMessage("Error saving system message", "danger");
+        }
+    });
 
-                    // Update the system message display with the updated system message object
-                const updatedSystemMessage = {
-                    id: messageId,
-                    name: messageName,
-                    description: messageDescription,
-                    content: messageContent,
-                    model_name: modelName,
-                    temperature: temperature
-                };
-                displaySystemMessage(updatedSystemMessage);
-
-                    // Close the modal
-                    $('#systemMessageModal').modal('hide');
-                });
-            },
-            error: function(error) {
-                console.error('Error creating system message:', error);
-            }
-        });
-    }
+    // Reset the temporary web search state after saving
+    tempWebSearchState = false;
 });
-
-
-function updateTemperatureSelectionInModal(temperature) {
-    console.log("Updating temperature in modal to:", temperature);
-    selectedTemperature = temperature;
-    document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
-        radio.checked = parseFloat(radio.value) === parseFloat(temperature);
-    });
-    updateTemperatureDisplay(); // Update the display to reflect the change
-}
-
-// Function to populate the system message modal
-function populateSystemMessageModal() {
-    let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
-    let dropdownButton = document.getElementById('systemMessageDropdown'); // Button for the dropdown
-
-    if (!dropdownMenu || !dropdownButton) {
-        console.error("Required elements not found in the DOM.");
-        return;
-    }
-
-    // Clear existing dropdown items
-    dropdownMenu.innerHTML = '';
-
-    // Add each system message to the dropdown
-    console.log('Populating system message modal...');
-    systemMessages.forEach((message, index) => {
-        let dropdownItem = document.createElement('button');
-        dropdownItem.className = 'dropdown-item';
-        dropdownItem.textContent = message.name;
-        dropdownItem.onclick = function() {
-            // Update the dropdown button text and modal content
-            dropdownButton.textContent = this.textContent; // Update the system message dropdown button text
-            document.getElementById('systemMessageName').value = message.name || '';
-            document.getElementById('systemMessageDescription').value = message.description || '';
-            document.getElementById('systemMessageContent').value = message.content || '';
-            document.getElementById('systemMessageModal').dataset.messageId = message.id;
-
-            // Update global and modal-specific variables
-            currentSystemMessageDescription = message.description;
-            initialTemperature = message.temperature;
-            selectedTemperature = message.temperature;
-            model = message.model_name; // Update the global model variable
-            activeSystemMessageId = message.id; // Update the active system message ID
-
-            // Update UI elements
-            updateTemperatureSelectionInModal(message.temperature);
-            updateModelDropdownInModal(message.model_name);
-
-            // Load websites for the selected system message
-            loadWebsitesForSystemMessage(message.id);
-
-            // Fetch and display file list for the selected system message
-            fetchFileList(message.id);
-
-        };
-        dropdownMenu.appendChild(dropdownItem);
-    });
-
-    // Handle default system message selection
-    if (!activeSystemMessageId && systemMessages.length > 0) {
-        const defaultSystemMessage = systemMessages[0]; // Assuming the first message is the default
-        activeSystemMessageId = defaultSystemMessage.id;
-        loadWebsitesForSystemMessage(defaultSystemMessage.id);
-        dropdownButton.textContent = defaultSystemMessage.name;
-        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
-        document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
-        document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
-        initialTemperature = defaultSystemMessage.temperature;
-        updateTemperatureSelectionInModal(initialTemperature);
-        updateModelDropdownInModal(defaultSystemMessage.model_name);
-        model = defaultSystemMessage.model_name;
-        
-        fetchFileList(defaultSystemMessage.id);// Fetch and display file list for the default system message
-
-    }
-}
 
 function updateTemperatureDisplay() {
     // Get the value of the currently selected temperature
@@ -1170,27 +1148,53 @@ $('#systemMessageModal').on('show.bs.modal', function () {
     // Show the selected group
     $('#' + targetGroup).removeClass('hidden');
 
-    // Setup the dropdown for selecting the model.
-    populateModelDropdownInModal();
+    // Fetch the latest system messages data
+    fetchAndProcessSystemMessages().then(() => {
+        // Setup the dropdown for selecting the model.
+        populateModelDropdownInModal();
 
-    // Set the system message name if there's an active system message
-    if (activeSystemMessageId) {
-        const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
+        let activeSystemMessage;
+        if (activeSystemMessageId) {
+            activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
+        } else if (systemMessages.length > 0) {
+            // If no active message, use the first one (or the default one if it exists)
+            activeSystemMessage = systemMessages.find(msg => msg.name === "Default System Message") || systemMessages[0];
+            activeSystemMessageId = activeSystemMessage.id;
+        }
+
         if (activeSystemMessage) {
+            // Populate all fields with the active system message data
             document.getElementById('systemMessageName').value = activeSystemMessage.name;
-            console.log("System message name set to:", activeSystemMessage.name);
-            // Ensure the model dropdown is set to the correct model
+            document.getElementById('systemMessageDescription').value = activeSystemMessage.description;
+            document.getElementById('systemMessageContent').value = activeSystemMessage.content;
+            document.getElementById('enableWebSearch').checked = activeSystemMessage.enable_web_search;
             updateModelDropdownInModal(activeSystemMessage.model_name);
+            updateTemperatureSelectionInModal(activeSystemMessage.temperature);
+
+            console.log("System message data loaded:", activeSystemMessage.name);
+
             // Load websites for the active system message
             loadWebsitesForSystemMessage(activeSystemMessageId);
+
+            // Fetch and display file list for the active system message
+            fetchFileList(activeSystemMessageId);
+        } else {
+            // Handle the case where no system messages are available
+            console.log("No system messages available. Setting default values.");
+            document.getElementById('systemMessageName').value = "New System Message";
+            document.getElementById('systemMessageDescription').value = "";
+            document.getElementById('systemMessageContent').value = "";
+            document.getElementById('enableWebSearch').checked = false;
+            updateModelDropdownInModal("gpt-3.5-turbo"); // Set a default model
+            updateTemperatureSelectionInModal(0.7); // Set a default temperature
         }
-    } else {
-        // Optionally set a default name if no active message is found
-        document.getElementById('systemMessageName').value = "Default Name";
-        console.log("No active system message. Setting default name.");
-        // Set a default model or handle the case where no model is set
-        updateModelDropdownInModal("default-model-name"); // Adjust "default-model-name" as needed
-    }
+
+        // Reset the isSaved flag
+        isSaved = false;
+    }).catch(error => {
+        console.error("Error loading system messages:", error);
+        showModalFlashMessage("Error loading system messages", "danger");
+    });
 });
 
 $('#systemMessageModal').on('shown.bs.modal', function () {
@@ -1228,12 +1232,39 @@ $('#systemMessageModal').on('hidden.bs.modal', function () {
     $('.modal-content-group').addClass('hidden');
 
     // Reset any specific flags or settings
-    $(this).removeData('targetGroup'); // Remove the data attribute for safety
+    $(this).removeData('targetGroup');
 
     // Clear active website ID and website details
     activeWebsiteId = null;
     clearWebsiteDetails();
     updateWebsiteControls();
+
+    // Reset the temporary web search state
+    tempWebSearchState = false;
+    
+    // Reset the UI to reflect the actual saved state
+    if (activeSystemMessageId) {
+        const activeMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
+        if (activeMessage) {
+            document.getElementById('systemMessageName').value = activeMessage.name;
+            document.getElementById('systemMessageDescription').value = activeMessage.description;
+            document.getElementById('systemMessageContent').value = activeMessage.content;
+            document.getElementById('enableWebSearch').checked = activeMessage.enable_web_search;
+            updateModelDropdownInModal(activeMessage.model_name);
+            updateTemperatureSelectionInModal(activeMessage.temperature);
+        }
+    } else {
+        // Clear all fields if no active message
+        document.getElementById('systemMessageName').value = '';
+        document.getElementById('systemMessageDescription').value = '';
+        document.getElementById('systemMessageContent').value = '';
+        document.getElementById('enableWebSearch').checked = false;
+        updateModelDropdownInModal('gpt-3.5-turbo'); // Set to default model
+        updateTemperatureSelectionInModal(0.7); // Set to default temperature
+    }
+
+    // Reset the isSaved flag
+    isSaved = false;
 });
 
 // Handles switching between different layers of orchestration within the modal.
