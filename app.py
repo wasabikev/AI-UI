@@ -50,6 +50,8 @@ if openai.api_key is None:
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 db_url = os.getenv('DATABASE_URL')
 
+BRAVE_SEARCH_API_KEY = os.getenv('BRAVE_SEARCH_API_KEY')
+
 embedding_store = EmbeddingStore(db_url)
 file_processor = FileProcessor(embedding_store)
 
@@ -115,6 +117,43 @@ except OSError as e:
 # Initialize the login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+def check_if_web_search_needed(ai_response):
+    # This is a simple check. You might want to use a more sophisticated method.
+    search_indicators = [
+        "I would need to search the web",
+        "I don't have up-to-date information",
+        "I would need to look that up",
+        "I don't have current data on that",
+        "To answer that, I'd need to check"
+    ]
+    return any(indicator.lower() in ai_response.lower() for indicator in search_indicators)
+
+def perform_web_search(query):
+    url = 'https://api.search.brave.com/res/v1/web/search'
+    headers = {
+        'Accept': 'application/json',
+        'X-Subscription-Token': BRAVE_SEARCH_API_KEY
+    }
+    params = {
+        'q': query,
+        'count': 5  # Limit to 5 results
+    }
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        results = response.json()
+        
+        # Process and format the results
+        formatted_results = []
+        for result in results.get('web', {}).get('results', []):
+            formatted_results.append(f"Title: {result['title']}\nURL: {result['url']}\nDescription: {result['description']}\n")
+        
+        return "\n".join(formatted_results)
+    except requests.RequestException as e:
+        app.logger.error(f'Error performing Brave search: {str(e)}')
+        return None
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -904,9 +943,11 @@ def chat():
         model = request.json.get('model')
         temperature = request.json.get('temperature')
         system_message_id = request.json.get('system_message_id')
+        
         if system_message_id is None:
             app.logger.error("No system_message_id provided in the chat request")
             return jsonify({'error': 'No system message ID provided'}), 400
+        
         conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
 
         app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}')
@@ -927,6 +968,7 @@ def chat():
         user_query = messages[-1]['content']
         app.logger.info(f'User query: {user_query}')
 
+        relevant_info = None
         try:
             app.logger.info(f'Querying index with user query: {user_query[:50]}...')
             relevant_info = file_processor.query_index(user_query, storage_context)
@@ -938,26 +980,50 @@ def chat():
             app.logger.error(f'Error querying index: {str(e)}')
             relevant_info = None
 
-        # Update the system message with the vector search results only if relevant_info is not None
+        # Update the system message with the vector search results
         system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
+        
+        if system_message is None:
+            system_message = {
+                "role": "system",
+                "content": ""
+            }
+            messages.insert(0, system_message)
+
+        # Append vector search results
         if relevant_info:
-            vector_search_content = f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
-            
-            if system_message:
-                system_message['content'] += vector_search_content
-            else:
-                # If there's no system message, create one
-                messages.insert(0, {
-                    "role": "system",
-                    "content": vector_search_content.strip()
-                })
+            system_message['content'] += f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
         
         # Log the updated system message
-        app.logger.info(f"Updated system message: {system_message['content'] if system_message else 'No system message'}")
+        app.logger.info(f"Updated system message: {system_message['content']}")
 
-        app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')
-        chat_output, model_name = get_response_from_model(client, model, messages, temperature)
-        app.logger.info(f"Response from model: {chat_output[:100]}...")
+        # First, get a response from the AI model
+        app.logger.info(f'Sending initial messages to model: {json.dumps(messages, indent=2)}')
+        initial_response, model_name = get_response_from_model(client, model, messages, temperature)
+        app.logger.info(f"Initial response from model: {initial_response[:100]}...")
+
+        # Check if the AI suggests a web search
+        should_web_search = check_if_web_search_needed(initial_response)
+
+        web_search_results = None
+        if should_web_search:
+            try:
+                app.logger.info(f'Performing web search for query: {user_query[:50]}...')
+                web_search_results = perform_web_search(user_query)
+                app.logger.info(f'Web search results: {web_search_results[:100]}...')
+
+                # Append web search results to messages
+                messages.append({"role": "system", "content": f"<Added Context Provided by Web Search>\n{web_search_results}\n</Added Context Provided by Web Search>"})
+
+                # Get a new response from the AI model with the web search results
+                app.logger.info(f'Sending messages with web search results to model: {json.dumps(messages, indent=2)}')
+                chat_output, _ = get_response_from_model(client, model, messages, temperature)
+                app.logger.info(f"Final response from model: {chat_output[:100]}...")
+            except Exception as e:
+                app.logger.error(f'Error performing web search: {str(e)}')
+                chat_output = initial_response
+        else:
+            chat_output = initial_response
 
         prompt_tokens = count_tokens(model_name, messages)
         completion_tokens = count_tokens(model_name, [{"content": chat_output}])
@@ -997,7 +1063,8 @@ def chat():
             'conversation_id': conversation.id,
             'conversation_title': conversation.title,
             'vector_search_results': relevant_info if relevant_info else "No results found",
-            'system_message_content': system_message['content'] if system_message else None,
+            'web_search_results': web_search_results if web_search_results else "No web search performed",
+            'system_message_content': system_message['content'],
             'usage': {
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens,
