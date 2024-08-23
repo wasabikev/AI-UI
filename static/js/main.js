@@ -819,7 +819,7 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
     const messageContent = document.getElementById('systemMessageContent').value;
     const modelName = document.getElementById('modalModelDropdownButton').dataset.apiName;
     const temperature = selectedTemperature;
-    const enableWebSearch = tempWebSearchState;
+    const enableWebSearch = document.getElementById('enableWebSearch').checked; // Get the actual state of the checkbox
 
     const messageId = document.getElementById('systemMessageModal').dataset.messageId;
 
@@ -889,9 +889,6 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
             showModalFlashMessage("Error saving system message", "danger");
         }
     });
-
-    // Reset the temporary web search state after saving
-    tempWebSearchState = false;
 });
 
 function updateTemperatureDisplay() {
@@ -1354,24 +1351,40 @@ function createMessageElement(message) {
 
         // Extract and format vector search results
         const vectorSearchRegex = /<Added Context Provided by Vector Search>([\s\S]*?)<\/Added Context Provided by Vector Search>/g;
-        let match;
         let vectorSearchResults = [];
+        let match;
 
         while ((match = vectorSearchRegex.exec(systemMessageContent)) !== null) {
             let content = match[1].trim();
             if (content !== "Empty Response") {
-                vectorSearchResults.push(`<br><strong>Added Context:</strong><br> ${escapeHtml(content)}<br>`);
+                vectorSearchResults.push(`<br><strong>Added context from vector search on files:</strong><br> ${escapeHtml(content)}<br>`);
             }
         }
 
-        // Remove vector search tags from the system message
-        systemMessageContent = systemMessageContent.replace(vectorSearchRegex, '').trim();
+        // Extract and format web search results
+        const webSearchRegex = /<Added Context Provided by Web Search>([\s\S]*?)<\/Added Context Provided by Web Search>/g;
+        let webSearchResults = [];
+
+        while ((match = webSearchRegex.exec(systemMessageContent)) !== null) {
+            let content = match[1].trim();
+            if (content !== "No web search results") {
+                // Convert URLs to clickable links
+                content = content.replace(
+                    /(https?:\/\/[^\s]+)/g, 
+                    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+                );
+                webSearchResults.push(`<br><strong>Added context from web search:</strong><br>${content}<br>`);
+            }
+        }
+
+        // Remove vector search and web search tags from the system message
+        systemMessageContent = systemMessageContent.replace(vectorSearchRegex, '').replace(webSearchRegex, '').trim();
 
         // Render the main system message content
         let renderedContent = renderOpenAI(systemMessageContent);
 
-        // Combine the main content with vector search results
-        let fullContent = renderedContent + vectorSearchResults.join('');
+        // Combine the main content with vector search and web search results
+        let fullContent = renderedContent + vectorSearchResults.join('') + webSearchResults.join('');
 
         const systemMessageHTML = `
             <div class="chat-entry system system-message">
@@ -1393,7 +1406,6 @@ function createMessageElement(message) {
         return $(messageHTML);
     }
 }
-
 
 // Function to render Markdown and code snippets
 function renderMarkdownAndCode(content) {
@@ -1714,7 +1726,8 @@ $('#chat-form').on('submit', function (e) {
         messages: messages,
         model: model,
         temperature: selectedTemperature,
-        system_message_id: activeSystemMessageId
+        system_message_id: activeSystemMessageId,
+        enable_web_search: $('#enableWebSearch').is(':checked')
     };
 
     if (activeConversationId !== null) {
@@ -1753,11 +1766,26 @@ $('#chat-form').on('submit', function (e) {
                 .append($('<span>').text(data.vector_search_results));
             $('#chat').append(vectorSearchDiv);
         } else {
-            const noResultsDiv = $('<div class="chat-entry vector-search">')
+            const noVectorResultsDiv = $('<div class="chat-entry vector-search">')
                 .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
                 .append('<strong>Semantic Search Results:</strong> ')
                 .append($('<span>').text("No results found"));
-            $('#chat').append(noResultsDiv);
+            $('#chat').append(noVectorResultsDiv);
+        }
+
+        // Display web search results
+        if (data.web_search_results && data.web_search_results !== "No web search results") {
+            const webSearchDiv = $('<div class="chat-entry web-search">')
+                .append('<img src="/static/images/BraveIcon.png" alt="Brave Icon" class="brave-icon"> ')
+                .append('<strong>Web Search Results:</strong> ')
+                .append($('<span>').html(data.web_search_results));
+            $('#chat').append(webSearchDiv);
+        } else if ($('#enableWebSearch').is(':checked')) {
+            const noWebResultsDiv = $('<div class="chat-entry web-search">')
+                .append('<img src="/static/images/BraveIcon.png" alt="Brave Icon" class="brave-icon"> ')
+                .append('<strong>Web Search Results:</strong> ')
+                .append($('<span>').text("No results found"));
+            $('#chat').append(noWebResultsDiv);
         }
 
         const renderedBotOutput = renderOpenAI(data.chat_output);

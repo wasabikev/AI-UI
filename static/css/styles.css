@@ -32,39 +32,6 @@ h2 {
     display: none;
 }
 
-/********** Vector Search Results Styles *****************/
-
-.chat-entry.vector-search {
-    background-color: #E4EFF2;
-    padding-left: 30px;
-    padding-top: 15px;
-    padding-bottom: 10px;
-    padding-right: 200px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-    border-radius: 4px;
-    width: 100%;
-}
-
-
-.chat-entry.vector-search .pinecone-icon {
-    width: 40px;
-    height: 40px;
-    margin-left: 10px;
-    margin-right: 5px;
-    margin-top: 3px;
-}
-
-
-.chat-entry.vector-search pre {
-    white-space: pre-wrap;
-    padding-left: 20px;
-    word-wrap: break-word;
-    max-height: 200px;
-    overflow-y: auto;
-    font-family: inherit; /* Use the same font as the rest of the chat */
-    font-size: inherit; /* Match the font size */
-}
 
 
 /*********** System Message Modal Styles *****************/
@@ -711,10 +678,77 @@ pre code {
 
 /**************** Chat Interface Styles *****************/
 
+/* Web Search Results Styles */
+
+.chat-entry.web-search {
+    background-color: #f0f8ff;
+    padding-left: 30px;
+    padding-top: 15px;
+    padding-bottom: 10px;
+    padding-right: 200px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.brave-icon {
+    width: 30px;
+    height: 35px;
+    margin-left: 10px;
+    margin-right: 5px;
+    margin-top: 3px;
+}
+
+.chat-entry.system a {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+.chat-entry.system a:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
 
 .chat-entry {
     margin-bottom: 0px;
 }
+
+/* Vector Search Results Styles */
+
+.chat-entry.vector-search {
+    background-color: #E4EFF2;
+    padding-left: 30px;
+    padding-top: 15px;
+    padding-bottom: 10px;
+    padding-right: 200px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+
+.chat-entry.vector-search .pinecone-icon {
+    width: 40px;
+    height: 40px;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 3px;
+}
+
+
+.chat-entry.vector-search pre {
+    white-space: pre-wrap;
+    padding-left: 20px;
+    word-wrap: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: inherit; /* Use the same font as the rest of the chat */
+    font-size: inherit; /* Match the font size */
+}
+
+
 
 .system-message {
     background-color: #517693; /* First draft varient: #8A7187 */
