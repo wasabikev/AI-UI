@@ -38,6 +38,9 @@ from file_processing import FileProcessor
 from embedding_store import EmbeddingStore
 from pinecone import Pinecone
 
+from typing import List, Dict # imported to support web search with footnotes
+import re # imported to support web search with footnotes
+
 from openai import OpenAI
 client = OpenAI()
 
@@ -118,18 +121,124 @@ except OSError as e:
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-def check_if_web_search_needed(ai_response):
-    # This is a simple check. You might want to use a more sophisticated method.
-    search_indicators = [
-        "I would need to search the web",
-        "I don't have up-to-date information",
-        "I would need to look that up",
-        "I don't have current data on that",
-        "To answer that, I'd need to check"
-    ]
-    return any(indicator.lower() in ai_response.lower() for indicator in search_indicators)
+from typing import List, Dict
 
-def perform_web_search(query):
+def perform_web_search_process(model, messages, user_query):
+    app.logger.info(f'Understanding query context: {user_query[:50]}...')
+    query_interpretation = understand_query(model, messages, user_query)
+    app.logger.info(f'Query interpretation: {query_interpretation[:100]}...')
+
+    app.logger.info(f'Generating search query based on interpretation...')
+    generated_search_query = generate_search_query(model, query_interpretation)
+    app.logger.info(f'Generated search query: {generated_search_query}')
+
+    if not generated_search_query:
+        app.logger.warning('Failed to generate search query')
+        return None, None
+
+    app.logger.info(f'Performing web search for query: {generated_search_query}')
+    web_search_results = perform_web_search(generated_search_query)
+    app.logger.info(f'Web search results: {web_search_results[:100]}...')
+
+    if web_search_results:
+        summarized_results = summarize_search_results(model, web_search_results)
+        app.logger.info(f'Summarized search results: {summarized_results[:100]}...')
+    else:
+        app.logger.warning('No web search results found.')
+        summarized_results = None
+
+    return generated_search_query, summarized_results
+
+def understand_query(model, messages: List[Dict[str, str]], user_query: str) -> str:
+    app.logger.info(f"Understanding query: {user_query}")
+    
+    # Get the last 5 exchanges (or all if less than 5)
+    recent_messages = messages[-10:] if len(messages) > 10 else messages
+    
+    # Prepare the conversation history
+    conversation_history = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in recent_messages])
+    conversation_history += f"\nUser: {user_query}"
+    
+    system_message = (
+        "Analyze the following conversation and the latest user query. "
+        "Provide a concise interpretation of what information the user is seeking, "
+        "considering the full context of the conversation."
+    )
+
+    interpretation_request_payload = {
+        "model": "gpt-3.5-turbo",  # You can change this to the appropriate model
+        "messages": [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": conversation_history}
+        ],
+        "max_tokens": 150,
+        "temperature": 0.7
+    }
+
+    app.logger.info(f"Sending interpretation request to OpenAI: {interpretation_request_payload}")
+
+    try:
+        response = client.chat.completions.create(**interpretation_request_payload)
+        interpretation = response.choices[0].message.content.strip()
+        app.logger.info(f"Query interpretation: {interpretation}")
+        return interpretation
+    except Exception as e:
+        app.logger.error(f"Error in understand_query: {str(e)}")
+        return None
+
+def generate_search_query(model, interpretation: str) -> str:
+    app.logger.info(f"Generating search query for interpretation: {interpretation}")
+    query_message = {
+        "role": "system",
+        "content": "You are an AI assistant that generates concise search queries based on user interpretations. "
+                   "Always respond with only the search query, without any additional text or explanations."
+    }
+    
+    few_shot_examples = [
+        {"role": "user", "content": "The user wants to know about the history and evolution of artificial intelligence."},
+        {"role": "assistant", "content": "history and evolution of artificial intelligence"},
+        {"role": "user", "content": "The user is looking for information on how to train a deep learning model for image classification."},
+        {"role": "assistant", "content": "train deep learning model for image classification tutorial"},
+        {"role": "user", "content": "The user needs tips on optimizing Python code for better performance."},
+        {"role": "assistant", "content": "Python code optimization techniques for performance"}
+    ]
+    
+    messages = [query_message] + few_shot_examples + [{"role": "user", "content": interpretation}]
+    
+    try:
+        query, _ = get_response_from_model(client, model, messages, 0.7)
+        clean_query = query.strip()
+        app.logger.info(f"Generated search query: {clean_query}")
+        return clean_query
+    except Exception as e:
+        app.logger.error(f"Error in generate_search_query: {str(e)}")
+        return None
+
+def summarize_search_results(model, results: List[Dict[str, str]]) -> str:
+    """
+    Summarize the search results and include citations with links.
+    """
+    summary_message = {
+        "role": "system",
+        "content": "Summarize the following search results. Include relevant information and cite sources using numbered footnotes. Always include the full URLs for each footnote at the end of the summary."
+    }
+    
+    results_text = "\n\n".join([f"{r['title']}\n{r['description']}\n[{r['citation_number']}] {r['url']}" for r in results])
+    
+    try:
+        summary, _ = get_response_from_model(client, model, [summary_message, {"role": "user", "content": results_text}], 0.7)
+        
+        # Ensure footnotes are included
+        if not any(f"[{i}]" in summary for i in range(1, len(results) + 1)):
+            footnotes = "\n\nSources:\n" + "\n".join([f"[{r['citation_number']}] {r['url']}" for r in results])
+            summary += footnotes
+        
+        return summary.strip()
+    except Exception as e:
+        app.logger.error(f"Error in summarize_search_results: {str(e)}")
+        return "Error summarizing search results."
+
+def perform_web_search(query: str) -> List[Dict[str, str]]:
     url = 'https://api.search.brave.com/res/v1/web/search'
     headers = {
         'Accept': 'application/json',
@@ -140,20 +249,44 @@ def perform_web_search(query):
         'count': 5  # Limit to 5 results
     }
 
+    app.logger.info(f"Performing web search with query: {query}")
+    app.logger.info(f"Headers: {headers}")
+    app.logger.info(f"Params: {params}")
+
     try:
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        app.logger.info(f"Response status code: {response.status_code}")
+        app.logger.info(f"Response content: {response.text[:500]}...")  # Log first 500 characters of response
+
         response.raise_for_status()
         results = response.json()
         
+        if not results.get('web', {}).get('results', []):
+            app.logger.warning(f'No results found for query: "{query[:50]}..."')
+            return []
+        
         # Process and format the results
         formatted_results = []
-        for result in results.get('web', {}).get('results', []):
-            formatted_results.append(f"Title: {result['title']}\nURL: {result['url']}\nDescription: {result['description']}\n")
+        for i, result in enumerate(results['web']['results'], 1):
+            formatted_results.append({
+                "title": result['title'],
+                "url": result['url'],
+                "description": result['description'],
+                "citation_number": i
+            })
         
-        return "\n".join(formatted_results)
+        app.logger.info(f'Successful web search for query: "{query[:50]}..."')
+        app.logger.info(f'Number of results: {len(formatted_results)}')
+        return formatted_results
     except requests.RequestException as e:
         app.logger.error(f'Error performing Brave search: {str(e)}')
-        return None
+        if hasattr(e, 'response'):
+            app.logger.error(f'Status code: {e.response.status_code}')
+            app.logger.error(f'Response content: {e.response.content}')
+        return []
+
+
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -870,68 +1003,75 @@ def get_response_from_model(client, model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
     """
-    if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09", "gpt-4o-2024-05-13"]:
-        # OpenAI chat models
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": 1500  # You can adjust max_tokens as needed
-        }
-        response = client.chat.completions.create(**payload)
-        chat_output = response.choices[0].message.content.strip()
-        model_name = response.model
-    elif model in ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620"]:
-        # Anthropic model
-        client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
+    app.logger.info(f"Getting response from model: {model}")
+    app.logger.info(f"Temperature: {temperature}")
+    app.logger.info(f"Number of messages: {len(messages)}")
 
-        # Construct the conversation history for Messages API
-        anthropic_messages = []
-        system_message = None
-        for message in messages:
-            if message['role'] == 'system':
-                system_message = message['content']
-            elif message['role'] == 'user':
-                anthropic_messages.append({"role": "user", "content": message['content']})
-            elif message['role'] == 'assistant':
-                anthropic_messages.append({"role": "assistant", "content": message['content']})
+    try:
+        if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09", "gpt-4o-2024-05-13"]:
+            # OpenAI chat models
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": 8192  # You can adjust max_tokens as needed
+            }
+            response = client.chat.completions.create(**payload)
+            chat_output = response.choices[0].message.content.strip()
+            model_name = response.model
 
-        # Prepend the system message to the user's first message
-        if system_message and anthropic_messages:
-            anthropic_messages[0]['content'] = f"{system_message}\n\nUser: {anthropic_messages[0]['content']}"
+        elif model in ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620"]:
+            # Anthropic model
+            anthropic_client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-        # Ensure the first message has the "user" role
-        if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
-            anthropic_messages.insert(0, {"role": "user", "content": ""})
+            anthropic_messages = []
+            system_message = None
+            for message in messages:
+                if message['role'] == 'system':
+                    system_message = message['content']
+                elif message['role'] in ['user', 'assistant']:
+                    anthropic_messages.append({"role": message['role'], "content": message['content']})
 
-        # Set max_tokens based on the model
-        max_tokens = 8192 if model == "claude-3-5-sonnet-20240620" else 4096
+            if system_message and anthropic_messages:
+                anthropic_messages[0]['content'] = f"{system_message}\n\nUser: {anthropic_messages[0]['content']}"
 
-        # Send the conversation to the Anthropic Messages API
-        response = client.messages.create(
-            model=model,
-            messages=anthropic_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            extra_headers={"anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"} if model == "claude-3-5-sonnet-20240620" else None
-        )
-        chat_output = response.content[0].text  # Extract the text content from the first ContentBlock
-        model_name = model  # Use the provided model name for Anthropic
-    elif model.startswith("gemini-"):
-        # Gemini models
-        gemini_model = GenerativeModel(model_name=model)
-        contents = [{
-            "role": "user",
-            "parts": [{"text": "\n".join([m['content'] for m in messages])}]
-        }]
-        response = gemini_model.generate_content(contents, generation_config={"temperature": temperature})
-        chat_output = response.text
-        model_name = model
-    else:
-        chat_output = "Sorry, the selected model is not supported yet."
-        model_name = None  # Set model_name to None for unsupported models
-        
-    return chat_output, model_name
+            if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
+                anthropic_messages.insert(0, {"role": "user", "content": ""})
+
+            max_tokens = 8192 if model == "claude-3-5-sonnet-20240620" else 4096
+
+            response = anthropic_client.messages.create(
+                model=model,
+                messages=anthropic_messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                extra_headers={"anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"} if model == "claude-3-5-sonnet-20240620" else None
+            )
+            chat_output = response.content[0].text
+            model_name = model
+
+        elif model.startswith("gemini-"):
+            # Gemini models
+            gemini_model = GenerativeModel(model_name=model)
+            contents = [{
+                "role": "user",
+                "parts": [{"text": "\n".join([m['content'] for m in messages])}]
+            }]
+            response = gemini_model.generate_content(contents, generation_config={"temperature": temperature})
+            chat_output = response.text
+            model_name = model
+
+        else:
+            raise ValueError(f"Unsupported model: {model}")
+
+        app.logger.info(f"Response received from {model_name}")
+        app.logger.info(f"Response content (first 100 chars): {chat_output[:100]}...")
+        return chat_output, model_name
+
+    except Exception as e:
+        app.logger.error(f"Error getting response from model {model}: {str(e)}")
+        app.logger.exception("Full traceback:")
+        return None, None
 
 
 
@@ -943,6 +1083,7 @@ def chat():
         model = request.json.get('model')
         temperature = request.json.get('temperature')
         system_message_id = request.json.get('system_message_id')
+        enable_web_search = request.json.get('enable_web_search', False)
         
         if system_message_id is None:
             app.logger.error("No system_message_id provided in the chat request")
@@ -950,7 +1091,7 @@ def chat():
         
         conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
 
-        app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}')
+        app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}, enable_web_search: {enable_web_search}')
 
         conversation = None
         if conversation_id:
@@ -978,6 +1119,7 @@ def chat():
                 relevant_info = None
         except Exception as e:
             app.logger.error(f'Error querying index: {str(e)}')
+            app.logger.exception("Full traceback:")
             relevant_info = None
 
         # Update the system message with the vector search results
@@ -997,33 +1139,36 @@ def chat():
         # Log the updated system message
         app.logger.info(f"Updated system message: {system_message['content']}")
 
-        # First, get a response from the AI model
-        app.logger.info(f'Sending initial messages to model: {json.dumps(messages, indent=2)}')
-        initial_response, model_name = get_response_from_model(client, model, messages, temperature)
-        app.logger.info(f"Initial response from model: {initial_response[:100]}...")
-
-        # Check if the AI suggests a web search
-        should_web_search = check_if_web_search_needed(initial_response)
-
-        web_search_results = None
-        if should_web_search:
+        summarized_results = None
+        generated_search_query = None
+        
+        if enable_web_search:
             try:
-                app.logger.info(f'Performing web search for query: {user_query[:50]}...')
-                web_search_results = perform_web_search(user_query)
-                app.logger.info(f'Web search results: {web_search_results[:100]}...')
-
-                # Append web search results to messages
-                messages.append({"role": "system", "content": f"<Added Context Provided by Web Search>\n{web_search_results}\n</Added Context Provided by Web Search>"})
-
-                # Get a new response from the AI model with the web search results
-                app.logger.info(f'Sending messages with web search results to model: {json.dumps(messages, indent=2)}')
-                chat_output, _ = get_response_from_model(client, model, messages, temperature)
-                app.logger.info(f"Final response from model: {chat_output[:100]}...")
+                app.logger.info('Web search enabled, starting search process...')
+                generated_search_query, summarized_results = perform_web_search_process(model, messages, user_query)
+                app.logger.info(f'Web search process completed. Generated query: {generated_search_query}')
+                app.logger.info(f'Summarized results: {summarized_results[:100] if summarized_results else None}')
+                if summarized_results:
+                    # Update the existing system message instead of adding a new one
+                    system_message['content'] += f"\n\n<Added Context Provided by Web Search>\n{summarized_results}\n</Added Context Provided by Web Search>"
+                    
+                    # Add instruction to include footnotes and sources
+                    system_message['content'] += "\n\nIMPORTANT: In your response, please include relevant footnotes using [1], [2], etc. At the end of your response, list all sources under a 'Sources:' section, providing full URLs for each footnote."
+                else:
+                    app.logger.warning('No summarized results from web search')
             except Exception as e:
-                app.logger.error(f'Error performing web search: {str(e)}')
-                chat_output = initial_response
-        else:
-            chat_output = initial_response
+                app.logger.error(f'Error in web search process: {str(e)}')
+                app.logger.exception("Full traceback:")
+                generated_search_query = None
+                summarized_results = None
+        
+        # Log the final system message after all updates
+        app.logger.info(f"Final system message: {system_message['content']}")
+
+        # Get a response from the AI model
+        app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')
+        chat_output, model_name = get_response_from_model(client, model, messages, temperature)
+        app.logger.info(f"Response from model: {chat_output[:100]}...")
 
         prompt_tokens = count_tokens(model_name, messages)
         completion_tokens = count_tokens(model_name, [{"content": chat_output}])
@@ -1063,17 +1208,20 @@ def chat():
             'conversation_id': conversation.id,
             'conversation_title': conversation.title,
             'vector_search_results': relevant_info if relevant_info else "No results found",
-            'web_search_results': web_search_results if web_search_results else "No web search performed",
+            'generated_search_query': generated_search_query,
+            'web_search_results': summarized_results if summarized_results else "No web search performed",
             'system_message_content': system_message['content'],
             'usage': {
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens,
                 'total_tokens': total_tokens
-            }
+            },
+            'enable_web_search': enable_web_search
         })  
 
     except Exception as e:
         app.logger.error(f'Unexpected error in chat route: {str(e)}')
+        app.logger.exception("Full traceback:")
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
 def count_tokens(model_name, messages):

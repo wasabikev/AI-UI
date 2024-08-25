@@ -678,6 +678,42 @@ pre code {
 
 /**************** Chat Interface Styles *****************/
 
+/* Footnotes and Sources Styles */
+
+.sources-section {
+    font-size: 0.9em;
+    margin-top: 15px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 10px;
+}
+
+.sources-section h4 {
+    font-size: 1em;
+    margin-bottom: 5px;
+}
+
+.sources-list {
+    margin-top: 5px;
+    padding-left: 20px;
+    font-size: 0.85em;
+}
+
+.sources-list li {
+    margin-bottom: 3px;
+}
+
+.footnote {
+    vertical-align: super;
+    font-size: smaller;
+    color: #0066cc;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.footnote:hover {
+    text-decoration: underline;
+}
+
 /* Web Search Results Styles */
 
 .chat-entry.web-search {
@@ -713,6 +749,55 @@ pre code {
 .chat-entry {
     margin-bottom: 0px;
 }
+
+.footnote {
+    font-size: 0.8em;
+    vertical-align: super;
+    color: #0066cc;
+    cursor: pointer;
+}
+
+.footnote-content {
+    display: none;
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.chat-entry.generated-query {
+    background-color: #f5f5f5;
+    padding-left: 30px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-right: 200px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 4px;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    width: 100%;
+}
+
+.chat-entry.generated-query .search-icon {
+    width: 35px;
+    height: 35px;
+    margin-left: 10px;
+    margin-right: 5px;
+    margin-top: 3px;
+}
+
+.chat-entry.generated-query strong {
+    color: #3F484B;
+    margin-right: 5px;
+}
+
+.chat-entry.generated-query span {
+    color: black;
+}
+
 
 /* Vector Search Results Styles */
 
