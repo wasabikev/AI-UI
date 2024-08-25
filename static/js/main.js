@@ -1621,7 +1621,6 @@ function showConversationControls(title = "AI &infin; UI", tokens = {prompt: 0, 
 }
 
 
-// This function fetches and displays a conversation.
 function loadConversation(conversationId) {
     console.log(`Fetching conversation with id: ${conversationId}...`);
     fetch(`/conversations/${conversationId}`)
@@ -1668,8 +1667,17 @@ function loadConversation(conversationId) {
             $('#chat').empty();
 
             // Add each message to the chat. Style the messages based on their role.
-            data.history.forEach(message => {
-                const messageElement = createMessageElement(message);
+            data.history.forEach((message, index) => {
+                let messageElement;
+                if (message.role === 'assistant') {
+                    // Use renderOpenAIWithFootnotes for assistant messages
+                    const renderedContent = renderOpenAIWithFootnotes(message.content, true); // Assume web search was enabled
+                    messageElement = $('<div class="chat-entry bot bot-message">')
+                        .append('<i class="fas fa-robot"></i> ')
+                        .append(renderedContent);
+                } else {
+                    messageElement = createMessageElement(message);
+                }
                 $('#chat').append(messageElement);
             });
 
@@ -1697,6 +1705,47 @@ function loadConversation(conversationId) {
 
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
+
+
+function renderOpenAIWithFootnotes(content, enableWebSearch) {
+    if (!enableWebSearch) {
+        return renderOpenAI(content);
+    }
+
+    // Split the content into main text and sources
+    let [mainText, sources] = content.split('Sources:', 2);
+
+    if (!sources) {
+        return renderOpenAI(content);
+    }
+
+    // Parse sources
+    let sourcesList = $('<ol class="sources-list">');
+    let sourcesMap = {};
+    sources.trim().split('\n').forEach(source => {
+        if (source.trim()) {
+            let [index, url] = source.split(']');
+            index = index.replace('[', '').trim();
+            url = url.trim();
+            sourcesMap[index] = url;
+            sourcesList.append($('<li>').append($('<a>').attr('href', url).text(url)));
+        }
+    });
+
+    // Render main text with hyperlinked footnotes
+    let renderedContent = mainText.replace(/\[(\d+)\]/g, (match, p1) => {
+        let url = sourcesMap[p1];
+        return url ? `<a href="${url}" class="footnote" target="_blank">[${p1}]</a>` : match;
+    });
+    renderedContent = renderOpenAI(renderedContent);
+
+    // Add sources section
+    let sourcesSection = $('<div class="sources-section">')
+        .append('<h4>Sources:</h4>')
+        .append(sourcesList);
+
+    return renderedContent + sourcesSection[0].outerHTML;
+}
 
 $('#chat-form').on('submit', function (e) {
     console.log('Chat form submitted with user input:', $('#user_input').val());
@@ -1756,7 +1805,12 @@ $('#chat-form').on('submit', function (e) {
         return response.json();
     })
     .then(data => {
-        console.log("Complete server response:", data);
+        console.log("Complete server response:", JSON.stringify(data, null, 2));
+        console.log("Generated search query:", data.generated_search_query);
+
+        // Log the generated search query
+        console.log("Complete server response:", JSON.stringify(data, null, 2));
+        console.log("Generated search query:", data.generated_search_query);
 
         // Display vector search results
         if (data.vector_search_results && data.vector_search_results !== "No results found") {
@@ -1773,12 +1827,25 @@ $('#chat-form').on('submit', function (e) {
             $('#chat').append(noVectorResultsDiv);
         }
 
+        // Display generated search query
+        if (data.generated_search_query) {
+            console.log("Creating generated query div");
+            const generatedQueryDiv = $('<div class="chat-entry generated-query">')
+                .append('<img src="/static/images/SearchIcon.png" alt="Search Icon" class="search-icon"> ')
+                .append('<strong>Generated Search Query:</strong> ')
+                .append($('<span>').text(data.generated_search_query));
+            $('#chat').append(generatedQueryDiv);
+            console.log("Generated query div appended");
+        } else {
+            console.log("No generated search query received");
+        }
+
         // Display web search results
-        if (data.web_search_results && data.web_search_results !== "No web search results") {
+        if (data.web_search_results && data.web_search_results !== "No web search performed") {
             const webSearchDiv = $('<div class="chat-entry web-search">')
                 .append('<img src="/static/images/BraveIcon.png" alt="Brave Icon" class="brave-icon"> ')
                 .append('<strong>Web Search Results:</strong> ')
-                .append($('<span>').html(data.web_search_results));
+                .append(renderOpenAI(data.web_search_results));
             $('#chat').append(webSearchDiv);
         } else if ($('#enableWebSearch').is(':checked')) {
             const noWebResultsDiv = $('<div class="chat-entry web-search">')
@@ -1788,12 +1855,12 @@ $('#chat-form').on('submit', function (e) {
             $('#chat').append(noWebResultsDiv);
         }
 
-        const renderedBotOutput = renderOpenAI(data.chat_output);
+        // Render bot output with footnotes
+        const renderedBotOutput = renderOpenAIWithFootnotes(data.chat_output, data.enable_web_search);
         const botMessageDiv = $('<div class="chat-entry bot bot-message">')
             .append('<i class="fas fa-robot"></i> ')
             .append(renderedBotOutput);
         $('#chat').append(botMessageDiv);
-
         $('#chat').scrollTop($('#chat')[0].scrollHeight);
         
         // Update messages array with the new assistant message
