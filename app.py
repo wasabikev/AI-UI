@@ -1014,7 +1014,7 @@ def get_response_from_model(client, model, messages, temperature):
                 "model": model,
                 "messages": messages,
                 "temperature": temperature,
-                "max_tokens": 8192  # You can adjust max_tokens as needed
+                "max_tokens": 4096  # Current maximum tokens supported by OpenAI
             }
             response = client.chat.completions.create(**payload)
             chat_output = response.choices[0].message.content.strip()
