@@ -5,6 +5,8 @@ from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import JSON  # Import JSON support
 from sqlalchemy import Boolean
 
+import uuid
+
 db = SQLAlchemy()
 
 class Folder(db.Model): # Folder is a table in the database
@@ -34,6 +36,9 @@ class Conversation(db.Model):
     entities = db.Column(db.JSON)    # Entities recognized in the conversation (if any)
     temperature = db.Column(db.Float)    # Temperature setting for the conversation
     prompt_template = db.Column(db.String(500))    # Template of the prompt used in the conversation
+    vector_search_results = db.Column(db.JSON)  # Store vector search results for each message
+    generated_search_queries = db.Column(db.JSON)  # Store generated search queries for each message
+    web_search_results = db.Column(db.JSON)  # Store web search results for each message
 
     def __repr__(self):
         return '<Conversation %r>' % self.title
@@ -58,7 +63,10 @@ class Conversation(db.Model):
             'intent': self.intent,
             'entities': self.entities,
             'temperature': self.temperature, 
-            'prompt_template': self.prompt_template,  
+            'prompt_template': self.prompt_template,
+            'vector_search_results': self.vector_search_results,
+            'generated_search_queries': self.generated_search_queries,
+            'web_search_results': self.web_search_results,  
             # Add other fields as necessary
         }
 
@@ -165,10 +173,30 @@ class Website(db.Model):
         }
 
 class UploadedFile(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(255), nullable=False)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(255), nullable=False)
+    processed_text_path = db.Column(db.String(255))
+    upload_timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    file_size = db.Column(db.Integer)
+    mime_type = db.Column(db.String(100))
     system_message_id = db.Column(db.Integer, db.ForeignKey('system_message.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    user = db.relationship('User', backref=db.backref('uploaded_files', lazy=True))
+    system_message = db.relationship('SystemMessage', back_populates='uploaded_files')
 
-    system_message = db.relationship('SystemMessage', back_populates='uploaded_files')  
+    def __repr__(self):
+        return f'<UploadedFile {self.original_filename}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'original_filename': self.original_filename,
+            'file_path': self.file_path,
+            'processed_text_path': self.processed_text_path,
+            'upload_timestamp': self.upload_timestamp.isoformat(),
+            'file_size': self.file_size,
+            'mime_type': self.mime_type,
+            'system_message_id': self.system_message_id
+        }
