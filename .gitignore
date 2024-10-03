@@ -7,6 +7,7 @@ app.log.*
 uploads/
 processed_texts/
 
+chat.backup.html
 styles.backup.css
 chat.backup.html
 app.py.backup.py

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, url_for, redirect, session, abort
+from flask import Flask, request, jsonify, render_template, url_for, redirect, session, send_file, abort
 from flask_cors import CORS
 from text_processing import format_text
 from flask_login import LoginManager, current_user, login_required
@@ -166,7 +166,7 @@ def understand_query(model, messages: List[Dict[str, str]], user_query: str) -> 
     )
 
     interpretation_request_payload = {
-        "model": "gpt-3.5-turbo",  # You can change this to the appropriate model
+        "model": "gpt-4o-mini",  # You can change this to the appropriate model
         "messages": [
             {"role": "system", "content": system_message},
             {"role": "user", "content": conversation_history}
