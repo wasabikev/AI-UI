@@ -167,14 +167,14 @@
                     <div class="modal-sidebar">
 
                         <div id="rag-controls">
-                            <h6>RAG Controls</h6>
+                            <h6>Knowledge Base Resources</h6>
                             <!-- Placeholder for dynamic RAG controls -->
                             <div id="RAG-Buttons">
                                 <!--- Website Identifier (real-time data, news summarization, and fact-checking) -->
-                                <button id="addWebsiteButton" type="button" class="btn btn-secondary" onclick="handleAddWebsiteButtonClick()">+ Website</button>
+                                <button id="addWebsiteButton" type="button" class="btn btn-secondary" onclick="handleAddWebsiteButtonClick()">+ Websites</button>
 
                                 <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
-                                <button id="addFilesButton" type="button" class="btn btn-secondary" onclick="handleAddFileButtonClick()">+ File</button>
+                                <button id="addFilesButton" type="button" class="btn btn-secondary" onclick="handleAddFileButtonClick()">+ Files</button>
                             </div>
                             <div class="modal-sidebar" id="modal-sidebar">
                                 <!-- Dynamic content will be loaded here -->
@@ -373,7 +373,9 @@
                                 <div class="col-md-12">
                                     <div id="filesGroup" class="modal-content-group hidden">
                                         <div class="form-group files-group-label">
-                                            <label for="fileInput" class="modal-label">Summary of Files Associated with this System Message:</label>
+                                            <br>
+                                            <label for="fileInput" class="modal-label">Add files for knowledge enhancement. These files will be used to improve the 
+                                                accuracy and depth of the AI's responses on this topic. </label>
                                         </div>
                                         <hr class="files-group-hr">
                                         <div class="d-flex align-items-center files-group-button-container">
