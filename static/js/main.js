@@ -101,16 +101,23 @@ document.getElementById('indexWebsiteButton').addEventListener('click', function
 
 // Functions related to the file upload feature
 
+// Add in CSRF protection for the AJAX request. This function will be used to get the CSRF token from the meta tag. (Addtional updates needed)
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
 function removeFile(fileId) {
     if (!confirm('Are you sure you want to remove this file?')) {
         return;
     }
-
     const fileListError = document.getElementById('fileListError');
     const fileUploadStatus = document.getElementById('fileUploadStatus');
 
     fetch(`/remove_file/${fileId}`, {
         method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
     })
     .then(response => {
         if (!response.ok) {
@@ -120,15 +127,12 @@ function removeFile(fileId) {
     })
     .then(data => {
         if (data.success) {
-            // Show success message
             fileUploadStatus.textContent = 'File removed successfully';
             fileUploadStatus.style.display = 'inline';
             setTimeout(() => {
                 fileUploadStatus.style.display = 'none';
             }, 3000);
-
-            // Refresh the file list
-            initializeAndUpdateFileList(activeSystemMessageId);
+            fetchFileList(activeSystemMessageId);
         } else {
             throw new Error(data.error || 'Failed to remove file');
         }
@@ -149,6 +153,7 @@ function uploadFile() {
     fileInput.accept = '.txt,.pdf,.docx'; // Add or modify accepted file types as needed
     
     const fileUploadStatus = document.getElementById('fileUploadStatus');
+    const fileListError = document.getElementById('fileListError');
     
     fileInput.onchange = function(e) {
         const file = e.target.files[0];
@@ -160,6 +165,7 @@ function uploadFile() {
             // Show "File upload in progress" message
             fileUploadStatus.textContent = 'File upload in progress...';
             fileUploadStatus.style.display = 'inline';
+            fileListError.style.display = 'none'; // Hide any previous error messages
 
             fetch('/upload_file', {
                 method: 'POST',
@@ -167,7 +173,7 @@ function uploadFile() {
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    return response.json().then(err => Promise.reject(err));
                 }
                 return response.json();
             })
@@ -187,12 +193,14 @@ function uploadFile() {
             .catch(error => {
                 console.error('Error:', error);
                 fileUploadStatus.textContent = 'File upload failed';
+                fileUploadStatus.style.display = 'inline';
+                fileListError.textContent = 'Failed to upload file: ' + (error.error || error.message);
+                fileListError.style.display = 'block';
+                
                 setTimeout(() => {
                     fileUploadStatus.style.display = 'none';
-                }, 3000); // Hide the message after 3 seconds
-                const fileListError = document.getElementById('fileListError');
-                fileListError.textContent = 'Failed to upload file: ' + error.message;
-                fileListError.style.display = 'block';
+                    fileListError.style.display = 'none';
+                }, 5000); // Hide both messages after 5 seconds
             });
         }
     };
@@ -242,20 +250,24 @@ function fetchFileList(systemMessageId) {
         }
         return response.json();
     })
-    .then(data => {
-        if (data.files && data.files.length > 0) {
-            data.files.forEach(file => {
+    .then(files => {
+        console.log('Received files:', files); // Debug log
+        if (files && files.length > 0) {
+            files.forEach(file => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item d-flex justify-content-between align-items-center';
                 fileItem.innerHTML = `
-                    <span class="file-name">${file.filename}</span>
-                    <button class="btn btn-sm btn-danger" onclick="removeFile(${file.id})">Remove</button>
+                    <span class="file-name">${file.name}</span>
+                    <div class="file-actions">
+                        <button class="btn btn-sm btn-primary" onclick="viewOriginalFile('${file.id}')">View Original</button>
+                        <button class="btn btn-sm btn-info" onclick="viewProcessedText('${file.id}')">View Processed</button>
+                        <button class="btn btn-sm btn-danger" onclick="removeFile('${file.id}')">Remove</button>
+                    </div>
                 `;
                 fileList.appendChild(fileItem);
             });
             fileList.style.display = 'block';
             noFilesMessage.style.display = 'none';
-
         } else {
             fileList.style.display = 'none';
             noFilesMessage.style.display = 'block';
@@ -281,6 +293,35 @@ function fetchFileList(systemMessageId) {
         }
     });
 }
+
+function viewOriginalFile(fileId) {
+    const url = `/view_original_file/${fileId}`;
+    window.open(url, '_blank');
+}
+
+function viewProcessedText(fileId) {
+    fetch(`/view_processed_text/${fileId}`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Processed text not available');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(text => {
+            // Create a new window or tab with the processed text
+            const newWindow = window.open('', '_blank');
+            newWindow.document.write(`<pre>${text}</pre>`);
+            newWindow.document.close();
+        })
+        .catch(error => {
+            console.error('Error viewing processed text:', error);
+            alert(error.message || 'Error viewing processed text. Please try again.');
+        });
+}
+
 
 function updateMoreFilesIndicator() {
     const fileListContainer = document.getElementById('fileListContainer');

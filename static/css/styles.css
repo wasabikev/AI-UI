@@ -388,6 +388,7 @@ h2 {
 .files-group-button-container {
     margin-top: -15px;
 }
+
 .file-list-scrollable {
     position: relative;
     max-height: 275px; /* Adjust as needed */
@@ -416,14 +417,32 @@ h2 {
 }
 
 .file-item {
-    padding: 5px 0;
+    padding: 10px 0;
     border-bottom: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .file-item:last-child {
     border-bottom: none;
 }
 
+.file-name {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.file-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.file-actions button {
+    white-space: nowrap;
+    padding: 2px 5px;
+    font-size: 0.8em;
+}
 
 .more-files-indicator {
     position: absolute;
