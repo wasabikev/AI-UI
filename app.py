@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, url_for, redirect, session, send_file, abort
+from flask import Flask, request, jsonify, render_template, url_for, redirect, session, send_file, abort, Response, send_file, make_response, render_template_string
 from flask_cors import CORS
 from text_processing import format_text
 from flask_login import LoginManager, current_user, login_required
@@ -23,6 +23,8 @@ import subprocess # imported to support Scrapy
 import requests
 import json
 
+import uuid # imported to generate unique IDs for files
+
 from models import db, Folder, Conversation, User, SystemMessage, Website, UploadedFile
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler # for log file rotation
@@ -41,6 +43,11 @@ from pinecone import Pinecone
 from typing import List, Dict # imported to support web search with footnotes
 import re # imported to support web search with footnotes
 
+from file_utils import (
+    get_user_folder, get_system_message_folder, get_uploads_folder,
+    get_processed_texts_folder, get_llmwhisperer_output_folder, ensure_folder_exists, get_file_path
+)
+
 from openai import OpenAI
 client = OpenAI()
 
@@ -55,13 +62,13 @@ db_url = os.getenv('DATABASE_URL')
 
 BRAVE_SEARCH_API_KEY = os.getenv('BRAVE_SEARCH_API_KEY')
 
-embedding_store = EmbeddingStore(db_url)
-file_processor = FileProcessor(embedding_store)
-
-from auth import auth as auth_blueprint  # Import the auth blueprint
-  
 # Set debug directly here. Switch to False for production.
 debug_mode = True
+
+# Application Setup
+app = Flask(__name__)
+CORS(app)  # Cross-Origin Resource Sharing
+app.config['DEBUG'] = debug_mode
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG if debug_mode else logging.INFO)
@@ -73,11 +80,6 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO if debug_mode else logging.WARNING)
 console_handler.setFormatter(formatter)
 
-# Application Setup
-app = Flask(__name__)
-CORS(app)  # Cross-Origin Resource Sharing
-app.config['DEBUG'] = debug_mode
-
 # Add handlers to the app's logger
 app.logger.addHandler(handler)
 app.logger.addHandler(console_handler)
@@ -85,10 +87,8 @@ app.logger.addHandler(console_handler)
 # Ensure that all log messages are propagated to the app's logger
 app.logger.propagate = False
 
+from auth import auth as auth_blueprint  # Import the auth blueprint
 app.register_blueprint(auth_blueprint)  # Registers auth with Flask application
-
-# Enable auto-reload of templates
-app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Set up database
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
@@ -103,23 +103,24 @@ migrate = Migrate(app, db)
 
 app.logger.info("Logging is set up.")
 
-# Set up file upload folder
-UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Update the file storage configuration
+base_dir = os.path.abspath(os.path.dirname(__file__))
+app.config['BASE_UPLOAD_FOLDER'] = os.path.join(base_dir, 'user_files')
+ensure_folder_exists(app.config['BASE_UPLOAD_FOLDER'])
+
+embedding_store = EmbeddingStore(db_url)
+from file_processing import FileProcessor
+file_processor = FileProcessor(embedding_store, app)
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
-
-# Ensure upload folder exists
-try:
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-except OSError as e:
-    print(f"Error creating upload folder: {e}")
-    
 
 # Initialize the login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+# Enable auto-reload of templates
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 from typing import List, Dict
 
@@ -286,11 +287,6 @@ def perform_web_search(query: str) -> List[Dict[str, str]]:
         return []
 
 
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 @app.route('/api/system-messages/<int:system_message_id>/toggle-web-search', methods=['POST'])
 @login_required
 def toggle_web_search(system_message_id):
@@ -307,9 +303,106 @@ def toggle_web_search(system_message_id):
 @login_required
 def query_documents():
     query = request.json.get('query')
-    file_processor = FileProcessor(embedding_store)
+    file_processor = FileProcessor(embedding_store, app)
     results = file_processor.query_index(query)
     return jsonify({'results': results})
+
+# Routes to handle files and file uploads
+
+from flask import make_response, send_file, abort
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/view_original_file/<file_id>')
+@login_required
+def view_original_file(file_id):
+    file = UploadedFile.query.get_or_404(file_id)
+    
+    if file.user_id != current_user.id:
+        abort(403)  # Unauthorized access
+    
+    if os.path.exists(file.file_path):
+        try:
+            # Create an HTML page that embeds the file
+            html_content = f'''
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>{file.original_filename}</title>
+                <style>
+                    html, body {{
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
+                        overflow: hidden;
+                    }}
+                    #file-embed {{
+                        width: 100%;
+                        height: 100%;
+                        border: none;
+                    }}
+                </style>
+            </head>
+            <body>
+                <embed id="file-embed" src="/serve_file/{file_id}" type="{file.mime_type}">
+                <script>
+                    function resizeEmbed() {{
+                        var embed = document.getElementById('file-embed');
+                        embed.style.height = window.innerHeight + 'px';
+                    }}
+                    window.onload = resizeEmbed;
+                    window.onresize = resizeEmbed;
+                </script>
+            </body>
+            </html>
+            '''
+            return render_template_string(html_content)
+        except Exception as e:
+            app.logger.error(f"Error serving file {file_id}: {str(e)}")
+            abort(500)
+    else:
+        abort(404)  # File not found
+
+@app.route('/serve_file/<file_id>')
+@login_required
+def serve_file(file_id):
+    file = UploadedFile.query.get_or_404(file_id)
+    
+    if file.user_id != current_user.id:
+        abort(403)  # Unauthorized access
+    
+    if os.path.exists(file.file_path):
+        return send_file(
+            file.file_path,
+            mimetype=file.mime_type,
+            as_attachment=False,
+            download_name=file.original_filename
+        )
+    else:
+        abort(404)  # File not found
+
+@app.route('/view_processed_text/<file_id>')
+@login_required
+def view_processed_text(file_id):
+    file = UploadedFile.query.get_or_404(file_id)
+    
+    if file.user_id != current_user.id:
+        abort(403)  # Unauthorized access
+    
+    if file.processed_text_path and os.path.exists(file.processed_text_path):
+        return send_file(
+            file.processed_text_path,
+            mimetype='text/plain',
+            as_attachment=False,
+            download_name=f"{file.original_filename}_processed.txt"
+        )
+    else:
+        app.logger.error(f"Processed text not found for file ID: {file_id}")
+        return jsonify({'error': 'Processed text not available'}), 404
 
 @app.route('/upload_file', methods=['POST'])
 @login_required
@@ -320,85 +413,138 @@ def upload_file():
     file = request.files['file']
     system_message_id = request.form.get('system_message_id')
     
+    app.logger.info(f"Received file upload request: {file.filename}, system_message_id: {system_message_id}")
+    
     if file.filename == '':
         return jsonify({'success': False, 'error': 'No selected file'})
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file_path = get_file_path(app, current_user.id, system_message_id, filename, 'uploads')
         file.save(file_path)
         
-        # Create a new UploadedFile record
-        new_file = UploadedFile(
-            filename=filename,
-            file_path=file_path,
-            system_message_id=system_message_id
-        )
-        
-        # Add and commit the new file to the database to get the id
-        db.session.add(new_file)
-        db.session.commit()
+        app.logger.info(f"File saved to: {file_path}")
         
         try:
+            # Create a new UploadedFile record
+            new_file = UploadedFile(
+                id=str(uuid.uuid4()),
+                user_id=current_user.id,
+                original_filename=filename,
+                file_path=file_path,
+                system_message_id=system_message_id,
+                file_size=os.path.getsize(file_path),
+                mime_type=file.content_type
+            )
+            
+            # Add and commit the new file to the database
+            db.session.add(new_file)
+            db.session.commit()
+            
+            app.logger.info(f"New file record created with ID: {new_file.id}")
+            
             # Get the storage context for this system message
             storage_context = embedding_store.get_storage_context(system_message_id)
             
             # Process and index the file
-            index = file_processor.process_file(file_path, storage_context, new_file.id)
-            app.logger.info("File processed successfully")
+            processed_text_path = file_processor.process_file(file_path, storage_context, new_file.id, current_user.id, system_message_id)
+            
+            app.logger.info(f"Processed text path returned: {processed_text_path}")
+            
+            # Update the processed_text_path
+            if processed_text_path:
+                new_file.processed_text_path = processed_text_path
+                db.session.commit()
+                app.logger.info(f"File {filename} processed successfully. Processed text path: {processed_text_path}")
+            else:
+                app.logger.warning(f"File {filename} processed, but no processed text path was returned.")
+            
+            return jsonify({'success': True, 'message': 'File uploaded and indexed successfully', 'file_id': new_file.id})
         except Exception as e:
-            app.logger.error(f"Error processing file: {str(e)}")
-            return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'})
-        
-        return jsonify({'success': True, 'message': 'File uploaded and indexed successfully'})
+            db.session.rollback()  # Rollback the session in case of error
+            app.logger.error(f"Error processing file: {str(e)}", exc_info=True)
+            return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'}), 500
     
-    return jsonify({'success': False, 'error': 'File type not allowed'})
+    app.logger.error(f"File type not allowed: {file.filename}")
+    return jsonify({'success': False, 'error': 'File type not allowed'}), 400
 
 @app.route('/get_files/<int:system_message_id>')
 @login_required
 def get_files(system_message_id):
     try:
         files = UploadedFile.query.filter_by(system_message_id=system_message_id).all()
-        file_list = [{'id': file.id, 'filename': file.filename} for file in files]
-        return jsonify({'success': True, 'files': file_list})
+        file_list = [{
+            'id': file.id,
+            'name': file.original_filename,  
+            'path': file.file_path,
+            'size': file.file_size,  
+            'type': file.mime_type,  
+            'upload_date': file.upload_timestamp.isoformat() if file.upload_timestamp else None  # Add this for upload date
+        } for file in files]
+        return jsonify(file_list)
     except Exception as e:
         app.logger.error(f"Error fetching files: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'error': 'Error fetching files'}), 500
     
-@app.route('/remove_file/<int:file_id>', methods=['DELETE'])
+@app.route('/remove_file/<file_id>', methods=['DELETE'])
 @login_required
 def remove_file(file_id):
     file = UploadedFile.query.get_or_404(file_id)
     
+    if file.user_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
     try:
-        # Get the system message ID associated with this file
+        # Delete vectors
         system_message_id = file.system_message_id
-
-        # Get the storage context for this system message
         storage_context = embedding_store.get_storage_context(system_message_id)
-
-        # Remove the file's content from the vector store
         vector_store = storage_context.vector_store
-        
-        # Get the namespace for this system message
         namespace = embedding_store.generate_namespace(system_message_id)
-        
-        # Delete vectors for the file
         delete_vectors_for_file(vector_store, file.id, namespace)
-
-        # Remove the file from the filesystem
+        
+        # Remove the original file
         if os.path.exists(file.file_path):
             os.remove(file.file_path)
+            app.logger.info(f"Original file removed: {file.file_path}")
+        else:
+            app.logger.warning(f"Original file not found: {file.file_path}")
         
-        # Remove the file record from the database
+        # Remove the processed text file
+        processed_file_name = f"{file.id}_processed.txt"
+        processed_file_path = get_file_path(app, current_user.id, system_message_id, processed_file_name, 'processed_texts')
+        
+        if os.path.exists(processed_file_path):
+            try:
+                os.remove(processed_file_path)
+                app.logger.info(f"Processed text file removed: {processed_file_path}")
+            except Exception as e:
+                app.logger.error(f"Error removing processed text file: {str(e)}")
+                app.logger.error(f"File permissions: {oct(os.stat(processed_file_path).st_mode)[-3:]}")
+        else:
+            app.logger.warning(f"Processed text file not found: {processed_file_path}")
+        
+        # Remove the LLMWhisperer output file
+        llmwhisperer_file_name = f"{file.id}_llmwhisperer_output.txt"
+        llmwhisperer_file_path = get_file_path(app, current_user.id, system_message_id, llmwhisperer_file_name, 'llmwhisperer_output')
+        
+        if os.path.exists(llmwhisperer_file_path):
+            try:
+                os.remove(llmwhisperer_file_path)
+                app.logger.info(f"LLMWhisperer output file removed: {llmwhisperer_file_path}")
+            except Exception as e:
+                app.logger.error(f"Error removing LLMWhisperer output file: {str(e)}")
+                app.logger.error(f"File permissions: {oct(os.stat(llmwhisperer_file_path).st_mode)[-3:]}")
+        else:
+            app.logger.warning(f"LLMWhisperer output file not found: {llmwhisperer_file_path}")
+        
+        # Remove database entry
         db.session.delete(file)
         db.session.commit()
         
-        app.logger.info(f"File {file_id} removed successfully from filesystem, database, and vector store.")
-        return jsonify({'success': True, 'message': 'File removed successfully'})
+        return jsonify({'success': True, 'message': 'File, processed text, and LLMWhisperer output removed successfully'})
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error removing file {file_id}: {str(e)}")
+        app.logger.error(f"Error removing file {file.original_filename} (ID: {file_id}): {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
     
 def delete_vectors_for_file(vector_store, file_id, namespace):
