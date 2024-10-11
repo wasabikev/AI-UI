@@ -6,6 +6,8 @@ app.log.*
 
 uploads/
 processed_texts/
+# Ignore the entire user_files directory. The user_files directory is dynamically created based on user IDs and system IDs.
+user_files/
 
 chat.backup.html
 styles.backup.css

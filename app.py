@@ -15,6 +15,7 @@ from flask_migrate import Migrate
 import openai
 import os
 import logging
+import sys
 import anthropic
 import tiktoken 
 import google.generativeai as genai
@@ -65,6 +66,15 @@ BRAVE_SEARCH_API_KEY = os.getenv('BRAVE_SEARCH_API_KEY')
 # Set debug directly here. Switch to False for production.
 debug_mode = True
 
+# Custom Unicode Formatter
+class UnicodeFormatter(logging.Formatter):
+    def format(self, record):
+        try:
+            return super().format(record)
+        except UnicodeEncodeError:
+            # If encoding fails, replace problematic characters
+            return super().format(record).encode('utf-8', 'replace').decode('utf-8')
+
 # Application Setup
 app = Flask(__name__)
 CORS(app)  # Cross-Origin Resource Sharing
@@ -72,20 +82,29 @@ app.config['DEBUG'] = debug_mode
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG if debug_mode else logging.INFO)
-handler = RotatingFileHandler("app.log", maxBytes=100000, backupCount=3)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
 
-console_handler = logging.StreamHandler()
+# Create custom formatter
+unicode_formatter = UnicodeFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# File handler
+file_handler = RotatingFileHandler("app.log", maxBytes=100000, backupCount=3, encoding='utf-8')
+file_handler.setFormatter(unicode_formatter)
+file_handler.setLevel(logging.DEBUG if debug_mode else logging.INFO)
+
+# Console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(unicode_formatter)
 console_handler.setLevel(logging.INFO if debug_mode else logging.WARNING)
-console_handler.setFormatter(formatter)
 
 # Add handlers to the app's logger
-app.logger.addHandler(handler)
+app.logger.addHandler(file_handler)
 app.logger.addHandler(console_handler)
 
 # Ensure that all log messages are propagated to the app's logger
 app.logger.propagate = False
+
+# Set the overall logger level
+app.logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
 
 from auth import auth as auth_blueprint  # Import the auth blueprint
 app.register_blueprint(auth_blueprint)  # Registers auth with Flask application
@@ -1114,7 +1133,7 @@ def generate_summary(messages):
         app.logger.info("Conversation history truncated for summary generation")
 
     summary_request_payload = {
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o-mini",
         "messages": [
             {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text:\n" + conversation_history}
         ],
@@ -1154,7 +1173,7 @@ def get_response_from_model(client, model, messages, temperature):
     app.logger.info(f"Number of messages: {len(messages)}")
 
     try:
-        if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09", "gpt-4o-2024-05-13"]:
+        if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09", "gpt-4o-2024-08-06"]:
             # OpenAI chat models
             payload = {
                 "model": model,
