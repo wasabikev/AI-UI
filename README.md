@@ -28,27 +28,46 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 **Vector Search**: Utilizes vector search to retrieve relevant information from uploaded documents and websites.
 **Dynamic System Messages**: System messages are dynamically updated with context from vector search and web search results.
 **Token Counting**: Implements token counting for various AI models to track usage and manage conversation length.
+**Dynamic System Messages**: System messages are dynamically updated with context from vector search and web search results.
+**Structured File Management**: Implements a hierarchical file structure to organize user uploads, processed texts, and LLMWhisperer outputs, facilitating efficient file handling and retrieval.
 
+
+## Global Variables
+`messages`: An array that stores the conversation messages.
+`systemMessages`: An array that stores the system messages.
+`model`: Stores the selected model name.
+`activeConversationId`: Keeps track of the currently selected conversation.
+`currentSystemMessage`: Stores the default system message.
+`currentSystemMessageDescription`: Stores the description of the current system message.
+`initialTemperature`: Stores the initial temperature setting.
+`isSaved`: A flag to track whether the system message changes have been saved.
+`activeSystemMessageId`: Tracks the currently active system message ID.
+`showTemperature`: Tracks the visibility of the temperature settings.
+`selectedTemperature`: Stores the default temperature value.
+`activeWebsiteId`: Stores the currently active website ID for the Websites Group.
 
 ## Key Components
 
-- **Backend**: The server is built with Flask and handles API routes, database interactions, communication with LLM APIs (OpenAI, Anthropic, Google), web scraping, vector search, and web search integration. Prod uses Gunicorn.
-- **Frontend**: The frontend is developed using HTML, CSS, JavaScript, Bootstrap, and additional libraries such as Prism.js and Marked.js for enhanced functionality.
-- **Database**: PostgreSQL is used for storing user data, conversation history, system messages, websites, and uploaded files. It includes tables for users, conversations, folders, system messages, websites, and uploaded files.
-- **System Message Modal**: The system message modal serves as a central hub for orchestrating various layers of interaction, including system message content, model selection, temperature settings, and the integration of controls for adding websites and files. Intended for expansion of additional orchestration layers.
+**Backend**: The server is built with Flask and handles API routes, database interactions, communication with LLM APIs (OpenAI, Anthropic, Google), web scraping, vector search, and web search integration. Prod uses Gunicorn.
+**Frontend**: The frontend is developed using HTML, CSS, JavaScript, Bootstrap, and additional libraries such as Prism.js, Marked.js, and MathJax for enhanced functionality.
+**Database**: PostgreSQL is used for storing user data, conversation history, system messages, websites, and uploaded files. It includes tables for users, conversations, folders, system messages, websites, and uploaded files.
+**Vector Storage**: Pinecone is used for efficient storage and retrieval of embeddings, enabling advanced search and similarity matching capabilities.
+**File Processing**: Supports uploading and processing of various file types, including PDFs, using LLMWhisperer for advanced text extraction.
+**Web Scraping**: Implements a flexible spider using Scrapy for indexing websites associated with system messages.
+**File Management**: The application implements a structured file management system using utility functions in file_utils.py to organize user uploads, processed texts, and LLMWhisperer outputs.
 
 
 ## Main Files & Their Roles
-
-- **app.py**: Flask server that handles routes, API communication, and session management.
-- **auth.py**: Authentication logic for user login, registration, and session handling.
-- **models.py**: SQLAlchemy models defining the database schema for users, conversations, and system messages.
-- **main.js**: Client-side logic for handling UI events, API calls, and dynamic content updates. Includes detailed modal interactions for system messages, model selection, and temperature adjustments, enhancing user control over AI behavior.
-- **chat.html**: The primary user interface for real-time conversation with AI models. It includes functionalities such as initiating new conversations, accessing the admin dashboard, and adjusting AI model settings. It also integrates a rich text editor and supports rendering of Markdown, LaTeX, and syntax-highlighted code snippets.
-- **admin.html**: The admin dashboard template for managing users and system messages.
-- **login.html/register.html**: Templates for user authentication flows.
-
-## Key Functions
+**app.py**: Flask server that handles routes, API communication, and session management. It includes functions for chat processing, file handling, web scraping, image generation, and integrates with various AI models (OpenAI, Anthropic, Google). It also manages database operations, user authentication, and implements web search functionality.
+**auth.py**: Authentication logic for user login, registration, and session handling.**models.py**: SQLAlchemy models defining the database schema for users, conversations, system messages, folders, websites, and uploaded files.
+**main.js**: Client-side logic for handling UI events, API calls, and dynamic content updates. Includes detailed modal interactions for system messages, model selection, and temperature adjustments, enhancing user control over AI behavior.
+**chat.html**: The primary user interface for real-time conversation with AI models. It includes functionalities such as initiating new conversations, accessing the admin dashboard, and adjusting AI model settings. It also integrates a rich text editor and supports rendering of Markdown, LaTeX, and syntax-highlighted code snippets.
+**admin.html**: The admin dashboard template for managing users and system messages.
+**login.html/register.html**: Templates for user authentication flows.
+**file_utils.py**: Utility functions for managing file and folder structures within the application.
+**file_processing.py**: Handles the processing of various file types, including PDFs and other text-based documents.
+**embedding_store.py**: Manages the interaction with Pinecone for vector storage and retrieval.
+**llm_whisper_processor.py**: Interfaces with the Unstract LLMWhisperer API for advanced document processing and text extraction.
 
 
 ### app.py
@@ -90,79 +109,134 @@ AI ∞ UI is a web-based conversational interface that facilitates interactions 
 
 
 ### main.js
-`updateConversationList()`: Refreshes the conversation list in the sidebar.`checkActiveConversation()`: Checks if there is an active conversation and loads it if present.`showConversationControls(title, tokens)`: Updates the UI to show conversation controls and token usage information.`$('#chat-form').on('submit', function (e))`: Handles the submission of the chat form, preventing default behavior, capturing and displaying user input, sending it to the server, and processing the AI's response to update the chat interface dynamically. This function also manages the display of system messages, updates conversation lists, and handles URL and UI updates based on the conversation context.`renderOpenAI(content)`: Processes and renders Markdown, code snippets, and LaTeX content within the chat interface.`updateSystemMessageDropdown()`, `populateSystemMessageModal()`, `updateModelDropdownInModal(modelName)`: Functions related to system message management, allowing for the customization of automated responses.`updateTemperatureDisplay()` : Function for managing the temperature setting and model selection, providing flexibility in AI interactions.`createMessageElement(message)`, `updateConversationList()`, `loadConversation(conversationId)`: Functions for dynamically updating the UI and handling real-time user interactions.`saveWebsiteURL(websiteURL, systemMessageId)`: Saves a website URL associated with a particular system message to the backend. Handles POST request and error management.`updateModelDropdownInModal(modelName)`: Updates the model dropdown in the system message modal to reflect the selected model name, ensuring the UI is synchronized with the backend model settings.`populateModelDropdownInModal()`: Populates the model dropdown in the system message modal with available AI models, allowing users to select different models dynamically.`fetchAndProcessSystemMessages()`: Fetches system messages from the server and processes them to update the UI.`showModalFlashMessage(message, category)`: Displays a modal flash message of a specified category (e.g., success, warning).`checkAdminStatus(e)`: Checks if the user is an admin before allowing access to admin-specific features.`openStatusModal(userId, currentStatus)`: Opens a modal for updating the status of a user, pre-filling it with current information.`updateStatus()`: Submits the form inside the status update modal.`renderMathInElement(element)`: Checks and processes any LaTeX content within the specified element using MathJax.`createMessageElement(message)`: Creates and returns a message element for the chat interface based on the message role and content.`displaySystemMessage(systemMessage)`: Updates the chat interface to display a system message, including its description, associated model name, and temperature setting. It removes any existing system messages, prepends the new system message to the chat, and updates the internal messages array to include this system message. This function ensures that system messages are prominently displayed at the top of the chat interface. `openModalAndShowGroup(targetGroup)` and `toggleContentGroup(groupID)`: These functions manage the visibility of content groups within modals. openModalAndShowGroup is used to open a modal and display a specific content group by hiding others and showing the targeted one. toggleContentGroup handles the visibility toggle of content groups within a modal, ensuring only the selected group is visible while others are hidden. Both functions are essential for dynamic UI interactions within modals, allowing for context-specific displays.
+`renderOpenAIWithFootnotes(content, enableWebSearch)`: Renders AI responses with hyperlinked footnotes for web search results when enabled.
+`updateConversationList()`: Refreshes the conversation list in the sidebar, including model and temperature information for each conversation.
+`loadConversation(conversationId)`: Loads a specific conversation, updating the UI with message history and conversation metadata.
+`showConversationControls(title, tokens)`: Updates the UI to display conversation title and token usage information.
+`handleAddFileButtonClick()`: Manages the file upload process within the system message modal.
+`handleAddWebsiteButtonClick()`: Handles the addition of websites to system messages for indexing.
+`updateWebsiteControls()`: Manages the visibility of website-related controls in the system message modal.
+`populateModelDropdownInModal()`: Populates the model selection dropdown in the system message modal.
+`updateModelDropdownInModal(modelName)`: Updates the model dropdown in the modal to reflect the selected model.
+`fetchAndProcessSystemMessages()`: Fetches system messages from the server and processes them to update the UI.
+`displaySystemMessage(systemMessage)`: Updates the chat interface to display a system message, including its description, associated model name, and temperature setting.
 
 
+## models.py
 
-### embedding_store.py
-`__init__(self, db_url)`: Initializes the EmbeddingStore with Pinecone configuration.`generate_db_identifier(self, db_url)`: Generates a unique identifier for the database.`get_embed_model(self)`: Returns the OpenAI embedding model.`get_storage_context(self, system_message_id)`: Creates and returns a storage context for a given system message.`generate_namespace(self, system_message_id)`: Generates a unique namespace for a system message.
+This file defines the database schema using SQLAlchemy ORM. The following models are defined:
 
-### file_processing.py
-`process_file(self, file_path, storage_context)`: Processes a file and creates an index.`process_text(self, text_content, metadata, storage_context)`: Processes text content and creates an index.`_create_index(self, documents, storage_context)`: Creates an index from documents.`query_index(self, query_text, storage_context)`: Performs a RAG query on the index.
+### Folder
+Represents a folder for organizing conversations.Fields: id, titleRelationship: One-to-many with Conversation
 
-### Global Variables
+### Conversation
+Represents a conversation between a user and the AI.Fields: id, title, history (JSON), token_count, folder_id, user_id, created_at, updated_at, model_name, sentiment, tags, language, status, rating, confidence, intent, entities (JSON), temperature, prompt_template, vector_search_results (JSON), generated_search_queries (JSON), web_search_results (JSON)Relationships: Many-to-one with User and Folder
 
-messages: An array that stores the conversation messages.
-systemMessages: An array that stores the system messages.
-model: Stores the selected model name.
-activeConversationId: Keeps track of the currently selected conversation.
-currentSystemMessage: Stores the default system message.
-currentSystemMessageDescription: Stores the description of the current system message.
-initialTemperature: Stores the initial temperature setting.
-isSaved: A flag to track whether the system message changes have been saved.
-activeSystemMessageId: Tracks the currently active system message ID.
-showTemperature: Tracks the visibility of the temperature settings.
-selectedTemperature: Stores the default temperature value.
-activeWebsiteId: Stores the currently active website ID for the Websites Group.
+### User
+Represents a user of the application.Fields: id, username, email, password_hash, is_admin, status, created_at, updated_at, last_loginRelationships: One-to-many with Conversation and UserUsage
 
-### models.py
-`Conversation`: Represents a conversation with fields such as title, history, token count, folder_id, user_id, created_at, updated_at, model_name, sentiment, tags, language, status, rating, confidence, intent, entities, temperature, and prompt_template.
-`User`: Represents a user with fields for username, email, password hash, admin status, user status, and last login time.
-`UserUsage`: Tracks user API usage, including tokens used, session times, and associated costs.
-`SystemMessage`: Stores system messages with fields for name, content, description, associated model, temperature setting, creator, source configuration, and web search enablement.
-`Website`: Manages website information associated with system messages, including URL, metadata, indexing status, and indexing frequency.
-`UploadedFile`: Represents files uploaded and associated with system messages.
-temperature, and prompt_template. This model is crucial for storing comprehensive details about each conversation, including metadata and interaction specifics.
-`Folder`: Manages groups of conversations, allowing users to categorize and organize conversations.
+### UserUsage
+Tracks API usage for each user.Fields: id, user_id, api_used, tokens_used, session_start, session_end, costRelationship: Many-to-one with User
 
-### embedding_store.py
+### SystemMessage
+Represents system messages used to configure AI behavior.Fields: id, name, content, description, model_name, temperature, created_by, created_at, updated_at, source_config (JSON), enable_web_searchRelationships: Many-to-one with User, One-to-many with Website and UploadedFile
 
-This file contains the `EmbeddingStore` class, which manages the interaction with Pinecone for vector storage and retrieval. Here are the key components and functions:
-`__init__(self, db_url)`: Initializes the EmbeddingStore with Pinecone configuration.`generate_db_identifier(self, db_url)`: Generates a unique identifier for the database.`get_embed_model(self)`: Returns the OpenAI embedding model.`get_storage_context(self, system_message_id)`: Creates and returns a storage context for a given system message.`generate_namespace(self, system_message_id)`: Generates a unique namespace for a system message.
+### Website
+Represents websites associated with system messages for indexing.Fields: id, url, site_metadata (JSON), system_message_id, indexed_at, indexing_status, last_error, indexing_frequency, created_at, updated_atRelationship: Many-to-one with SystemMessage
+
+### UploadedFile
+Represents files uploaded by users and associated with system messages.Fields: id, user_id, original_filename, file_path, processed_text_path, upload_timestamp, file_size, mime_type, system_message_idRelationships: Many-to-one with User and SystemMessage
 
 Key features:
-Uses Pinecone for efficient storage and retrieval of embeddings.Integrates with OpenAI's embedding model.Generates unique namespaces for each system message to organize embeddings.Handles error cases and provides informative logging.
+Uses SQLAlchemy ORM for database interactions.Implements relationships between models for efficient data retrieval.Includes timestamps for creation and updates on relevant models.Uses JSON fields for storing complex data structures.Implements password hashing for user security.Provides to_dict() methods for easy serialization of model instances.
 
-This class is crucial for managing the vector storage aspect of the application, enabling efficient semantic search and retrieval of relevant information during conversations.
+This comprehensive database schema allows for efficient organization of conversations, system messages, and associated resources while maintaining user-specific data and usage tracking. It supports the application's core functionalities, including conversation management, user authentication, file uploads, website indexing, and system message configuration.
+
+### embedding_store.py
+
+The `EmbeddingStore` class in this file manages the interaction with Pinecone for vector storage and retrieval. Here are the key components and functions:
+`__init__(self, db_url)`: Initializes the EmbeddingStore with Pinecone configuration. It sets up the Pinecone client, creates the index if it doesn't exist, and generates a unique database identifier.`generate_db_identifier(self, db_url)`: Generates a unique identifier for the database based on the database URL.`get_embed_model(self)`: Returns the OpenAI embedding model used for generating embeddings.`get_storage_context(self, system_message_id)`: Creates and returns a storage context for a given system message. This includes setting up the Pinecone vector store with the appropriate namespace.`generate_namespace(self, system_message_id)`: Generates a unique namespace for a system message, combining the system message ID and the database identifier.
+
+Key features:
+Uses Pinecone for efficient storage and retrieval of embeddings.Integrates with OpenAI's embedding model for generating embeddings.Generates unique namespaces for each system message to organize embeddings.Supports serverless Pinecone index creation with configurable cloud and region settings.Implements error handling and logging for initialization and operation processes.Uses MD5 hashing for generating unique identifiers and namespaces.
+
+This class is crucial for managing the vector storage aspect of the application, enabling efficient semantic search and retrieval of relevant information during conversations. It ensures that embeddings are properly organized and can be quickly accessed based on the system message context.
+
+The EmbeddingStore is designed to work with the broader application architecture, particularly in conjunction with the file processing and querying functionalities, to provide a robust system for managing and retrieving contextual information in AI-driven conversations.
+
 
 ### llm_whisper_processor.py
 
 This file contains the `LLMWhisperProcessor` class, which interfaces with the Unstract LLMWhisperer API for advanced document processing and text extraction. Key features and functions include:
-`__init__(self)`: Initializes the LLMWhisperProcessor with the API key and sets up a folder for processed texts.`process_file(self, file_path)`: Processes a file using the LLMWhisperer API, extracting and storing the text content.`highlight_text(self, whisper_hash, search_text)`: Highlights specific text within a processed document.
+`__init__(self, app)`: Initializes the LLMWhisperProcessor with the API key and sets up the LLMWhisperer client.`process_file(self, file_path, user_id, system_message_id, file_id)`: Processes a file using the LLMWhisperer API, extracting and storing the text content. It returns the extracted text and the full LLMWhisperer output.`highlight_text(self, whisper_hash, search_text)`: Highlights specific text within a processed document using the LLMWhisperer API.
 
 Key features:
-Integrates with Unstract's LLMWhisperer API for advanced document processing.Extracts text from various file formats, including complex PDFs.Stores processed text for future reference and analysis.Provides text highlighting capabilities for search and analysis purposes.Handles API exceptions and provides error logging.
+Integrates with Unstract's LLMWhisperer API for advanced document processing.Extracts text from various file formats, including complex PDFs.Stores both the extracted text and the full LLMWhisperer output for future reference and analysis.Provides text highlighting capabilities for search and analysis purposes.Handles API exceptions and provides error logging.Uses environment variables for secure API key management.
 
 This class enhances the application's document processing capabilities, allowing for more accurate and structured extraction of text from complex documents. It's particularly useful for scenarios involving detailed document analysis or when working with PDFs that contain intricate layouts or embedded information.
+
+The LLMWhisperProcessor works in conjunction with the FileProcessor to provide comprehensive document handling capabilities, supporting the application's ability to process and analyze a wide range of document types.
+
+Note: Ensure that the LLMWHISPERER_API_KEY environment variable is set before using this class.
 
 ### file_processing.py
 
 The `FileProcessor` class in this file handles the processing of various file types, including PDFs and other text-based documents. It integrates with LLMWhisperer for advanced PDF processing and uses LlamaIndex for indexing and querying. Key functions include:
-`__init__(self, embedding_store)`: Initializes the FileProcessor with an embedding store and LLMWhisperProcessor.`process_file(self, file_path, storage_context, file_id)`: Processes a file, using LLMWhisperer for PDFs and SimpleDirectoryReader for other file types.`process_text(self, text_content, metadata, storage_context)`: Processes raw text content.`_create_index(self, documents, storage_context)`: Creates a vector index from processed documents.`query_index(self, query_text, storage_context)`: Performs a RAG (Retrieval-Augmented Generation) query on the created index.`highlight_text(self, whisper_hash, search_text)`: Utilizes LLMWhisperer to highlight specific text in processed documents.
+`__init__(self, embedding_store, app)`: Initializes the FileProcessor with an embedding store and LLMWhisperProcessor.`process_file(self, file_path, storage_context, file_id, user_id, system_message_id)`: Processes a file, using LLMWhisperer for PDFs and SimpleDirectoryReader for other file types. It creates an index, saves the processed text, and returns the path to the processed text file.`process_text(self, text_content, metadata, storage_context)`: Processes raw text content, creating a Document object and an index.`_create_index(self, documents, storage_context)`: Creates a vector index from processed documents using an ingestion pipeline and LlamaIndex's VectorStoreIndex.`query_index(self, query_text, storage_context)`: Performs a RAG (Retrieval-Augmented Generation) query on the created index.`highlight_text(self, whisper_hash, search_text)`: Utilizes LLMWhisperer to highlight specific text in processed documents.
 
 Key features:
-Differentiates between PDF and non-PDF file processing.Integrates LLMWhisperer for advanced PDF text extraction.Uses LlamaIndex for efficient document indexing and querying.Maintains file metadata throughout the processing pipeline.Provides RAG capabilities for intelligent information retrieval.Handles exceptions and provides error logging.
+Differentiates between PDF and non-PDF file processing.Integrates LLMWhisperer for advanced PDF text extraction.Uses LlamaIndex for efficient document indexing and querying.Maintains file metadata throughout the processing pipeline, including file_id for each document and node.Implements an ingestion pipeline for document processing, including node parsing and embedding.Provides RAG capabilities for intelligent information retrieval.Handles exceptions and provides error logging.Saves processed text files for future reference.
 
-This class is crucial for the application's document processing and information retrieval capabilities, enabling efficient handling of various file types and intelligent querying of processed content.
+This class is crucial for the application's document processing and information retrieval capabilities, enabling efficient handling of various file types and intelligent querying of processed content. It works in conjunction with the EmbeddingStore to manage vector representations of documents and the LLMWhisperProcessor for specialized PDF handling.
+
+The FileProcessor is designed to integrate seamlessly with the broader application architecture, particularly in supporting the chat functionality by providing relevant context from processed documents during conversations.
+
+
+### file_utils.py
+
+This file contains utility functions for managing file and folder structures within the application. It provides a consistent and organized approach to handling user uploads, processed texts, and LLMWhisperer outputs.
+
+Key functions include:
+
+`get_user_folder(app, user_id)`: Retrieves the base folder for a specific user.
+`get_system_message_folder(app, user_id, system_message_id)`: Gets the folder for a specific system message within a user's folder.
+`get_uploads_folder(app, user_id, system_message_id)`: Returns the uploads folder for a specific system message.
+`get_processed_texts_folder(app, user_id, system_message_id)`: Returns the folder for processed texts of a specific system message.
+`get_llmwhisperer_output_folder(app, user_id, system_message_id)`: Returns the folder for LLMWhisperer outputs of a specific system message.
+`ensure_folder_exists(folder_path)`: Creates a folder if it doesn't exist.
+`get_file_path(app, user_id, system_message_id, filename, folder_type)`: Retrieves the full path for a file based on its type and associated system message.
+
+These utilities ensure a structured and consistent file management system across the application, separating user data, system messages, and different types of processed files. This organization facilitates easier file retrieval, processing, and management throughout the application's lifecycle.
+
+## File Structure
+
+The application uses a hierarchical file structure for organizing user uploads and processed files:
+BASE_UPLOAD_FOLDER/ ├── user_id/ │ └── system_message_id/ │ ├── uploads/ │ ├── processed_texts/ │ └── llmwhisperer_output/
+
+This structure allows for efficient organization and retrieval of files based on user, system message, and file type.
 
 
 ## Modal-Based User Interface Guidelines
 In our project, we prioritize a modal-based approach for user interfaces when requesting input or displaying information that requires user interaction. This approach ensures a consistent, accessible, and user-friendly experience across the application. Use Modals for User Input: Whenever the application requires input from the user, whether it's form submission, settings configuration, or any other input-driven task, use a modal window. This includes actions like adding or editing data, confirming decisions, or any interaction that benefits from focused attention.For future iterations and feature implementations, we strongly encourage maintaining the modal-based approach for user interfaces. This consistency is key to providing an intuitive and pleasant user experience across our application.
 The system message modal allows for comprehensive configuration of system messages, including templates setup, model selection, and temperature settings. It also provides controls for adding websites and files, which can be used in specific scenarios like real-time data analysis or document review. Intended as a hub for systemic orchestration.
 
-## Error Handling and Feedback
-**Client-Side**: Errors are logged in the console and user-friendly messages are displayed using modal alerts.
-**Server-Side**: Errors are logged using Flask's app.logger and appropriate HTTP status codes are returned to the frontend.
+## Error Handling and Logging
+
+The application implements comprehensive error handling and logging mechanisms, including:
+Rotating file handlers for log managementConsole logging for development debuggingDetailed error tracking and reporting throughout the application
+
+### Ongoing Logging Enhancements
+
+We are currently in the process of improving our logging system to better handle Unicode characters and special symbols. This involves:
+Implementation of a custom UnicodeFormatter for improved character encoding in logs.
+Gradual migration of logging calls from f-string formatting to %s placeholder style.
+
+These enhancements aim to:
+Prevent UnicodeEncodeErrors in logsImprove log readability and consistencyEnhance the overall robustness of our logging system
+
+Status: Partially implemented, with ongoing updates.
+
+Note for contributors: When working on the codebase, please be aware of this ongoing update. If you encounter any logging statements using f-strings (e.g., `app.logger.info(f"Message: {variable}")`), please update them to the new style: `app.logger.info("Message: %s", variable)`.
 
 
 ## External Libraries and Scripts
@@ -180,10 +254,6 @@ The system message modal allows for comprehensive configuration of system messag
 **LlamaIndex**: A framework for building RAG applications and connecting LLMs with external data.
 **Unstract LLMWhisperer**: An API for extracting and structuring text from complex PDF documents, enhancing the accuracy and efficiency of document processing for LLMs.
 
-## Global Variables
-`messages`: An array that stores the conversation messages.`systemMessages`: An array that stores the system messages.`model`: Stores the selected model name.`activeConversationId`: Keeps track of the currently selected conversation.`currentSystemMessage`: Stores the default system message.`currentSystemMessageDescription`: Stores the description of the current system message.`initialTemperature`: Stores the initial temperature setting.`isSaved`: A flag to track whether the system message changes have been saved.`activeSystemMessageId`: Tracks the currently active system message ID.`showTemperature`: Tracks the visibility of the temperature settings.`selectedTemperature`: Stores the default temperature value. `activeWebsiteId`: Stores the currently active website ID for the Websites Group.
-
-
 ## Database Schema
 
 The application uses a relational database with the following key relationships:
@@ -197,17 +267,27 @@ This schema allows for efficient organization of conversations, system messages,
 **Google AI**: Integrates Gemini models.
 **Pinecone**: Vector database for efficient storage and retrieval of embeddings.
 **Brave Search**: Used for web search functionality.
-**Unstract LLMWhisperer**: An API for extracting and structuring text from complex PDF documents, enhancing the accuracy and efficiency of document processing for LLMs.
+**Unstract LLMWhisperer**: An API for extracting and structuring text from complex PDF documents.
 
 ## API Keys and Environment Variables
 
 The application requires several API keys and environment variables to be set:
-`OPENAI_API_KEY`: For OpenAI services`ANTHROPIC_API_KEY`: For Anthropic's Claude models`GOOGLE_API_KEY`: For Google's Gemini models`PINECONE_API_KEY`: For Pinecone vector database`BRAVE_SEARCH_API_KEY`: For Brave Search API`DATABASE_URL`: PostgreSQL database connection string`SECRET_KEY`: Flask secret key for session management `LLMWHISPERER_API_KEY`: For Unstract's LLMWhisperer API
+`OPENAI_API_KEY`: For OpenAI services
+`ANTHROPIC_API_KEY`: For Anthropic's Claude models
+`GOOGLE_API_KEY`: For Google's Gemini models
+`PINECONE_API_KEY`: For Pinecone vector database
+`BRAVE_SEARCH_API_KEY`: For Brave Search API
+`DATABASE_URL`: PostgreSQL database connection string
+`SECRET_KEY`: Flask secret key for session management
+`LLMWHISPERER_API_KEY`: For Unstract's LLMWhisperer API
+`ADMIN_USERNAME`: For creating an admin user
+`ADMIN_PASSWORD`: For setting the admin user's password
 
 ## Data Processing and Search
 **File Processing**: The application can process and index various file types for later retrieval during conversations.
-**Website Indexing**: Supports indexing of websites to include their content in the vector search. (In development)
+**Website Indexing**: Supports indexing of websites to include their content in the vector search.
 **Vector Search**: Utilizes Pinecone for efficient storage and retrieval of document embeddings.
+**Web Search**: Integrates Brave Search for real-time web information retrieval during conversations.
 
 ## Setting up API Keys
 Create a new file called `.env` in the project's root directory.
