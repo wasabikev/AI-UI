@@ -41,13 +41,23 @@ from file_processing import FileProcessor
 from embedding_store import EmbeddingStore
 from pinecone import Pinecone
 
-from typing import List, Dict # imported to support web search with footnotes
-import re # imported to support web search with footnotes
-
 from file_utils import (
     get_user_folder, get_system_message_folder, get_uploads_folder,
     get_processed_texts_folder, get_llmwhisperer_output_folder, ensure_folder_exists, get_file_path
 )
+
+# Imports for web search with footnotes
+import asyncio
+from asyncio import Queue
+from functools import lru_cache
+from aiohttp import ClientSession, ClientResponseError
+from aiolimiter import AsyncLimiter
+from bs4 import BeautifulSoup
+from typing import List, Dict  
+import re 
+from concurrent.futures import ThreadPoolExecutor
+from tenacity import retry, stop_after_attempt, wait_exponential
+from async_timeout import timeout
 
 from openai import OpenAI
 client = OpenAI()
@@ -143,33 +153,57 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 from typing import List, Dict
 
-def perform_web_search_process(model, messages, user_query):
-    app.logger.info(f'Understanding query context: {user_query[:50]}...')
-    query_interpretation = understand_query(model, messages, user_query)
-    app.logger.info(f'Query interpretation: {query_interpretation[:100]}...')
+# Begining of web search 
 
-    app.logger.info(f'Generating search query based on interpretation...')
-    generated_search_query = generate_search_query(model, query_interpretation)
-    app.logger.info(f'Generated search query: {generated_search_query}')
+# Rate limiter: 3 requests per second
+rate_limiter = AsyncLimiter(3, 1)
 
-    if not generated_search_query:
-        app.logger.warning('Failed to generate search query')
-        return None, None
+class WebSearchError(Exception):
+    """Custom exception for web search errors."""
+    pass
 
-    app.logger.info(f'Performing web search for query: {generated_search_query}')
-    web_search_results = perform_web_search(generated_search_query)
-    app.logger.info(f'Web search results: {web_search_results[:100]}...')
+async def perform_web_search(query: str) -> List[Dict[str, str]]:
+    url = 'https://api.search.brave.com/res/v1/web/search'
+    headers = {
+        'Accept': 'application/json',
+        'X-Subscription-Token': BRAVE_SEARCH_API_KEY
+    }
+    params = {
+        'q': query,
+        'count': 3
+    }
 
-    if web_search_results:
-        summarized_results = summarize_search_results(model, web_search_results)
-        app.logger.info(f'Summarized search results: {summarized_results[:100]}...')
-    else:
-        app.logger.warning('No web search results found.')
-        summarized_results = None
+    app.logger.info(f"Performing web search with query: {query}")
 
-    return generated_search_query, summarized_results
+    try:
+        async with ClientSession() as session:
+            async with session.get(url, headers=headers, params=params, timeout=10) as response:
+                if response.status == 429:
+                    raise WebSearchError("Rate limit reached. Please try again later.")
+                response.raise_for_status()
+                results = await response.json()
+        
+        if not results.get('web', {}).get('results', []):
+            app.logger.warning(f'No results found for query: "{query[:50]}..."')
+            return []
+        
+        formatted_results = [
+            {
+                "title": result['title'],
+                "url": result['url'],
+                "description": result['description'],
+                "citation_number": i
+            }
+            for i, result in enumerate(results['web']['results'], 1)
+        ]
+        
+        app.logger.info(f'Number of results: {len(formatted_results)}')
+        return formatted_results
+    except aiohttp.ClientError as e:
+        app.logger.error(f'Error performing Brave search: {str(e)}')
+        raise WebSearchError(f"Failed to perform web search: {str(e)}")
 
-def understand_query(model, messages: List[Dict[str, str]], user_query: str) -> str:
+async def understand_query(model, messages: List[Dict[str, str]], user_query: str) -> str:
     app.logger.info(f"Understanding query: {user_query}")
     
     # Get the last 5 exchanges (or all if less than 5)
@@ -198,7 +232,7 @@ def understand_query(model, messages: List[Dict[str, str]], user_query: str) -> 
     app.logger.info(f"Sending interpretation request to OpenAI: {interpretation_request_payload}")
 
     try:
-        response = client.chat.completions.create(**interpretation_request_payload)
+        response = client.chat.completions.create(**interpretation_request_payload)  
         interpretation = response.choices[0].message.content.strip()
         app.logger.info(f"Query interpretation: {interpretation}")
         return interpretation
@@ -206,49 +240,118 @@ def understand_query(model, messages: List[Dict[str, str]], user_query: str) -> 
         app.logger.error(f"Error in understand_query: {str(e)}")
         return None
 
-def generate_search_query(model, interpretation: str) -> str:
-    app.logger.info(f"Generating search query for interpretation: {interpretation}")
+async def generate_search_queries(model, interpretation: str) -> List[str]:
+    app.logger.info(f"Generating search queries for interpretation: {interpretation}")
     query_message = {
         "role": "system",
-        "content": "You are an AI assistant that generates concise search queries based on user interpretations. "
-                   "Always respond with only the search query, without any additional text or explanations."
+        "content": "Generate three diverse search queries based on the given interpretation. Respond with only valid JSON in the format: {\"queries\": [\"query1\", \"query2\", \"query3\"]}"
     }
     
-    few_shot_examples = [
-        {"role": "user", "content": "The user wants to know about the history and evolution of artificial intelligence."},
-        {"role": "assistant", "content": "history and evolution of artificial intelligence"},
-        {"role": "user", "content": "The user is looking for information on how to train a deep learning model for image classification."},
-        {"role": "assistant", "content": "train deep learning model for image classification tutorial"},
-        {"role": "user", "content": "The user needs tips on optimizing Python code for better performance."},
-        {"role": "assistant", "content": "Python code optimization techniques for performance"}
-    ]
-    
-    messages = [query_message] + few_shot_examples + [{"role": "user", "content": interpretation}]
+    messages = [query_message, {"role": "user", "content": interpretation}]
     
     try:
-        query, _ = get_response_from_model(client, model, messages, 0.7)
-        clean_query = query.strip()
-        app.logger.info(f"Generated search query: {clean_query}")
-        return clean_query
+        chat_output, _ = await get_response_from_model(client, model, messages, 0.7)
+        if chat_output is None:
+            raise ValueError("Failed to generate search queries")
+        queries = json.loads(chat_output.strip())["queries"]
+        app.logger.info(f"Generated search queries: {queries}")
+        return queries
     except Exception as e:
-        app.logger.error(f"Error in generate_search_query: {str(e)}")
-        return None
+        app.logger.error(f"Error in generate_search_queries: {str(e)}")
+        raise WebSearchError(f"Failed to generate search queries: {str(e)}")
 
-def summarize_search_results(model, results: List[Dict[str, str]]) -> str:
-    """
-    Summarize the search results and include citations with links.
-    """
+async def perform_multiple_web_searches(queries: List[str]) -> List[Dict[str, str]]:
+    all_results = []
+    urls_seen = set()
+    query_queue = Queue()
+
+    for query in queries:
+        await query_queue.put(query)
+
+    async def process_queue():
+        while not query_queue.empty():
+            query = await query_queue.get()
+            try:
+                results = await perform_web_search(query)
+                for result in results:
+                    url = result.get("url")
+                    if url and url not in urls_seen:
+                        urls_seen.add(url)
+                        all_results.append(result)
+                app.logger.info(f"Successful search for query: {query[:50]}...")
+            except WebSearchError as e:
+                app.logger.error(f"Error searching for query '{query}': {str(e)}")
+            finally:
+                query_queue.task_done()
+            
+            # Wait for 1 second before processing the next query
+            await asyncio.sleep(1)
+
+    # Process the queue
+    await process_queue()
+
+    return all_results
+
+
+async def fetch_full_content(results: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    app.logger.info(f"Starting fetch_full_content with {len(results)} results")
+
+    async def get_page_content(url: str) -> str:
+        try:
+            async with ClientSession() as session:
+                app.logger.info(f"Fetching content for URL: {url}")
+                async with session.get(url, timeout=10) as response:
+                    html = await response.text()
+                    app.logger.info(f"Received HTML content for {url} (length: {len(html)})")
+                    soup = BeautifulSoup(html, 'html.parser')
+                    text_content = soup.get_text(strip=True, separator='\n')
+                    app.logger.info(f"Extracted text content for {url} (length: {len(text_content)})")
+                    return text_content
+        except Exception as e:
+            app.logger.error(f"Error fetching content for {url}: {str(e)}")
+            return ""
+
+    semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
+
+    async def fetch_with_semaphore(result):
+        async with semaphore:
+            app.logger.info(f"Processing result: {result['title'][:50]}... (URL: {result['url']})")
+            content = await get_page_content(result['url'])
+            full_result = {**result, "full_content": content}
+            app.logger.info(f"Completed processing for {result['url']} (content length: {len(content)})")
+            return full_result
+
+    tasks = [fetch_with_semaphore(result) for result in results]
+    app.logger.info(f"Created {len(tasks)} tasks for fetching full content")
+    
+    full_content_results = await asyncio.gather(*tasks)
+    
+    app.logger.info(f"Completed fetch_full_content. Processed {len(full_content_results)} results")
+    
+    # Log a summary of the results
+    for i, result in enumerate(full_content_results):
+        app.logger.info(f"Result {i+1}: URL: {result['url']}, Title: {result['title'][:50]}..., Content length: {len(result.get('full_content', ''))}")
+
+    return full_content_results
+
+# Controls the search results.  Lots of improvements can happen here to increase quality. (e.g. better summarization, better search results, etc.) Presently only 500 characters used from each search result.
+async def summarize_search_results(model, results: List[Dict[str, str]]) -> str:
     summary_message = {
         "role": "system",
-        "content": "Summarize the following search results. Include relevant information and cite sources using numbered footnotes. Always include the full URLs for each footnote at the end of the summary."
+        "content": "Summarize the following search results. Include relevant information and cite sources using "
+            "numbered footnotes in the format [1], [2], etc. At the end of the summary, include a 'Sources:' "
+            "section with the full URLs for each footnote, formatted as '[1] url1', '[2] url2', etc., "
+            "each on a new line."
     }
     
-    results_text = "\n\n".join([f"{r['title']}\n{r['description']}\n[{r['citation_number']}] {r['url']}" for r in results])
+    formatted_results = "\n".join([
+        f"<item index=\"{r['citation_number']}\">\n<source>{r['url']}</source>\n<title>{r['title']}</title>\n<content>{r['full_content'][:500]}...</content>\n</item>"
+        for r in results
+    ])
     
     try:
-        summary, _ = get_response_from_model(client, model, [summary_message, {"role": "user", "content": results_text}], 0.7)
+        summary, _ = await get_response_from_model(client, model, [summary_message, {"role": "user", "content": formatted_results}], 0.7)
         
-        # Ensure footnotes are included
         if not any(f"[{i}]" in summary for i in range(1, len(results) + 1)):
             footnotes = "\n\nSources:\n" + "\n".join([f"[{r['citation_number']}] {r['url']}" for r in results])
             summary += footnotes
@@ -256,54 +359,7 @@ def summarize_search_results(model, results: List[Dict[str, str]]) -> str:
         return summary.strip()
     except Exception as e:
         app.logger.error(f"Error in summarize_search_results: {str(e)}")
-        return "Error summarizing search results."
-
-def perform_web_search(query: str) -> List[Dict[str, str]]:
-    url = 'https://api.search.brave.com/res/v1/web/search'
-    headers = {
-        'Accept': 'application/json',
-        'X-Subscription-Token': BRAVE_SEARCH_API_KEY
-    }
-    params = {
-        'q': query,
-        'count': 5  # Limit to 5 results
-    }
-
-    app.logger.info(f"Performing web search with query: {query}")
-    app.logger.info(f"Headers: {headers}")
-    app.logger.info(f"Params: {params}")
-
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        app.logger.info(f"Response status code: {response.status_code}")
-        app.logger.info(f"Response content: {response.text[:500]}...")  # Log first 500 characters of response
-
-        response.raise_for_status()
-        results = response.json()
-        
-        if not results.get('web', {}).get('results', []):
-            app.logger.warning(f'No results found for query: "{query[:50]}..."')
-            return []
-        
-        # Process and format the results
-        formatted_results = []
-        for i, result in enumerate(results['web']['results'], 1):
-            formatted_results.append({
-                "title": result['title'],
-                "url": result['url'],
-                "description": result['description'],
-                "citation_number": i
-            })
-        
-        app.logger.info(f'Successful web search for query: "{query[:50]}..."')
-        app.logger.info(f'Number of results: {len(formatted_results)}')
-        return formatted_results
-    except requests.RequestException as e:
-        app.logger.error(f'Error performing Brave search: {str(e)}')
-        if hasattr(e, 'response'):
-            app.logger.error(f'Status code: {e.response.status_code}')
-            app.logger.error(f'Response content: {e.response.content}')
-        return []
+        raise WebSearchError(f"Failed to summarize search results: {str(e)}")
 
 
 @app.route('/api/system-messages/<int:system_message_id>/toggle-web-search', methods=['POST'])
@@ -317,6 +373,41 @@ def toggle_web_search(system_message_id):
     db.session.commit()
     
     return jsonify({'message': 'Web search setting updated successfully'}), 200
+
+async def perform_web_search_process(model, messages, user_query):
+    try:
+        app.logger.info(f'Understanding query context: {user_query[:50]}...')
+        query_interpretation = await understand_query(model, messages, user_query)
+        app.logger.info(f'Query interpretation: {query_interpretation[:100]}...')
+
+        app.logger.info('Generating multiple search queries based on interpretation...')
+        generated_search_queries = await generate_search_queries(model, query_interpretation)
+        app.logger.info(f'Generated search queries: {generated_search_queries}')
+
+        if not generated_search_queries:
+            raise WebSearchError('Failed to generate search queries')
+
+        app.logger.info(f'Performing web searches for queries: {generated_search_queries}')
+        web_search_results = await perform_multiple_web_searches(generated_search_queries)
+        app.logger.info(f'Web search results count: {len(web_search_results)}')
+
+        if web_search_results:
+            full_content_results = await fetch_full_content(web_search_results)
+            summarized_results = await summarize_search_results(model, full_content_results)
+            app.logger.info(f'Summarized search results: {summarized_results[:100]}...')
+        else:
+            app.logger.warning('No web search results found.')
+            summarized_results = "No relevant web search results were found."
+
+        return generated_search_queries, summarized_results
+    except WebSearchError as e:
+        app.logger.error(f'Web search process error: {str(e)}')
+        return generated_search_queries, f"An error occurred during the web search process: {str(e)}"
+    except Exception as e:
+        app.logger.error(f'Unexpected error in web search process: {str(e)}')
+        return None, "An unexpected error occurred during the web search process."
+
+# End of web search
 
 @app.route('/query_documents', methods=['POST'])
 @login_required
@@ -1025,13 +1116,28 @@ def get_conversation(conversation_id):
     if conversation is None:
         return jsonify({'error': 'Conversation not found'}), 404
 
-    # Convert the Conversation object into a dictionary with current fields.
+    # Convert the Conversation object into a dictionary with all fields, including the new ones
     conversation_dict = {
+        "id": conversation.id,
         "title": conversation.title,
         "history": json.loads(conversation.history),
         "token_count": conversation.token_count,
-        'model_name': conversation.model_name,
-        "temperature": conversation.temperature
+        "model_name": conversation.model_name,
+        "temperature": conversation.temperature,
+        "vector_search_results": json.loads(conversation.vector_search_results) if conversation.vector_search_results else None,
+        "generated_search_queries": json.loads(conversation.generated_search_queries) if conversation.generated_search_queries else None,
+        "web_search_results": json.loads(conversation.web_search_results) if conversation.web_search_results else None,
+        "created_at": conversation.created_at.isoformat() if conversation.created_at else None,
+        "updated_at": conversation.updated_at.isoformat() if conversation.updated_at else None,
+        "sentiment": conversation.sentiment,
+        "tags": conversation.tags,
+        "language": conversation.language,
+        "status": conversation.status,
+        "rating": conversation.rating,
+        "confidence": conversation.confidence,
+        "intent": conversation.intent,
+        "entities": json.loads(conversation.entities) if conversation.entities else None,
+        "prompt_template": conversation.prompt_template
     }
     return jsonify(conversation_dict)
 
@@ -1164,16 +1270,17 @@ def reset_conversation():
         del session['conversation_id']
     return jsonify({"message": "Conversation reset successful"})
 
-def get_response_from_model(client, model, messages, temperature):
+async def get_response_from_model(client, model, messages, temperature):
     """
     Routes the request to the appropriate API based on the model selected.
+    Supports both synchronous and asynchronous calls.
     """
     app.logger.info(f"Getting response from model: {model}")
     app.logger.info(f"Temperature: {temperature}")
     app.logger.info(f"Number of messages: {len(messages)}")
 
     try:
-        if model in ["gpt-3.5-turbo", "gpt-4-0613", "gpt-4-1106-preview", "gpt-4-turbo-2024-04-09", "gpt-4o-2024-08-06"]:
+        if model.startswith("gpt-"):
             # OpenAI chat models
             payload = {
                 "model": model,
@@ -1181,13 +1288,14 @@ def get_response_from_model(client, model, messages, temperature):
                 "temperature": temperature,
                 "max_tokens": 4096  # Current maximum tokens supported by OpenAI
             }
+            # Use synchronous call for OpenAI models
             response = client.chat.completions.create(**payload)
             chat_output = response.choices[0].message.content.strip()
             model_name = response.model
 
-        elif model in ["claude-3-opus-20240229", "claude-3-5-sonnet-20240620"]:
+        elif model.startswith("claude-"):
             # Anthropic model
-            anthropic_client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
+            anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
             anthropic_messages = []
             system_message = None
@@ -1205,7 +1313,8 @@ def get_response_from_model(client, model, messages, temperature):
 
             max_tokens = 8192 if model == "claude-3-5-sonnet-20240620" else 4096
 
-            response = anthropic_client.messages.create(
+            response = await asyncio.to_thread(
+                anthropic_client.messages.create,
                 model=model,
                 messages=anthropic_messages,
                 max_tokens=max_tokens,
@@ -1222,7 +1331,11 @@ def get_response_from_model(client, model, messages, temperature):
                 "role": "user",
                 "parts": [{"text": "\n".join([m['content'] for m in messages])}]
             }]
-            response = gemini_model.generate_content(contents, generation_config={"temperature": temperature})
+            response = await asyncio.to_thread(
+                gemini_model.generate_content,
+                contents,
+                generation_config={"temperature": temperature}
+            )
             chat_output = response.text
             model_name = model
 
@@ -1237,6 +1350,11 @@ def get_response_from_model(client, model, messages, temperature):
         app.logger.error(f"Error getting response from model {model}: {str(e)}")
         app.logger.exception("Full traceback:")
         return None, None
+
+# Wrapper function for synchronous calls
+def get_response_from_model_sync(client, model, messages, temperature):
+    return asyncio.run(get_response_from_model(client, model, messages, temperature))
+
 
 
 
@@ -1310,7 +1428,14 @@ def chat():
         if enable_web_search:
             try:
                 app.logger.info('Web search enabled, starting search process...')
-                generated_search_query, summarized_results = perform_web_search_process(model, messages, user_query)
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                with ThreadPoolExecutor() as pool:
+                    generated_search_query, summarized_results = loop.run_until_complete(
+                        perform_web_search_process(model, messages, user_query)
+                    )
+                loop.close()
+                
                 app.logger.info(f'Web search process completed. Generated query: {generated_search_query}')
                 app.logger.info(f'Summarized results: {summarized_results[:100] if summarized_results else None}')
                 if summarized_results:
@@ -1326,13 +1451,18 @@ def chat():
                 app.logger.exception("Full traceback:")
                 generated_search_query = None
                 summarized_results = None
+
         
         # Log the final system message after all updates
         app.logger.info(f"Final system message: {system_message['content']}")
 
         # Get a response from the AI model
         app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')
-        chat_output, model_name = get_response_from_model(client, model, messages, temperature)
+        chat_output, model_name = get_response_from_model_sync(client, model, messages, temperature)
+
+        if chat_output is None:
+            raise Exception("Failed to get response from model")
+        
         app.logger.info(f"Response from model: {chat_output[:100]}...")
 
         prompt_tokens = count_tokens(model_name, messages)
@@ -1362,6 +1492,9 @@ def chat():
             app.logger.info(f'Updated existing conversation with id: {conversation.id}')
 
         conversation.model_name = model
+        conversation.vector_search_results = json.dumps(relevant_info) if relevant_info else None
+        conversation.generated_search_queries = json.dumps(generated_search_query) if generated_search_query else None
+        conversation.web_search_results = json.dumps(summarized_results) if summarized_results else None
 
         db.session.commit()
         session['conversation_id'] = conversation.id
