@@ -50,7 +50,11 @@ from file_utils import (
 import asyncio
 from asyncio import Queue
 from functools import lru_cache
-from aiohttp import ClientSession, ClientResponseError
+import aiohttp
+from aiohttp import ClientSession
+import asyncio
+import time
+from asyncio import Queue
 from aiolimiter import AsyncLimiter
 from bs4 import BeautifulSoup
 from typing import List, Dict  
@@ -106,6 +110,10 @@ console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(unicode_formatter)
 console_handler.setLevel(logging.INFO if debug_mode else logging.WARNING)
 
+# Control httpcore logging
+httpcore_logger = logging.getLogger('httpcore')
+httpcore_logger.setLevel(logging.WARNING)  # or logging.ERROR to be even quieter
+
 # Add handlers to the app's logger
 app.logger.addHandler(file_handler)
 app.logger.addHandler(console_handler)
@@ -155,14 +163,67 @@ from typing import List, Dict
 
 # Begining of web search 
 
-# Rate limiter: 3 requests per second
-rate_limiter = AsyncLimiter(3, 1)
+#### Common helper functions for both standard and intelligent web search
+
+@app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
+@login_required
+def toggle_search(system_message_id):
+    data = request.json
+    enable_web_search = data.get('enableWebSearch')
+    enable_intelligent_search = data.get('enableIntelligentSearch')
+    
+    system_message = SystemMessage.query.get_or_404(system_message_id)
+    system_message.enable_web_search = enable_web_search
+    # Note: We're not storing enable_intelligent_search in the database
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Search settings updated successfully',
+        'enableWebSearch': system_message.enable_web_search,
+        'enableIntelligentSearch': enable_intelligent_search
+    }), 200
+
+async def understand_query(client, model: str, messages: List[Dict[str, str]], user_query: str, is_standard_search: bool = True) -> str:
+    app.logger.info(f"Starting query understanding for user query: '{user_query[:50]}...'")
+    
+    system_message = """Analyze the conversation history and the latest user query. 
+    Provide a concise interpretation of what information the user is seeking, 
+    considering the full context of the conversation."""
+
+    # Only include the conversation history, excluding the latest user query
+    conversation_history = "\n".join([f"{msg['role'].capitalize()}: {msg['content'][:50]}..." for msg in messages[:-1]])
+    
+    # Add the latest user query separately
+    conversation_history += f"\nUser: {user_query}"
+
+    app.logger.debug(f"Constructed conversation history for query understanding: {conversation_history}")
+
+    messages_for_model = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": conversation_history}
+    ]
+
+    # Use gpt-4o-mini-2024-07-18 for standard search, otherwise use the provided model
+    query_model = "gpt-4o-mini-2024-07-18" if is_standard_search else model
+    app.logger.info(f"Sending request to model {query_model} for query interpretation")
+
+    try:
+        interpretation, _ = await get_response_from_model(client, query_model, messages_for_model, temperature=0.3)
+        interpreted_query = interpretation.strip()
+        app.logger.info(f"Query interpreted. Interpretation: '{interpreted_query[:100]}...'")
+        return interpreted_query
+    except Exception as e:
+        app.logger.error(f"Error in understand_query: {str(e)}")
+        raise WebSearchError(f"Failed to interpret query: {str(e)}")
 
 class WebSearchError(Exception):
     """Custom exception for web search errors."""
     pass
 
+
 async def perform_web_search(query: str) -> List[Dict[str, str]]:
+    app.logger.info(f"Starting web search for query: '{query[:50]}...'")
+    
     url = 'https://api.search.brave.com/res/v1/web/search'
     headers = {
         'Accept': 'application/json',
@@ -173,11 +234,12 @@ async def perform_web_search(query: str) -> List[Dict[str, str]]:
         'count': 3
     }
 
-    app.logger.info(f"Performing web search with query: {query}")
+    app.logger.info(f"Sending request to Brave Search API")
 
     try:
         async with ClientSession() as session:
             async with session.get(url, headers=headers, params=params, timeout=10) as response:
+                app.logger.info(f"Received response from Brave Search API. Status: {response.status}")
                 if response.status == 429:
                     raise WebSearchError("Rate limit reached. Please try again later.")
                 response.raise_for_status()
@@ -197,215 +259,496 @@ async def perform_web_search(query: str) -> List[Dict[str, str]]:
             for i, result in enumerate(results['web']['results'], 1)
         ]
         
-        app.logger.info(f'Number of results: {len(formatted_results)}')
+        app.logger.info(f'Web search completed. Number of results: {len(formatted_results)}')
+        
+        # Log a summary of each result (title and URL)
+        for i, result in enumerate(formatted_results, 1):
+            app.logger.info(f"Result {i}: Title: '{result['title'][:30]}...', URL: {result['url']}")
+        
         return formatted_results
     except aiohttp.ClientError as e:
         app.logger.error(f'Error performing Brave search: {str(e)}')
         raise WebSearchError(f"Failed to perform web search: {str(e)}")
-
-async def understand_query(model, messages: List[Dict[str, str]], user_query: str) -> str:
-    app.logger.info(f"Understanding query: {user_query}")
-    
-    # Get the last 5 exchanges (or all if less than 5)
-    recent_messages = messages[-10:] if len(messages) > 10 else messages
-    
-    # Prepare the conversation history
-    conversation_history = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in recent_messages])
-    conversation_history += f"\nUser: {user_query}"
-    
-    system_message = (
-        "Analyze the following conversation and the latest user query. "
-        "Provide a concise interpretation of what information the user is seeking, "
-        "considering the full context of the conversation."
-    )
-
-    interpretation_request_payload = {
-        "model": "gpt-4o-mini",  # You can change this to the appropriate model
-        "messages": [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": conversation_history}
-        ],
-        "max_tokens": 150,
-        "temperature": 0.7
-    }
-
-    app.logger.info(f"Sending interpretation request to OpenAI: {interpretation_request_payload}")
-
-    try:
-        response = client.chat.completions.create(**interpretation_request_payload)  
-        interpretation = response.choices[0].message.content.strip()
-        app.logger.info(f"Query interpretation: {interpretation}")
-        return interpretation
     except Exception as e:
-        app.logger.error(f"Error in understand_query: {str(e)}")
-        return None
+        app.logger.error(f'Unexpected error in perform_web_search: {str(e)}')
+        raise WebSearchError(f"Unexpected error during web search: {str(e)}")
 
-async def generate_search_queries(model, interpretation: str) -> List[str]:
-    app.logger.info(f"Generating search queries for interpretation: {interpretation}")
-    query_message = {
-        "role": "system",
-        "content": "Generate three diverse search queries based on the given interpretation. Respond with only valid JSON in the format: {\"queries\": [\"query1\", \"query2\", \"query3\"]}"
-    }
-    
-    messages = [query_message, {"role": "user", "content": interpretation}]
-    
+# Rate limiter: 3 requests per second
+rate_limiter = AsyncLimiter(3, 1)
+
+# Utility function that serves both standard and intelligent web search
+async def perform_web_search_process(client, model: str, messages: List[Dict[str, str]], user_query: str, user_id: int, system_message_id: int, enable_intelligent_search: bool):
+    app.logger.info(f"Starting web search process for query: '{user_query[:50]}...'")
+    app.logger.info(f"Search type: {'Intelligent' if enable_intelligent_search else 'Standard'}")
+
     try:
-        chat_output, _ = await get_response_from_model(client, model, messages, 0.7)
-        if chat_output is None:
-            raise ValueError("Failed to generate search queries")
-        queries = json.loads(chat_output.strip())["queries"]
-        app.logger.info(f"Generated search queries: {queries}")
+        app.logger.info('Step 1: Understanding user query...')
+        understood_query = await understand_query(client, model, messages, user_query, is_standard_search=not enable_intelligent_search)
+        app.logger.info(f'Understood query: {understood_query}')
+
+        if enable_intelligent_search:
+            app.logger.info('Initiating intelligent web search...')
+            return await intelligent_web_search_process(client, model, messages, understood_query, user_id, system_message_id)
+        else:
+            app.logger.info('Initiating standard web search...')
+            return await standard_web_search_process(client, model, understood_query, user_id, system_message_id)
+
+    except WebSearchError as e:
+        app.logger.error(f'Web search process error: {str(e)}')
+        return [], f"An error occurred during the web search process: {str(e)}"
+    except Exception as e:
+        app.logger.error(f'Unexpected error in web search process: {str(e)}')
+        app.logger.exception("Full traceback:")
+        return [], "An unexpected error occurred during the web search process."
+    
+#### Functions for intelligent web search
+
+async def generate_search_queries(client, model: str, interpretation: str) -> List[str]:
+    app.logger.info(f"Starting search query generation based on interpretation: '{interpretation[:50]}...'")
+    
+    system_message = """Generate three diverse search queries based on the given interpretation. 
+    Respond with only valid JSON in the format: {"queries": ["query1", "query2", "query3"]}"""
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": interpretation}
+    ]
+
+    app.logger.info(f"Sending request to model {model} for search query generation")
+
+    try:
+        response, _ = await get_response_from_model(client, model, messages, temperature=0.3)
+        app.logger.info(f"Received response from model: '{response[:100]}...'")
+        
+        queries = json.loads(response.strip())["queries"]
+        
+        app.logger.info("Generated search queries:")
+        for i, query in enumerate(queries, 1):
+            app.logger.info(f"Query {i}: '{query}'")
+        
         return queries
+    except json.JSONDecodeError as e:
+        app.logger.error(f"Error decoding JSON in generate_search_queries: {str(e)}")
+        app.logger.error(f"Raw response: {response}")
+        raise WebSearchError(f"Failed to parse generated search queries: {str(e)}")
     except Exception as e:
         app.logger.error(f"Error in generate_search_queries: {str(e)}")
         raise WebSearchError(f"Failed to generate search queries: {str(e)}")
 
+async def intelligent_web_search_process(client, model: str, messages: List[Dict[str, str]], understood_query: str, user_id: int, system_message_id: int):
+    app.logger.info(f"Starting intelligent web search for understood query: '{understood_query[:50]}...'")
+
+    try:
+        # Step 1: Use the understood query to generate search queries
+        app.logger.info("Step 1: Generating search queries based on understood query")
+        generated_search_queries = await generate_search_queries(client, model, understood_query)
+        app.logger.info(f"Generated {len(generated_search_queries)} search queries")
+
+        if not generated_search_queries:
+            app.logger.error("Failed to generate search queries")
+            raise WebSearchError('Failed to generate search queries')
+
+        # Step 2: Performing multiple web searches
+        app.logger.info("Step 2: Performing multiple web searches")
+        web_search_results = await perform_multiple_web_searches(generated_search_queries)
+        app.logger.info(f"Received {len(web_search_results)} web search results")
+
+        if web_search_results:
+            # Step 3: Fetching full content for search results
+            app.logger.info("Step 3: Fetching full content for search results")
+            full_content_results = await fetch_full_content(web_search_results, app, user_id, system_message_id)
+            app.logger.info(f"Fetched full content for {len(full_content_results)} results")
+
+            # Step 4: Summarizing search results
+            app.logger.info("Step 4: Summarizing search results")
+            summarized_results = await summarize_search_results(client, model, full_content_results, understood_query)
+            app.logger.info(f"Generated summary of length: {len(summarized_results)} characters")
+
+            app.logger.info("Intelligent web search completed successfully")
+            return generated_search_queries, summarized_results
+        else:
+            app.logger.warning("No relevant web search results were found")
+            return generated_search_queries, "No relevant web search results were found."
+
+    except WebSearchError as e:
+        app.logger.error(f"WebSearchError in intelligent web search: {str(e)}")
+        raise
+    except Exception as e:
+        app.logger.error(f"Unexpected error in intelligent web search: {str(e)}")
+        app.logger.exception("Full traceback:")
+        raise WebSearchError(f"Unexpected error during intelligent web search: {str(e)}")
+
+# Create a rate limiter: 1 request per second
+rate_limiter = AsyncLimiter(1, 1)
+
 async def perform_multiple_web_searches(queries: List[str]) -> List[Dict[str, str]]:
+    app.logger.info(f"Starting multiple web searches for {len(queries)} queries")
     all_results = []
     urls_seen = set()
-    query_queue = Queue()
 
-    for query in queries:
-        await query_queue.put(query)
-
-    async def process_queue():
-        while not query_queue.empty():
-            query = await query_queue.get()
+    async def process_query(query):
+        async with rate_limiter:
+            app.logger.info(f"Processing query: '{query[:50]}...'")
             try:
                 results = await perform_web_search(query)
+                app.logger.info(f"Received {len(results)} results for query: '{query[:50]}...'")
+                new_results_count = 0
                 for result in results:
                     url = result.get("url")
                     if url and url not in urls_seen:
                         urls_seen.add(url)
                         all_results.append(result)
-                app.logger.info(f"Successful search for query: {query[:50]}...")
+                        new_results_count += 1
+                app.logger.info(f"Added {new_results_count} new results for query: '{query[:50]}...'")
             except WebSearchError as e:
-                app.logger.error(f"Error searching for query '{query}': {str(e)}")
-            finally:
-                query_queue.task_done()
-            
-            # Wait for 1 second before processing the next query
-            await asyncio.sleep(1)
+                app.logger.error(f"Error searching for query '{query[:50]}...': {str(e)}")
 
-    # Process the queue
-    await process_queue()
+    app.logger.info("Running web searches concurrently...")
+    # Use asyncio.gather to run searches concurrently while respecting rate limits
+    await asyncio.gather(*(process_query(query) for query in queries))
+
+    app.logger.info(f"Multiple web searches completed. Total unique results: {len(all_results)}")
+    app.logger.info(f"Unique URLs found: {len(urls_seen)}")
 
     return all_results
 
 
-async def fetch_full_content(results: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    app.logger.info(f"Starting fetch_full_content with {len(results)} results")
+async def fetch_full_content(results: List[Dict[str, str]], app, user_id: int, system_message_id: int) -> List[Dict[str, str]]:
+    app.logger.info(f"Starting to fetch full content for {len(results)} results")
 
     async def get_page_content(url: str) -> str:
         try:
             async with ClientSession() as session:
-                app.logger.info(f"Fetching content for URL: {url}")
+                app.logger.info(f"Fetching content from URL: {url}")
                 async with session.get(url, timeout=10) as response:
+                    app.logger.info(f"Received response from {url}. Status: {response.status}")
                     html = await response.text()
-                    app.logger.info(f"Received HTML content for {url} (length: {len(html)})")
                     soup = BeautifulSoup(html, 'html.parser')
                     text_content = soup.get_text(strip=True, separator='\n')
-                    app.logger.info(f"Extracted text content for {url} (length: {len(text_content)})")
+                    app.logger.info(f"Extracted {len(text_content)} characters of text from {url}")
                     return text_content
         except Exception as e:
             app.logger.error(f"Error fetching content for {url}: {str(e)}")
             return ""
 
-    semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
+    tasks = [asyncio.create_task(get_page_content(result['url'])) for result in results]
+    contents = await asyncio.gather(*tasks)
 
-    async def fetch_with_semaphore(result):
-        async with semaphore:
-            app.logger.info(f"Processing result: {result['title'][:50]}... (URL: {result['url']})")
-            content = await get_page_content(result['url'])
-            full_result = {**result, "full_content": content}
-            app.logger.info(f"Completed processing for {result['url']} (content length: {len(content)})")
-            return full_result
+    full_content_results = []
+    used_citation_numbers = set()
 
-    tasks = [fetch_with_semaphore(result) for result in results]
-    app.logger.info(f"Created {len(tasks)} tasks for fetching full content")
-    
-    full_content_results = await asyncio.gather(*tasks)
-    
-    app.logger.info(f"Completed fetch_full_content. Processed {len(full_content_results)} results")
-    
-    # Log a summary of the results
-    for i, result in enumerate(full_content_results):
-        app.logger.info(f"Result {i+1}: URL: {result['url']}, Title: {result['title'][:50]}..., Content length: {len(result.get('full_content', ''))}")
+    for result, content in zip(results, contents):
+        # Ensure unique citation numbers
+        original_citation_number = result['citation_number']
+        unique_citation_number = original_citation_number
+        while unique_citation_number in used_citation_numbers:
+            unique_citation_number += 1
+        used_citation_numbers.add(unique_citation_number)
 
+        full_result = {**result, "full_content": content, "citation_number": unique_citation_number}
+        full_content_results.append(full_result)
+
+        file_name = f"result_{unique_citation_number}.json"
+        file_path = get_file_path(app, user_id, system_message_id, file_name, 'web_search_results')
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(full_result, f, ensure_ascii=False, indent=2)
+            app.logger.info(f"Saved full content for result {unique_citation_number} to {file_path}")
+        except Exception as e:
+            app.logger.error(f"Error saving file for result {unique_citation_number}: {str(e)}")
+
+    app.logger.info(f"Completed fetching full content for {len(full_content_results)} results")
     return full_content_results
 
-# Controls the search results.  Lots of improvements can happen here to increase quality. (e.g. better summarization, better search results, etc.) Presently only 500 characters used from each search result.
-async def summarize_search_results(model, results: List[Dict[str, str]]) -> str:
-    summary_message = {
-        "role": "system",
-        "content": "Summarize the following search results. Include relevant information and cite sources using "
-            "numbered footnotes in the format [1], [2], etc. At the end of the summary, include a 'Sources:' "
-            "section with the full URLs for each footnote, formatted as '[1] url1', '[2] url2', etc., "
-            "each on a new line."
-    }
+async def summarize_page_content(client, content: str, query: str) -> str:
+    app.logger.info("Starting summarize_page_content...")
     
-    formatted_results = "\n".join([
-        f"<item index=\"{r['citation_number']}\">\n<source>{r['url']}</source>\n<title>{r['title']}</title>\n<content>{r['full_content'][:500]}...</content>\n</item>"
-        for r in results
-    ])
-    
+    system_message = """Summarize the given content, focusing on information relevant to the query. 
+    Be concise but include key points and any relevant code snippets."""
+
+    user_message = f"""Summarize the following content, focusing on information relevant to the query: "{query}"
+
+    Content: {content[:500]}...  # Truncated for logging purposes
+
+    Provide a concise summary that captures the main points relevant to the query."""
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message}
+    ]
+
     try:
-        summary, _ = await get_response_from_model(client, model, [summary_message, {"role": "user", "content": formatted_results}], 0.7)
+        summary, _ = await get_response_from_model(client, "gpt-4o-mini-2024-07-18", messages, temperature=0.3)
+        summarized_content = summary.strip()
+        app.logger.info(f"Page content summarized. Summary length: {len(summarized_content)} characters")
+        return summarized_content
+    except Exception as e:
+        app.logger.error(f"Error in summarize_page_content: {str(e)}")
+        raise WebSearchError(f"Failed to summarize page content: {str(e)}")
+
+async def combine_summaries(client, summaries: List[Dict[str, str]], query: str) -> str:
+    app.logger.info(f"Starting combine_summaries for query: '{query}'")
+    
+    system_message = """Combine the given summaries into a coherent overall summary. 
+    Include relevant information from all sources and cite them using numbered footnotes [1], [2], etc. 
+    At the end, include a 'Sources:' section with full URLs for each footnote."""
+
+    # Truncate summaries for logging purposes
+    truncated_summaries = [
+        {
+            "index": s["index"],
+            "url": s["url"],
+            "summary": s["summary"][:100] + "..." if len(s["summary"]) > 100 else s["summary"]
+        }
+        for s in summaries
+    ]
+
+    user_message = f"""Combine the following summaries into a coherent overall summary, focusing on information relevant to the query: "{query}"
+
+    Summaries:
+    {json.dumps(truncated_summaries, indent=2)}
+
+    Provide a concise but comprehensive summary that addresses the query, citing sources with footnotes."""
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message}
+    ]
+
+    try:
+        app.logger.info(f"Sending request to combine {len(summaries)} summaries")
+        final_summary, _ = await get_response_from_model(client, "gpt-4o-mini-2024-07-18", messages, temperature=0.3)
+        combined_summary = final_summary.strip()
+        app.logger.info(f"Summaries combined. Final summary length: {len(combined_summary)} characters")
+        return combined_summary
+    except Exception as e:
+        app.logger.error(f"Error in combine_summaries: {str(e)}")
+        raise WebSearchError(f"Failed to combine summaries: {str(e)}")
+
+async def intelligent_summarize(client, model: str, content: str, query: str, max_tokens: int = 1000) -> str:
+    app.logger.info(f"Starting intelligent summarization for query: '{query[:50]}...'")
+    
+    if not content:
+        app.logger.warning("No content provided for summarization")
+        return "No content available for summarization."
+    
+    system_message = """You are an advanced AI assistant tasked with intelligently summarizing web content. 
+    Your summaries should be informative, relevant to the query, and include key information. 
+    If the content contains code, especially for newer libraries, repos, or APIs, include it verbatim in your summary. 
+    Adjust the level of detail based on the content's relevance and information density.
+    Your summary should be comprehensive yet concise."""
+
+    # Truncate content if it's too long
+    max_content_length = 5000  # Adjust this value as needed
+    truncated_content = content[:max_content_length]
+    if len(content) > max_content_length:
+        truncated_content += "... [Content truncated]"
+
+    user_message = f"""Summarize the following content, focusing on information relevant to the query: "{query}"
+    
+    Content: {truncated_content}
+    
+    Remember to include any relevant code snippets verbatim, especially if they relate to new technologies or APIs."""
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message}
+    ]
+
+    app.logger.info(f"Sending request to model {model} for intelligent summarization")
+    app.logger.debug(f"Content length for summarization: {len(truncated_content)} characters")
+
+    try:
+        summary, _ = await get_response_from_model(client, model, messages, temperature=0.3)
+        summarized_content = summary.strip()
+        app.logger.info(f"Intelligent summarization completed. Summary length: {len(summarized_content)} characters")
+        return summarized_content
+    except Exception as e:
+        app.logger.error(f"Error in intelligent_summarize: {str(e)}")
+        raise WebSearchError(f"Failed to generate intelligent summary: {str(e)}")
+
+
+# Controls the search results.  Lots of improvements can happen here to increase quality. (e.g. better summarization, better search results, etc.) 
+async def summarize_search_results(client, model: str, results: List[Dict[str, str]], query: str) -> str:
+    app.logger.info(f"Starting summarization of search results for query: '{query[:50]}...'")
+    app.logger.info(f"Number of results to summarize: {len(results)}")
+
+    summaries = []
+    for index, result in enumerate(results, 1):
+        app.logger.info(f"Summarizing result {index}/{len(results)} (URL: {result['url']})")
         
-        if not any(f"[{i}]" in summary for i in range(1, len(results) + 1)):
-            footnotes = "\n\nSources:\n" + "\n".join([f"[{r['citation_number']}] {r['url']}" for r in results])
-            summary += footnotes
+        # Log the first 100 characters of the full content for debugging
+        app.logger.debug(f"Full content preview for result {index}: {result.get('full_content', '')[:100]}...")
         
-        return summary.strip()
+        summary = await intelligent_summarize(client, model, result.get('full_content', ''), query)
+        summaries.append({
+            "index": result['citation_number'],
+            "url": result['url'],
+            "summary": summary
+        })
+        app.logger.info(f"Completed summary for result {index}")
+
+    app.logger.info("All individual results summarized. Preparing combined summary prompt.")
+
+
+    combined_summary_prompt = f"""Combine the following summaries into a coherent overall summary.
+    Include relevant information from all sources and cite them using numbered footnotes [1], [2], etc.
+    Include any code snippets that are present in the summaries, as they may be crucial for understanding new technologies.
+    At the end, include a 'Sources:' section with full URLs for each footnote.
+    Ensure all provided results are included in the summary and sources list.
+    
+    Query: {query}
+    
+    Summaries:
+    {json.dumps(summaries, indent=2)}"""
+
+    messages = [
+        {"role": "system", "content": "You are an advanced AI assistant tasked with combining multiple summaries into a comprehensive, well-structured final summary."},
+        {"role": "user", "content": combined_summary_prompt}
+    ]
+
+    app.logger.info(f"Sending request to model {model} for final summary combination")
+
+    try:
+        final_summary, _ = await get_response_from_model(client, model, messages, temperature=0.3)
+        summarized_content = final_summary.strip()
+        app.logger.info(f"Final summary generated. Length: {len(summarized_content)} characters")
+        return summarized_content
     except Exception as e:
         app.logger.error(f"Error in summarize_search_results: {str(e)}")
-        raise WebSearchError(f"Failed to summarize search results: {str(e)}")
+        raise WebSearchError(f"Failed to combine summaries: {str(e)}")
 
+##### Functions for standard web search
 
-@app.route('/api/system-messages/<int:system_message_id>/toggle-web-search', methods=['POST'])
-@login_required
-def toggle_web_search(system_message_id):
-    data = request.json
-    enable_web_search = data.get('enableWebSearch')
+async def generate_single_search_query(client, model: str, messages: List[Dict[str, str]], user_query: str) -> str:
+    app.logger.info("Starting generate_single_search_query...")
     
-    system_message = SystemMessage.query.get_or_404(system_message_id)
-    system_message.enable_web_search = enable_web_search
-    db.session.commit()
-    
-    return jsonify({'message': 'Web search setting updated successfully'}), 200
+    system_message = """Generate a single, concise search query based on the conversation history and the latest user query. 
+    The query should capture the main intent of the user's request."""
 
-async def perform_web_search_process(model, messages, user_query):
+    conversation_history = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages[-5:]])
+    conversation_history += f"\nUser: {user_query}"
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": conversation_history}
+    ]
+
     try:
-        app.logger.info(f'Understanding query context: {user_query[:50]}...')
-        query_interpretation = await understand_query(model, messages, user_query)
-        app.logger.info(f'Query interpretation: {query_interpretation[:100]}...')
+        query, _ = await get_response_from_model(client, "gpt-4o-mini-2024-07-18", messages, temperature=0.3)
+        generated_query = query.strip()
+        app.logger.info(f"Generated single search query: {generated_query}")
+        return generated_query
+    except Exception as e:
+        app.logger.error(f"Error in generate_single_search_query: {str(e)}")
+        raise WebSearchError(f"Failed to generate search query: {str(e)}")
+    
+async def standard_web_search_process(client, model: str, understood_query: str, user_id: int, system_message_id: int):
+    app.logger.info(f"Starting standard web search process for understood query: '{understood_query[:50]}...'")
+    try:
+        app.logger.info('Step 2: Generating search query...')
+        search_query = await generate_single_search_query(client, model, [], understood_query)
+        app.logger.info(f'Generated search query: {search_query}')
 
-        app.logger.info('Generating multiple search queries based on interpretation...')
-        generated_search_queries = await generate_search_queries(model, query_interpretation)
-        app.logger.info(f'Generated search queries: {generated_search_queries}')
-
-        if not generated_search_queries:
-            raise WebSearchError('Failed to generate search queries')
-
-        app.logger.info(f'Performing web searches for queries: {generated_search_queries}')
-        web_search_results = await perform_multiple_web_searches(generated_search_queries)
-        app.logger.info(f'Web search results count: {len(web_search_results)}')
+        app.logger.info('Step 3: Performing web search...')
+        web_search_results = await perform_web_search(search_query)
+        app.logger.info(f'Web search completed. Results count: {len(web_search_results)}')
 
         if web_search_results:
-            full_content_results = await fetch_full_content(web_search_results)
-            summarized_results = await summarize_search_results(model, full_content_results)
-            app.logger.info(f'Summarized search results: {summarized_results[:100]}...')
+            app.logger.info('Step 4: Fetching partial content for search results...')
+            partial_content_results = await fetch_partial_content(web_search_results, app, user_id, system_message_id)
+            app.logger.info(f'Partial content fetched for {len(partial_content_results)} results')
+            
+            app.logger.info('Step 5: Summarizing search results...')
+            summarized_results = await standard_summarize_search_results(client, model, partial_content_results, understood_query)
+            app.logger.info(f'Summarization completed. Summary length: {len(summarized_results)} characters')
         else:
             app.logger.warning('No web search results found.')
             summarized_results = "No relevant web search results were found."
 
-        return generated_search_queries, summarized_results
+        app.logger.info('Standard web search process completed successfully')
+        return [search_query], summarized_results
+
     except WebSearchError as e:
-        app.logger.error(f'Web search process error: {str(e)}')
-        return generated_search_queries, f"An error occurred during the web search process: {str(e)}"
+        app.logger.error(f'Standard web search process error: {str(e)}')
+        return None, f"An error occurred during the standard web search process: {str(e)}"
     except Exception as e:
-        app.logger.error(f'Unexpected error in web search process: {str(e)}')
-        return None, "An unexpected error occurred during the web search process."
+        app.logger.error(f'Unexpected error in standard web search process: {str(e)}')
+        app.logger.exception("Full traceback:")
+        return None, "An unexpected error occurred during the standard web search process."
+
+async def fetch_partial_content(results: List[Dict[str, str]], app, user_id: int, system_message_id: int) -> List[Dict[str, str]]:
+    app.logger.info(f"Starting to fetch partial content for {len(results)} results")
+
+    async def get_partial_page_content(url: str) -> str:
+        try:
+            async with ClientSession() as session:
+                app.logger.info(f"Fetching partial content from URL: {url}")
+                async with session.get(url, timeout=10) as response:
+                    app.logger.info(f"Received response from {url}. Status: {response.status}")
+                    html = await response.text()
+                    soup = BeautifulSoup(html, 'html.parser')
+                    text_content = soup.get_text(strip=True, separator='\n')
+                    partial_content = text_content[:1000]  # Get first 1000 characters
+                    app.logger.info(f"Extracted {len(partial_content)} characters of text from {url}")
+                    return partial_content
+        except Exception as e:
+            app.logger.error(f"Error fetching content for {url}: {str(e)}")
+            return ""
+
+    tasks = [asyncio.create_task(get_partial_page_content(result['url'])) for result in results]
+    contents = await asyncio.gather(*tasks)
+
+    partial_content_results = []
+    for result, content in zip(results, contents):
+        partial_result = {**result, "partial_content": content}
+        partial_content_results.append(partial_result)
+
+        file_name = f"partial_result_{result['citation_number']}.json"
+        file_path = get_file_path(app, user_id, system_message_id, file_name, 'web_search_results')
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(partial_result, f, ensure_ascii=False, indent=2)
+            app.logger.info(f"Saved partial content for result {result['citation_number']} to {file_path}")
+        except Exception as e:
+            app.logger.error(f"Error saving file for result {result['citation_number']}: {str(e)}")
+
+    app.logger.info(f"Completed fetching partial content for {len(partial_content_results)} results")
+    return partial_content_results
+
+async def standard_summarize_search_results(client, model: str, results: List[Dict[str, str]], query: str) -> str:
+    app.logger.info(f"Starting standard summarization of search results for query: '{query[:50]}...'")
+    
+    combined_content = "\n\n".join([
+        f"Title: {result['title']}\nURL: {result['url']}\nPartial Content: {result['partial_content']}"
+        for result in results
+    ])
+
+    system_message = """Summarize the given search results, focusing on information relevant to the query. 
+    Include key points from each result and cite them using numbered footnotes [1], [2], etc. 
+    At the end, include a 'Sources:' section with full URLs for each footnote."""
+
+    user_message = f"""Summarize the following search results, focusing on information relevant to the query: "{query}"
+
+    Search Results:
+    {combined_content}
+
+    Provide a concise but comprehensive summary that addresses the query, citing sources with footnotes."""
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message}
+    ]
+
+    try:
+        summary, _ = await get_response_from_model(client, model, messages, temperature=0.3)
+        summarized_content = summary.strip()
+        app.logger.info(f"Search results summarized. Summary length: {len(summarized_content)} characters")
+        return summarized_content
+    except Exception as e:
+        app.logger.error(f"Error in standard_summarize_search_results: {str(e)}")
+        raise WebSearchError(f"Failed to summarize search results: {str(e)}")
+
 
 # End of web search
 
@@ -1247,7 +1590,7 @@ def generate_summary(messages):
         "temperature": 0.5  # Adjust the temperature if needed
     }
 
-    app.logger.info(f"Sending summary request to OpenAI: {summary_request_payload}")
+    app.logger.info(f"Sending summary request to OpenAI for conversation title: {str(summary_request_payload)[:100]}...")
 
     try:
         response = client.chat.completions.create(**summary_request_payload)
@@ -1367,6 +1710,7 @@ def chat():
         temperature = request.json.get('temperature')
         system_message_id = request.json.get('system_message_id')
         enable_web_search = request.json.get('enable_web_search', False)
+        enable_intelligent_search = request.json.get('enable_intelligent_search', False)
         
         if system_message_id is None:
             app.logger.error("No system_message_id provided in the chat request")
@@ -1374,7 +1718,7 @@ def chat():
         
         conversation_id = request.json.get('conversation_id') or session.get('conversation_id')
 
-        app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}, enable_web_search: {enable_web_search}')
+        app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}, enable_web_search: {enable_web_search}, enable_intelligent_search: {enable_intelligent_search}')
 
         conversation = None
         if conversation_id:
@@ -1423,7 +1767,7 @@ def chat():
         app.logger.info(f"Updated system message: {system_message['content']}")
 
         summarized_results = None
-        generated_search_query = None
+        generated_search_queries = None
         
         if enable_web_search:
             try:
@@ -1431,28 +1775,33 @@ def chat():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 with ThreadPoolExecutor() as pool:
-                    generated_search_query, summarized_results = loop.run_until_complete(
-                        perform_web_search_process(model, messages, user_query)
+                    generated_search_queries, summarized_results = loop.run_until_complete(
+                        perform_web_search_process(client, model, messages, user_query, current_user.id, system_message_id, enable_intelligent_search)
                     )
                 loop.close()
                 
-                app.logger.info(f'Web search process completed. Generated query: {generated_search_query}')
+                app.logger.info(f'Web search process completed. Generated queries: {generated_search_queries}')
                 app.logger.info(f'Summarized results: {summarized_results[:100] if summarized_results else None}')
+                
+                # Ensure generated_search_queries is always a list
+                if not isinstance(generated_search_queries, list):
+                    app.logger.warning(f"generated_search_queries is not a list. Type: {type(generated_search_queries)}. Value: {generated_search_queries}")
+                    generated_search_queries = [str(generated_search_queries)] if generated_search_queries else []
+                
                 if summarized_results:
-                    # Update the existing system message instead of adding a new one
                     system_message['content'] += f"\n\n<Added Context Provided by Web Search>\n{summarized_results}\n</Added Context Provided by Web Search>"
                     
-                    # Add instruction to include footnotes and sources
                     system_message['content'] += "\n\nIMPORTANT: In your response, please include relevant footnotes using [1], [2], etc. At the end of your response, list all sources under a 'Sources:' section, providing full URLs for each footnote."
                 else:
                     app.logger.warning('No summarized results from web search')
             except Exception as e:
                 app.logger.error(f'Error in web search process: {str(e)}')
                 app.logger.exception("Full traceback:")
-                generated_search_query = None
+                generated_search_queries = None
                 summarized_results = None
+        else:
+            app.logger.info('Web search is disabled')
 
-        
         # Log the final system message after all updates
         app.logger.info(f"Final system message: {system_message['content']}")
 
@@ -1463,7 +1812,7 @@ def chat():
         if chat_output is None:
             raise Exception("Failed to get response from model")
         
-        app.logger.info(f"Response from model: {chat_output[:100]}...")
+        app.logger.info(f"Final response from model after prompt injections: {chat_output}")
 
         prompt_tokens = count_tokens(model_name, messages)
         completion_tokens = count_tokens(model_name, [{"content": chat_output}])
@@ -1493,7 +1842,7 @@ def chat():
 
         conversation.model_name = model
         conversation.vector_search_results = json.dumps(relevant_info) if relevant_info else None
-        conversation.generated_search_queries = json.dumps(generated_search_query) if generated_search_query else None
+        conversation.generated_search_queries = json.dumps(generated_search_queries) if generated_search_queries else None
         conversation.web_search_results = json.dumps(summarized_results) if summarized_results else None
 
         db.session.commit()
@@ -1506,7 +1855,7 @@ def chat():
             'conversation_id': conversation.id,
             'conversation_title': conversation.title,
             'vector_search_results': relevant_info if relevant_info else "No results found",
-            'generated_search_query': generated_search_query,
+            'generated_search_queries': generated_search_queries if generated_search_queries else [],
             'web_search_results': summarized_results if summarized_results else "No web search performed",
             'system_message_content': system_message['content'],
             'usage': {
@@ -1514,7 +1863,8 @@ def chat():
                 'completion_tokens': completion_tokens,
                 'total_tokens': total_tokens
             },
-            'enable_web_search': enable_web_search
+            'enable_web_search': enable_web_search,
+            'enable_intelligent_search': enable_intelligent_search
         })  
 
     except Exception as e:
