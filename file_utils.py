@@ -17,6 +17,9 @@ def get_processed_texts_folder(app, user_id, system_message_id):
 def get_llmwhisperer_output_folder(app, user_id, system_message_id):
     return os.path.join(get_system_message_folder(app, user_id, system_message_id), 'llmwhisperer_output')
 
+def get_web_search_results_folder(app, user_id, system_message_id):
+    return os.path.join(get_system_message_folder(app, user_id, system_message_id), 'web_search_results')
+
 def ensure_folder_exists(folder_path):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
@@ -26,8 +29,10 @@ def get_file_path(app, user_id, system_message_id, filename, folder_type):
         folder = get_uploads_folder(app, user_id, system_message_id)
     elif folder_type == 'processed_texts':
         folder = get_processed_texts_folder(app, user_id, system_message_id)
-    elif folder_type == 'llmwhisperer_output':  
+    elif folder_type == 'llmwhisperer_output':
         folder = get_llmwhisperer_output_folder(app, user_id, system_message_id)
+    elif folder_type == 'web_search_results':
+        folder = get_web_search_results_folder(app, user_id, system_message_id)
     else:
         raise ValueError(f"Invalid folder type: {folder_type}")
     

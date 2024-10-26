@@ -15,6 +15,7 @@ let showTemperature = false;  // Tracks the visibility of the temperature settin
 let selectedTemperature = 0.7; // Default temperature value
 let activeWebsiteId = null;  // This will store the currently active website ID for the Websites Group
 let tempWebSearchState = false; // This will store the temporary web search state
+let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -34,10 +35,79 @@ document.addEventListener("DOMContentLoaded", function() {
                 displaySystemMessage(systemMessages[0]);
             }
         }
+
+        // Add event listeners for the web search toggles
+        const enableWebSearchToggle = document.getElementById('enableWebSearch');
+        const enableIntelligentSearchToggle = document.getElementById('enableIntelligentSearch');
+
+        enableWebSearchToggle.addEventListener('change', function() {
+            tempWebSearchState = this.checked;
+            if (!this.checked) {
+                enableIntelligentSearchToggle.checked = false;
+                tempIntelligentSearchState = false;
+                enableIntelligentSearchToggle.disabled = true;
+            } else {
+                enableIntelligentSearchToggle.disabled = false;
+            }
+            updateSearchSettings();
+        });
+
+        enableIntelligentSearchToggle.addEventListener('change', function() {
+            tempIntelligentSearchState = this.checked;
+            if (this.checked) {
+                enableWebSearchToggle.checked = true;
+                tempWebSearchState = true;
+            }
+            updateSearchSettings();
+        });
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
     });
 });
+
+function updateSearchSettings() {
+    // Only send an update if the temporary state differs from the current system message state
+    if (tempWebSearchState !== currentSystemMessage.enable_web_search || tempIntelligentSearchState !== false) {
+        fetch(`/api/system-messages/${activeSystemMessageId}/toggle-search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                enableWebSearch: tempWebSearchState,
+                enableIntelligentSearch: tempIntelligentSearchState
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Search settings updated:', data);
+            // Update the current system message with the new settings
+            currentSystemMessage.enable_web_search = data.enableWebSearch;
+            // Note: We're not storing enableIntelligentSearch in the model
+        })
+        .catch((error) => {
+            console.error('Error updating search settings:', error);
+            // Revert the toggles to their previous state on error
+            initializeSearchToggles(currentSystemMessage);
+        });
+    }
+}
+
+function initializeSearchToggles(systemMessage) {
+    const enableWebSearchToggle = document.getElementById('enableWebSearch');
+    const enableIntelligentSearchToggle = document.getElementById('enableIntelligentSearch');
+
+    // Set the web search toggle based on the saved setting
+    enableWebSearchToggle.checked = systemMessage.enable_web_search;
+    tempWebSearchState = systemMessage.enable_web_search;
+
+    // Always start with intelligent search disabled
+    enableIntelligentSearchToggle.checked = false;
+    tempIntelligentSearchState = false;
+
+    // Enable or disable the intelligent search toggle based on web search setting
+    enableIntelligentSearchToggle.disabled = !systemMessage.enable_web_search;
+}
 
 document.getElementById('enableWebSearch').addEventListener('change', function() {
     tempWebSearchState = this.checked;
@@ -1116,7 +1186,7 @@ function modelNameMapping(modelName) {
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
         case "gpt-4o-2024-08-06": mappedName = "GPT-4o"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
-        case "claude-3-5-sonnet-20240620": mappedName = "Claude 3.5 (Sonnet)"; break;
+        case "claude-3-5-sonnet-20241022": mappedName = "Claude 3.5 (Sonnet)"; break;
         case "gemini-pro": mappedName = "Gemini Pro"; break;
         default: mappedName = "Unknown Model"; break;
     }
@@ -1137,7 +1207,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-08-06","claude-3-opus-20240229","claude-3-5-sonnet-20240620","gemini-pro"];
+    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-08-06","claude-3-opus-20240229","claude-3-5-sonnet-20241022","gemini-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown
@@ -1874,7 +1944,8 @@ $('#chat-form').on('submit', function (e) {
         model: model,
         temperature: selectedTemperature,
         system_message_id: activeSystemMessageId,
-        enable_web_search: $('#enableWebSearch').is(':checked')
+        enable_web_search: $('#enableWebSearch').is(':checked'),
+        enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
     };
 
     if (activeConversationId !== null) {
@@ -1904,11 +1975,8 @@ $('#chat-form').on('submit', function (e) {
     })
     .then(data => {
         console.log("Complete server response:", JSON.stringify(data, null, 2));
-        console.log("Generated search query:", data.generated_search_query);
-
-        // Log the generated search query
-        console.log("Complete server response:", JSON.stringify(data, null, 2));
-        console.log("Generated search query:", data.generated_search_query);
+        
+        console.log("Generated search queries:", data.generated_search_queries);
 
         // Display vector search results
         if (data.vector_search_results && data.vector_search_results !== "No results found") {
@@ -1926,7 +1994,7 @@ $('#chat-form').on('submit', function (e) {
         }
 
         // Display generated search queries
-        if (data.generated_search_query) {
+        if (data.generated_search_queries && Array.isArray(data.generated_search_queries) && data.generated_search_queries.length > 0) {
             console.log("Creating generated query div");
             const generatedQueryDiv = $('<div class="chat-entry generated-query">');
             
@@ -1935,21 +2003,15 @@ $('#chat-form').on('submit', function (e) {
             
             const queryList = $('<ul class="query-list">');
             
-            if (Array.isArray(data.generated_search_query)) {
-                // Handle array of queries
-                data.generated_search_query.forEach((query) => {
-                    queryList.append($('<li>').text(query));
-                });
-            } else if (typeof data.generated_search_query === 'string') {
-                // Handle single query string
-                queryList.append($('<li>').text(data.generated_search_query));
-            }
+            data.generated_search_queries.forEach((query) => {
+                queryList.append($('<li>').text(query));
+            });
             
             generatedQueryDiv.append(queryList);
             $('#chat').append(generatedQueryDiv);
             console.log("Generated query div appended");
         } else {
-            console.log("No generated search query received");
+            console.log("No generated search queries received, not an array, or empty array");
         }
 
         // Display web search results

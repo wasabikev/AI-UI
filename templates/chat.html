@@ -106,7 +106,7 @@
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4o-2024-08-06">GPT-4o</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
-                                    <li><a class="dropdown-item" href="#" data-model="claude-3-5-sonnet-20240620">Claude 3.5 (Sonnet)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-5-sonnet-20241022">Claude 3.5 (Sonnet)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gemini-pro">Gemini Pro</a></li>
                                 </ul>
                             </div>
@@ -328,9 +328,10 @@
                                 <!-- Websites Group -->
                                 <div class="col-md-12">
                                     <div id="websitesGroup" class="modal-content-group hidden">
-                                        <!-- Web Browsing Activation -->
-                                        <hr>
-                                        <div class="form-group">
+                                    <!-- Web Browsing Activation -->
+                                    <hr>
+                                    <div class="form-group d-flex align-items-center">
+                                        <div class="mr-4">
                                             <label for="enableWebSearch" class="mb-0">Enable Web Search</label>
                                             <div class="toggle-switch">
                                                 <input type="checkbox" id="enableWebSearch" class="toggle-switch-checkbox" name="enableWebSearch">
@@ -340,30 +341,41 @@
                                                 </label>
                                             </div>
                                         </div>
-                                        <hr>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group" style="margin-top: -7px;">
-                                                    <label for="websiteURL">Scrape Website</label>
-                                                    <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <button id="submitWebsiteButton" type="button" class="btn btn-info website-control-btn">Add Website</button>
-                                                <button id="removeWebsiteButton" type="button" class="btn btn-info website-control-btn" style="display: none;">Remove Website</button>
+                                        <div class="ml-5">
+                                            <label for="enableIntelligentSearch" class="mb-0">Enable Intelligent Search</label>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="enableIntelligentSearch" class="toggle-switch-checkbox" name="enableIntelligentSearch">
+                                                <label class="toggle-switch-label" for="enableIntelligentSearch">
+                                                    <span class="toggle-switch-inner"></span>
+                                                    <span class="toggle-switch-switch"></span>
+                                                </label>
                                             </div>
                                         </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group" style="margin-top: -7px;">
+                                                <label for="websiteURL">Scrape Website</label>
+                                                <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button id="submitWebsiteButton" type="button" class="btn btn-info website-control-btn">Add Website</button>
+                                            <button id="removeWebsiteButton" type="button" class="btn btn-info website-control-btn" style="display: none;">Remove Website</button>
+                                        </div>
+                                    </div>
                                         
-                                        <div id="websiteDetails">
-                                            <h5>Indexing Details</h5>
-                                            <div class="detail-item" style="position: relative;">
-                                                <strong>Indexing Status:</strong> <span id="indexingStatus">N/A</span>
-                                                <button id="indexWebsiteButton" type="button" class="btn btn-info website-control-btn index-website-btn">Index Website</button>
-                                            </div>
-                                            <div class="detail-item">
-                                                <strong>Indexing Frequency:</strong> <span id="indexingFrequency">N/A</span>
-                                            </div>
+                                    <div id="websiteDetails">
+                                        <h5>Indexing Details</h5>
+                                        <div class="detail-item" style="position: relative;">
+                                            <strong>Indexing Status:</strong> <span id="indexingStatus">N/A</span>
+                                            <button id="indexWebsiteButton" type="button" class="btn btn-info website-control-btn index-website-btn">Index Website</button>
                                         </div>
+                                        <div class="detail-item">
+                                            <strong>Indexing Frequency:</strong> <span id="indexingFrequency">N/A</span>
+                                        </div>
+                                    </div>
                                         
                                     </div> <!-- End of websites group -->
                                 </div> <!-- End of Bootstrap column -->
