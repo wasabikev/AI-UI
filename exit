@@ -1,0 +1,119 @@
+[33m71730d5[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Revert to gunicorn on prod
+[33mb9e9991[m Resolved error with base_upload_folder
+[33mb6fad31[m Removed quart
+[33m94e3ede[m Modfied hypercon configuration for prod
+[33mf609c6e[m Hypercorn config variant, take 2
+[33m6d539ad[m Revert to Gunicorn w/out Uvicorn worker class.
+[33m35fe5e8[m Gunicorn with the Uvicorn worker class.
+[33m73741a0[m Revert to gunicorn
+[33m20058c3[m Switch to uvicorn for production
+[33m04bf3f5[m Switch to Hypercorn for status updates support
+[33m9fb3a6a[m Revert to prior Procfile due to production errors
+[33m5c31745[m Configured Gunicorn with async workers for production SSE support
+[33ma06333a[m Switched to Hypercorn server in production for consistent async support and SSE functionality
+[33mce35e76[m Implemented real-time status updates for inference orchestreation with async event streaming
+[33m8f0c2fa[m Basic and Int web search operational. Sonnet 10.22.24 update.
+[33ma6c1e8c[m Bug fix for requirements.txt
+[33m12a20ad[m Implement advanced web search functionality. Multiple query generation, page fetch, and summarization with references and observability.
+[33ma79676c[m Bug fix for gpt-4o-2024-08-06 update
+[33m163e4f1[m Logging update & update to gpt-4o-2024-08-06
+[33m369cf0b[m Refactor file organization and improve UI
+[33m1583fca[m Update Conversation and UploadedFile models, add new migration
+[33mb8b7724[m Fix OpenAI max_tokens bug in app.py
+[33m2394097[m LLM assisted search and footnotes
+[33m2f723a3[m Web search functionality version 0.1
+[33m2c7484a[m UI for web browsing toggle update
+[33mfce3084[m Update model with enable_web_search field and adjust .gitignore
+[33m49f7b13[m RAG integration with system message
+[33m399b253[m Trigger rebuild for revert
+[33m36b27c6[m Modified chat route for Anthropic RAG comptability.
+[33mb8a52bb[m Added LLMWhisperer integration for PDF RAG.
+[33m7e69704[m Files based RAG. Minor adjustment for prod.
+[33m3357356[m Files based RAG functionality for system messages
+[33m08baa57[m Files RAG modal UI and DB update.
+[33me25ca31[m Updated requirements.txt to solve build error.
+[33m97b5f25[m Updated OpenAI API and added Sonnet 3.5
+[33maaec5ae[m Preliminary website RAG UI complete.
+[33m8503889[m Increase Gunicorn timeout.
+[33m0d7b221[m Enable Gunicorn access logs.
+[33me965ebd[m Testing modification to count_tokens function.
+[33md9481e6[m Procfile adjust for gunicorn configuration.
+[33mf457ca3[m Added support for viewing logs on prod.
+[33m8ad78b1[m Remove log files from repo. Doh!
+[33m41ec4bd[m Cleanup logging from 3/27 prod event.
+[33meb037f7[m Add gunicorn support
+[33m05ec5ab[m Logging update
+[33mb87263d[m Adding streaming for logging.
+[33m964257f[m Even more logging
+[33ma357d55[m Added logging for 404 errors
+[33m0bb6499[m Added logging
+[33ma0d6fd2[m Update 5:06 to resolve 404 error
+[33m09a7d62[m Update port for prod troubleshooting
+[33mbb12339[m 4:29 update to resolve prod build issue.
+[33mc1ea2a2[m Change to trigger push to prod.
+[33mc0e148f[m Add Procfile to resolve health check on prod.
+[33ma677421[m trigger redeployment
+[33m0d8c880[m Phase 1 website RAG completed. (DB and UI complete)
+[33m884217a[m Added support for GPT4-o and websites RAG progress.
+[33m04fa2d5[m Modal and DB updates to support website RAG.
+[33m821df2d[m Modal update for layered orchestration.
+[33m7cad191[m Updated README.md and button updates.
+[33m4733c53[m Updated system message modal containers
+[33md11b9a9[m Refactored CSS for clarity
+[33m7e60b19[m Refactored system message modal for RAG expansion.
+[33m63a39a6[m Improved rendering for code blocks.
+[33mf2fb403[m Added support for Gemini
+[33m847a725[m New OpenAI models added.
+[33mb1eca46[m Interface v2.1
+[33mc7c2539[m Updated code and markdown rendering (yet again.)
+[33mbb5d847[m Bug fixes: Model drop down & UI system message display.
+[33m930cfbf[m Bug fixes: temp adjustments & css media adjustment
+[33mad04073[m Bug fixes: modal sizing & +New button
+[33m3d7a77f[m Bug fix for +New button
+[33maf96a9b[m Rendering update - user input as plain text.
+[33m2e2fecb[m Implemented tiktoken for multi-model token counting.
+[33m3f489cd[m Resolved system message not passing to Anthropic API.
+[33mbf39079[m Refactored chat enpoint and added support for Anthropic models (Opus).
+[33m24ad6e9[m Incremental update to support new RAG controls.
+[33m6b66c10[m Added DB and front end framework for RAG sources within system messages.
+[33ma25a1fa[m Refactored and improved output parsing for display
+[33medf7e0c[m System message modal scroll bar update
+[33ma4766eb[m Added access to gpt-4-0125-preview. UI update to system message modal.
+[33maead176[m Update for markdown handling.
+[33m2e88abf[m Resolved rendering UI bugs and improved handling for MathJax content.
+[33m215ecf7[m Added MathJax rendering to support math tutoring (math notation display)
+[33m01c1dcc[m Fixed loadConverstation bug introduced by last merge.  (Need better testing!)
+[33m71240e9[m Resolved bug with rendering HTML code blocks in restored converstations.
+[33m036b2a9[m Finalize v1 of the system message modal and the system message display. Huzzah.
+[33m1bc4b74[m Update to fix saveSystemMessageChanges bug introduced by last merge. Oops.
+[33mce0708e[m Improved converstation title generation to support converstations with high token counts.
+[33med7ba83[m Adding system messages control panel and support for GPT-4 (128K).
+[33m2f6ccaf[m Schema update.  Adding SystemMessage table prior to front end development.
+[33m6b93896[m Updated logic to fetch converstations based on user role.
+[33m091f63f[m Enhanced converstation loading logic to filter based on user.
+[33m8417201[m Resolved minor bug with admin flash message.
+[33m7ed1a28[m Implemented role-based access control and locked down admin dashboard.
+[33m4713628[m New user admin dashboard for access management.
+[33m4dc5d98[m Added backup admin for emergency access.
+[33mcf8b3e6[m Adding authentication and expanded user management.
+[33m58684ce[m Updated DB schema for user authentication. Removed unused tables.
+[33m9572edf[m Implemented temperature adjustment feature with UI updates and backend integration for conversation settings.
+[33m006d6d8[m Updated default system message.
+[33mfbabb34[m Schema update to support temperature and template names.
+[33m511ddd2[m Added database viewer with JSON data colorization.
+[33mc32b11e[m Update hardcoded URLs to relative paths in JavaScript
+[33mb7642f7[m Updated port configuration for deployment
+[33m5ef8881[m Updates for security and to ready project for production enviroment.
+[33m9263f6e[m[33m ([m[1;32m1040ai[m[33m)[m System messages switching and updated Product Specification
+[33ma6664cd[m Merge branch 'contextualCode-x'
+[33m7436d59[m Committing all changes before merge
+[33md8c720b[m Merge branch 'main' of https://github.com/wasabikev/AI-UI
+[33m24348d5[m Minor update to markdown handling
+[33m8ffe3c6[m Update README.md
+[33m91b20a2[m Create README.md
+[33m3fa2751[m Core interface complete. Extensible to multiple applications.
+[33mcacdaa5[m Moved files to private directory
+[33m2748a69[m Updated .gitignore to exclude private directory
+[33me1ddf11[m Merge branch 'master'
+[33mfec32d2[m[33m ([m[1;31morigin/master[m[33m)[m Initial commit
+[33mca923b7[m Initial commit
