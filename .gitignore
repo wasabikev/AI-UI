@@ -16,3 +16,15 @@ app.py.backup.py
 auth.py.backup.py
 models.backup.py
 backup.js
+
+#Related to Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+entrypoint.sh
+
+#Python
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/

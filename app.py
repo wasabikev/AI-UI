@@ -1229,22 +1229,27 @@ ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') # set this in your .env file
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 ADMIN_EMAIL = "admin@backup.com" # Change this to your own email address
 
-with app.app_context():
-    # Check if the admin user exists
+def create_admin_user():
     admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
-
     if not admin_user and ADMIN_USERNAME and ADMIN_PASSWORD:
-        # Create a new admin user
         hashed_password = generate_password_hash(ADMIN_PASSWORD)
-        new_admin = User(username=ADMIN_USERNAME, email=ADMIN_EMAIL,
-                         password_hash=hashed_password, is_admin=True, status="Active")
-
+        new_admin = User(
+            username=ADMIN_USERNAME,
+            email=ADMIN_EMAIL,
+            password_hash=hashed_password,
+            is_admin=True,
+            status="Active"
+        )
         try:
             db.session.add(new_admin)
             db.session.commit()
             print("Admin user created")
         except Exception as e:
             print(f"Error creating admin user: {e}")
+
+# Move this to after app creation
+# with app.app_context():
+#    create_admin_user()
 
 # Default System Message creation logic
 DEFAULT_SYSTEM_MESSAGE = {
@@ -1302,13 +1307,34 @@ def add_website_to_system_message(system_message_id):
 @app.route('/get-current-model', methods=['GET'])
 @login_required
 def get_current_model():
-    # Assuming the current model is associated with the default system message
-    default_message = SystemMessage.query.filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"]).first()
-
-    if default_message:
-        return jsonify({'model_name': default_message.model_name})
-    else:
-        return jsonify({'error': 'Default system message not found'}), 404
+    try:
+        # First try to get the default system message
+        default_message = SystemMessage.query.filter_by(name="Default System Message").first()
+        
+        # If not found, try to get any system message
+        if not default_message:
+            default_message = SystemMessage.query.first()
+        
+        # If still no system message exists, return default values
+        if default_message:
+            return jsonify({
+                'model_name': default_message.model_name,
+                'temperature': default_message.temperature
+            })
+        else:
+            # Return default values if no system message exists
+            return jsonify({
+                'model_name': 'gpt-3.5-turbo',
+                'temperature': 0.7
+            })
+            
+    except Exception as e:
+        app.logger.error(f"Error in get_current_model: {str(e)}")
+        # Return default values in case of error
+        return jsonify({
+            'model_name': 'gpt-3.5-turbo',
+            'temperature': 0.7
+        })
 
 @app.route('/system-messages', methods=['POST'])
 @login_required
