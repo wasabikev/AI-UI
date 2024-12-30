@@ -23,7 +23,7 @@
     </script>
 
     <script type="text/javascript">
-        var isAdmin = {{ current_user.is_admin | tojson }};
+        var isAdmin = {{ user.is_admin | tojson if user else 'false' }};
     </script>
 
     <style>

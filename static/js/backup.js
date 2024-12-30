@@ -14,6 +14,8 @@ let activeSystemMessageId = null; // Variable to track the currently active syst
 let showTemperature = false;  // Tracks the visibility of the temperature settings
 let selectedTemperature = 0.7; // Default temperature value
 let activeWebsiteId = null;  // This will store the currently active website ID for the Websites Group
+let tempWebSearchState = false; // This will store the temporary web search state
+let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -33,10 +35,125 @@ document.addEventListener("DOMContentLoaded", function() {
                 displaySystemMessage(systemMessages[0]);
             }
         }
+
+        // Add event listeners for the web search toggles
+        const enableWebSearchToggle = document.getElementById('enableWebSearch');
+        const enableIntelligentSearchToggle = document.getElementById('enableIntelligentSearch');
+
+        enableWebSearchToggle.addEventListener('change', function() {
+            tempWebSearchState = this.checked;
+            if (!this.checked) {
+                enableIntelligentSearchToggle.checked = false;
+                tempIntelligentSearchState = false;
+                enableIntelligentSearchToggle.disabled = true;
+            } else {
+                enableIntelligentSearchToggle.disabled = false;
+            }
+            updateSearchSettings();
+        });
+
+        enableIntelligentSearchToggle.addEventListener('change', function() {
+            tempIntelligentSearchState = this.checked;
+            if (this.checked) {
+                enableWebSearchToggle.checked = true;
+                tempWebSearchState = true;
+            }
+            updateSearchSettings();
+        });
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
     });
 });
+
+let statusUpdateContainer = null;
+
+function createStatusUpdateContainer() {
+    if (!statusUpdateContainer) {
+        statusUpdateContainer = $('<div class="status-update-container"></div>');
+        $('#chat').append(statusUpdateContainer);
+    }
+    return statusUpdateContainer;
+}
+
+function addStatusUpdate(message) {
+    const container = createStatusUpdateContainer();
+    
+    const statusDiv = $('<div class="chat-entry status-update">')
+        .append('<img src="/static/images/processing-icon.gif" alt="Processing" class="status-icon">')
+        .append($('<span>').text(message));
+    
+    container.append(statusDiv);
+    
+    // Scroll to the bottom of the container
+    container.scrollTop(container[0].scrollHeight);
+    
+    // Return the status div for potential updates
+    return statusDiv;
+}
+
+function clearStatusUpdates() {
+    if (statusUpdateContainer) {
+        // Fade out all status updates
+        statusUpdateContainer.find('.status-update').addClass('fade-out');
+        
+        // Remove after animation
+        setTimeout(() => {
+            statusUpdateContainer.remove();
+            statusUpdateContainer = null;
+        }, 500);
+    }
+}
+
+function updateSearchSettings() {
+    // Only send an update if the temporary state differs from the current system message state
+    if (tempWebSearchState !== currentSystemMessage.enable_web_search || tempIntelligentSearchState !== false) {
+        fetch(`/api/system-messages/${activeSystemMessageId}/toggle-search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                enableWebSearch: tempWebSearchState,
+                enableIntelligentSearch: tempIntelligentSearchState
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Search settings updated:', data);
+            // Update the current system message with the new settings
+            currentSystemMessage.enable_web_search = data.enableWebSearch;
+            // Note: We're not storing enableIntelligentSearch in the model
+        })
+        .catch((error) => {
+            console.error('Error updating search settings:', error);
+            // Revert the toggles to their previous state on error
+            initializeSearchToggles(currentSystemMessage);
+        });
+    }
+}
+
+function initializeSearchToggles(systemMessage) {
+    const enableWebSearchToggle = document.getElementById('enableWebSearch');
+    const enableIntelligentSearchToggle = document.getElementById('enableIntelligentSearch');
+
+    // Set the web search toggle based on the saved setting
+    enableWebSearchToggle.checked = systemMessage.enable_web_search;
+    tempWebSearchState = systemMessage.enable_web_search;
+
+    // Always start with intelligent search disabled
+    enableIntelligentSearchToggle.checked = false;
+    tempIntelligentSearchState = false;
+
+    // Enable or disable the intelligent search toggle based on web search setting
+    enableIntelligentSearchToggle.disabled = !systemMessage.enable_web_search;
+}
+
+document.getElementById('enableWebSearch').addEventListener('change', function() {
+    tempWebSearchState = this.checked;
+    console.log('Temporary web search state updated:', tempWebSearchState);
+});
+
+
 
 document.getElementById('indexWebsiteButton').addEventListener('click', function() {
     const websiteId = activeWebsiteId; // Use the global variable for the active website ID
@@ -91,6 +208,262 @@ document.getElementById('indexWebsiteButton').addEventListener('click', function
         });
 });
 
+// Functions related to the file upload feature
+
+// Add in CSRF protection for the AJAX request. This function will be used to get the CSRF token from the meta tag. (Addtional updates needed)
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
+function removeFile(fileId) {
+    if (!confirm('Are you sure you want to remove this file?')) {
+        return;
+    }
+    const fileListError = document.getElementById('fileListError');
+    const fileUploadStatus = document.getElementById('fileUploadStatus');
+
+    fetch(`/remove_file/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            fileUploadStatus.textContent = 'File removed successfully';
+            fileUploadStatus.style.display = 'inline';
+            setTimeout(() => {
+                fileUploadStatus.style.display = 'none';
+            }, 3000);
+            fetchFileList(activeSystemMessageId);
+        } else {
+            throw new Error(data.error || 'Failed to remove file');
+        }
+    })
+    .catch(error => {
+        console.error('Error removing file:', error);
+        fileListError.textContent = `Failed to remove file: ${error.message}`;
+        fileListError.style.display = 'block';
+        setTimeout(() => {
+            fileListError.style.display = 'none';
+        }, 5000);
+    });
+}
+
+function uploadFile() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.txt,.pdf,.docx'; // Add or modify accepted file types as needed
+    
+    const fileUploadStatus = document.getElementById('fileUploadStatus');
+    const fileListError = document.getElementById('fileListError');
+    
+    fileInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('system_message_id', activeSystemMessageId);
+
+            // Show "File upload in progress" message
+            fileUploadStatus.textContent = 'File upload in progress...';
+            fileUploadStatus.style.display = 'inline';
+            fileListError.style.display = 'none'; // Hide any previous error messages
+
+            fetch('/upload_file', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Show "File upload complete" message
+                    fileUploadStatus.textContent = 'File upload complete';
+                    setTimeout(() => {
+                        fileUploadStatus.style.display = 'none';
+                    }, 3000); // Hide the message after 3 seconds
+                    fetchFileList(activeSystemMessageId);
+                    updateMoreFilesIndicator();
+                } else {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                fileUploadStatus.textContent = 'File upload failed';
+                fileUploadStatus.style.display = 'inline';
+                fileListError.textContent = 'Failed to upload file: ' + (error.error || error.message);
+                fileListError.style.display = 'block';
+                
+                setTimeout(() => {
+                    fileUploadStatus.style.display = 'none';
+                    fileListError.style.display = 'none';
+                }, 5000); // Hide both messages after 5 seconds
+            });
+        }
+    };
+
+    fileInput.click();
+}
+
+function initializeAndUpdateFileList(systemMessageId) {
+    console.log('Initializing and updating file list for system message ID:', systemMessageId);
+    
+    // Clear existing file list
+    const fileList = document.getElementById('fileList');
+    if (fileList) {
+        fileList.innerHTML = '';
+    }
+
+    // Fetch and display the file list
+    fetchFileList(systemMessageId);
+
+    // Update the more files indicator
+    updateMoreFilesIndicator();
+}
+
+
+function fetchFileList(systemMessageId) {
+    const fileList = document.getElementById('fileList');
+    const noFilesMessage = document.getElementById('noFilesMessage');
+    const fileListError = document.getElementById('fileListError');
+    const fileListContainer = document.getElementById('fileListContainer');
+    if (!fileListContainer) {
+        console.error('File list container not found');
+        return;
+    }
+    const moreFilesIndicator = document.getElementById('moreFilesIndicator');
+
+    // Reset all displays
+    fileList.innerHTML = '';
+    fileList.style.display = 'none';
+    noFilesMessage.style.display = 'none';
+    fileListError.style.display = 'none';
+    moreFilesIndicator.style.display = 'none';
+
+    fetch(`/get_files/${systemMessageId}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(files => {
+        console.log('Received files:', files); // Debug log
+        if (files && files.length > 0) {
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item d-flex justify-content-between align-items-center';
+                fileItem.innerHTML = `
+                    <span class="file-name">${file.name}</span>
+                    <div class="file-actions">
+                        <button class="btn btn-sm btn-primary" onclick="viewOriginalFile('${file.id}')">View Original</button>
+                        <button class="btn btn-sm btn-info" onclick="viewProcessedText('${file.id}')">View Processed</button>
+                        <button class="btn btn-sm btn-danger" onclick="removeFile('${file.id}')">Remove</button>
+                    </div>
+                `;
+                fileList.appendChild(fileItem);
+            });
+            fileList.style.display = 'block';
+            noFilesMessage.style.display = 'none';
+        } else {
+            fileList.style.display = 'none';
+            noFilesMessage.style.display = 'block';
+        }
+        fileListContainer.style.display = 'block';
+        updateMoreFilesIndicator();
+    })
+    .catch(error => {
+        console.error('Error fetching file list:', error);
+        fileListError.textContent = `Error fetching file list: ${error.message}`;
+        fileListError.style.display = 'block';
+        updateMoreFilesIndicator();
+    });
+
+    // Add scroll event listener to show/hide indicator based on scroll position
+    fileListContainer.addEventListener('scroll', () => {
+        if (fileListContainer.scrollHeight > fileListContainer.clientHeight) {
+            if (fileListContainer.scrollTop + fileListContainer.clientHeight >= fileListContainer.scrollHeight - 20) {
+                moreFilesIndicator.style.display = 'none';
+            } else {
+                moreFilesIndicator.style.display = 'block';
+            }
+        }
+    });
+}
+
+function viewOriginalFile(fileId) {
+    const url = `/view_original_file/${fileId}`;
+    window.open(url, '_blank');
+}
+
+function viewProcessedText(fileId) {
+    fetch(`/view_processed_text/${fileId}`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Processed text not available');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(text => {
+            // Create a new window or tab with the processed text
+            const newWindow = window.open('', '_blank');
+            newWindow.document.write(`<pre>${text}</pre>`);
+            newWindow.document.close();
+        })
+        .catch(error => {
+            console.error('Error viewing processed text:', error);
+            alert(error.message || 'Error viewing processed text. Please try again.');
+        });
+}
+
+
+function updateMoreFilesIndicator() {
+    const fileListContainer = document.getElementById('fileListContainer');
+    const moreFilesIndicator = document.getElementById('moreFilesIndicator');
+    
+    if (fileListContainer && moreFilesIndicator) {
+        if (fileListContainer.scrollHeight > fileListContainer.clientHeight) {
+            if (fileListContainer.scrollTop + fileListContainer.clientHeight >= fileListContainer.scrollHeight - 20) {
+                moreFilesIndicator.style.display = 'none';
+            } else {
+                moreFilesIndicator.style.display = 'block';
+            }
+        } else {
+            moreFilesIndicator.style.display = 'none';
+        }
+    }
+}
+
+function handleAddFileButtonClick() {
+    // Open the modal and switch to the filesGroup
+    openModalAndShowGroup('filesGroup');
+
+    // Additional logic can be added here if there are any specific actions needed
+    // For example, clearing any previously selected files or resetting file input fields
+    resetFileInput();
+}
+
+function resetFileInput() {
+    // Reset the file input field
+    var fileInput = document.getElementById('fileInput');
+    fileInput.value = "";  // Clear any previously selected file
+}
+
 
 
 function handleAddWebsiteButtonClick() {
@@ -102,7 +475,6 @@ function handleAddWebsiteButtonClick() {
     clearWebsiteDetails();
     updateWebsiteControls();
 }
-
 
 function openModalAndShowGroup(groupID) {
     // Hide all content groups
@@ -256,11 +628,7 @@ function formatDate(dateString) {
 
 function clearWebsiteDetails() {
     document.getElementById('indexingStatus').textContent = 'N/A';
-    document.getElementById('indexedAt').textContent = 'N/A';
-    document.getElementById('lastError').textContent = 'N/A';
     document.getElementById('indexingFrequency').textContent = 'N/A';
-    document.getElementById('createdAt').textContent = 'N/A';
-    document.getElementById('updatedAt').textContent = 'N/A';
     document.getElementById('websiteURL').value = '';
 
     // Hide the Index Website button
@@ -436,6 +804,75 @@ function updateStatus() {
     document.getElementById('statusUpdateForm').submit();
 }
 
+function updateTemperatureSelectionInModal(temperature) {
+    console.log("Updating temperature in modal to:", temperature);
+    selectedTemperature = temperature;
+    document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
+        radio.checked = parseFloat(radio.value) === parseFloat(temperature);
+    });
+    updateTemperatureDisplay(); // Update the display to reflect the change
+}
+
+function populateSystemMessageModal() {
+    let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
+    let dropdownButton = document.getElementById('systemMessageDropdown');
+
+    if (!dropdownMenu || !dropdownButton) {
+        console.error("Required elements not found in the DOM.");
+        return;
+    }
+
+    dropdownMenu.innerHTML = '';
+
+    console.log('Populating system message modal...');
+    systemMessages.forEach((message) => {
+        let dropdownItem = document.createElement('button');
+        dropdownItem.className = 'dropdown-item';
+        dropdownItem.textContent = message.name;
+        dropdownItem.onclick = function() {
+            dropdownButton.textContent = this.textContent;
+            document.getElementById('systemMessageName').value = message.name || '';
+            document.getElementById('systemMessageDescription').value = message.description || '';
+            document.getElementById('systemMessageContent').value = message.content || '';
+            document.getElementById('systemMessageModal').dataset.messageId = message.id;
+            document.getElementById('enableWebSearch').checked = message.enable_web_search;
+
+            currentSystemMessageDescription = message.description;
+            initialTemperature = message.temperature;
+            selectedTemperature = message.temperature;
+            model = message.model_name;
+            activeSystemMessageId = message.id;
+
+            updateTemperatureSelectionInModal(message.temperature);
+            updateModelDropdownInModal(message.model_name);
+            loadWebsitesForSystemMessage(message.id);
+            fetchFileList(message.id);
+        };
+        dropdownMenu.appendChild(dropdownItem);
+    });
+
+    if (!activeSystemMessageId && systemMessages.length > 0) {
+        const defaultSystemMessage = systemMessages.find(msg => msg.name === "Default System Message") || systemMessages[0];
+        activeSystemMessageId = defaultSystemMessage.id;
+        loadWebsitesForSystemMessage(defaultSystemMessage.id);
+        dropdownButton.textContent = defaultSystemMessage.name;
+        document.getElementById('systemMessageName').value = defaultSystemMessage.name;
+        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
+        document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
+        document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
+        document.getElementById('enableWebSearch').checked = defaultSystemMessage.enable_web_search;
+        initialTemperature = defaultSystemMessage.temperature;
+        updateTemperatureSelectionInModal(initialTemperature);
+        updateModelDropdownInModal(defaultSystemMessage.model_name);
+        model = defaultSystemMessage.model_name;
+        
+        fetchFileList(defaultSystemMessage.id);
+    }
+
+    // Reset the isSaved flag
+    isSaved = false;
+}
+
 function fetchAndProcessSystemMessages() {
     return new Promise((resolve, reject) => {
         fetch('/api/system_messages')
@@ -532,6 +969,7 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
     const messageContent = document.getElementById('systemMessageContent').value;
     const modelName = document.getElementById('modalModelDropdownButton').dataset.apiName;
     const temperature = selectedTemperature;
+    const enableWebSearch = document.getElementById('enableWebSearch').checked; // Get the actual state of the checkbox
 
     const messageId = document.getElementById('systemMessageModal').dataset.messageId;
 
@@ -540,176 +978,68 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         const existingMessage = systemMessages.find(message => message.name.toLowerCase() === messageName.toLowerCase());
         if (existingMessage) {
             showModalFlashMessage("Please select a different name. That name is already in use.", "warning");
-            return; // Stop the function from proceeding further
+            return;
         }
     }
 
-    if (messageId) {
-        // Updating an existing system message
-        $.ajax({
-            url: `/system-messages/${messageId}`,
-            method: 'PUT',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                name: messageName,
-                description: messageDescription,
-                content: messageContent,
-                model_name: modelName,
-                temperature: selectedTemperature
-            }),
-            success: function(response) {
-                console.log('System message updated successfully:', response);
+    const messageData = {
+        name: messageName,
+        description: messageDescription,
+        content: messageContent,
+        model_name: modelName,
+        temperature: temperature,
+        enable_web_search: enableWebSearch
+    };
 
-                // Set the isSaved flag to true here to indicate changes were saved
-                isSaved = true;
+    const url = messageId ? `/system-messages/${messageId}` : '/system-messages';
+    const method = messageId ? 'PUT' : 'POST';
 
-                // Set the activeSystemMessageId to the ID of the system message that was just saved
-                activeSystemMessageId = messageId;
+    $.ajax({
+        url: url,
+        method: method,
+        contentType: 'application/json',
+        data: JSON.stringify(messageData),
+        success: function(response) {
+            console.log('System message saved successfully:', response);
 
-                // Update the global model variable
-                model = modelName;
-                console.log('Global model variable updated to:', model);
+            // Set the isSaved flag to true
+            isSaved = true;
 
-                // Fetch and process system messages
-                fetchAndProcessSystemMessages().then(() => {
-                    // Update the selected temperature and the temperature display
-                    selectedTemperature = temperature;
-                    console.log("Temperature after AJAX response:", selectedTemperature);
-                    updateTemperatureDisplay();
+            // Update the global model variable
+            model = modelName;
+            console.log('Global model variable updated to:', model);
 
-                    // Update the model dropdown on the main page
-                    $('#dropdownMenuButton').text(modelNameMapping(modelName));
+            // Update the selected temperature and the temperature display
+            selectedTemperature = temperature;
+            console.log("Temperature after AJAX response:", selectedTemperature);
+            updateTemperatureDisplay();
 
-                    // Update the system message display with the updated system message object
-                const updatedSystemMessage = {
-                    id: messageId,
-                    name: messageName,
-                    description: messageDescription,
-                    content: messageContent,
-                    model_name: modelName,
-                    temperature: temperature
-                };
-                displaySystemMessage(updatedSystemMessage);
+            // Update the model dropdown on the main page
+            $('#dropdownMenuButton').text(modelNameMapping(modelName));
 
-                    $('#systemMessageModal').modal('hide');
-                });
-            },
-            error: function(error) {
-                console.error('Error updating system message:', error);
-            }
-        });
-    } else {
-        // Creating a new system message
-        $.ajax({
-            url: `/system-messages`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                name: messageName,
-                description: messageDescription,
-                content: messageContent,
-                model_name: modelName,
-                temperature: temperature
-            }),
-            success: function(response) {
-                console.log('System message created successfully:', response);
+            // Close the modal
+            $('#systemMessageModal').modal('hide');
 
-                // Fetch the updated list of system messages
-                fetchAndProcessSystemMessages().then(() => {
-                    // Assuming response contains the new system message ID, update activeSystemMessageId
-                    activeSystemMessageId = response.id;
-
-                    // Update the system message display with the updated system message object
-                const updatedSystemMessage = {
-                    id: messageId,
-                    name: messageName,
-                    description: messageDescription,
-                    content: messageContent,
-                    model_name: modelName,
-                    temperature: temperature
-                };
-                displaySystemMessage(updatedSystemMessage);
-
-                    // Close the modal
-                    $('#systemMessageModal').modal('hide');
-                });
-            },
-            error: function(error) {
-                console.error('Error creating system message:', error);
-            }
-        });
-    }
+            // Fetch and process system messages, then update the UI
+            fetchAndProcessSystemMessages().then(() => {
+                // Find the updated or new message in the refreshed systemMessages array
+                const updatedMessage = systemMessages.find(msg => msg.id === (response.id || messageId));
+                if (updatedMessage) {
+                    // Set the activeSystemMessageId
+                    activeSystemMessageId = updatedMessage.id;
+                    // Display the updated system message
+                    displaySystemMessage(updatedMessage);
+                } else {
+                    console.error('Could not find the updated system message in the array');
+                }
+            });
+        },
+        error: function(error) {
+            console.error('Error saving system message:', error);
+            showModalFlashMessage("Error saving system message", "danger");
+        }
+    });
 });
-
-
-function updateTemperatureSelectionInModal(temperature) {
-    console.log("Updating temperature in modal to:", temperature);
-    selectedTemperature = temperature;
-    document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
-        radio.checked = parseFloat(radio.value) === parseFloat(temperature);
-    });
-    updateTemperatureDisplay(); // Update the display to reflect the change
-}
-
-// Function to populate the system message modal
-function populateSystemMessageModal() {
-    let dropdownMenu = document.querySelector('#systemMessageModal .dropdown-menu');
-    let dropdownButton = document.getElementById('systemMessageDropdown'); // Button for the dropdown
-
-    if (!dropdownMenu || !dropdownButton) {
-        console.error("Required elements not found in the DOM.");
-        return;
-    }
-
-    // Clear existing dropdown items
-    dropdownMenu.innerHTML = '';
-
-    // Add each system message to the dropdown
-    console.log('Populating system message modal...');
-    systemMessages.forEach((message, index) => {
-        let dropdownItem = document.createElement('button');
-        dropdownItem.className = 'dropdown-item';
-        dropdownItem.textContent = message.name;
-        dropdownItem.onclick = function() {
-            // Update the dropdown button text and modal content
-            dropdownButton.textContent = this.textContent; // Update the system message dropdown button text
-            document.getElementById('systemMessageName').value = message.name || '';
-            document.getElementById('systemMessageDescription').value = message.description || '';
-            document.getElementById('systemMessageContent').value = message.content || '';
-            document.getElementById('systemMessageModal').dataset.messageId = message.id;
-
-            // Update global and modal-specific variables
-            currentSystemMessageDescription = message.description;
-            initialTemperature = message.temperature;
-            selectedTemperature = message.temperature;
-            model = message.model_name; // Update the global model variable
-            activeSystemMessageId = message.id; // Update the active system message ID
-
-            // Update UI elements
-            updateTemperatureSelectionInModal(message.temperature);
-            updateModelDropdownInModal(message.model_name);
-
-            // Load websites for the selected system message
-            loadWebsitesForSystemMessage(message.id);
-        };
-        dropdownMenu.appendChild(dropdownItem);
-    });
-
-    // Handle default system message selection
-    if (!activeSystemMessageId && systemMessages.length > 0) {
-        const defaultSystemMessage = systemMessages[0]; // Assuming the first message is the default
-        activeSystemMessageId = defaultSystemMessage.id;
-        loadWebsitesForSystemMessage(defaultSystemMessage.id);
-        dropdownButton.textContent = defaultSystemMessage.name;
-        document.getElementById('systemMessageDescription').value = defaultSystemMessage.description || '';
-        document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
-        document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
-        initialTemperature = defaultSystemMessage.temperature;
-        updateTemperatureSelectionInModal(initialTemperature);
-        updateModelDropdownInModal(defaultSystemMessage.model_name);
-        model = defaultSystemMessage.model_name;
-    }
-}
 
 function updateTemperatureDisplay() {
     // Get the value of the currently selected temperature
@@ -732,7 +1062,7 @@ function displaySystemMessage(systemMessage) {
     const temperatureDisplay = systemMessage.temperature;
     const descriptionContent = `<span class="no-margin">${renderOpenAI(systemMessage.description)}</span>`;
     const renderedContent = `
-    <div class="chat-entry system system-message">
+    <div class="chat-entry system system-message" data-system-message-id="${systemMessage.id}">
         <strong>System:</strong>${systemMessageButton}${descriptionContent}<br>
         <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
     </div>`;
@@ -750,6 +1080,10 @@ function displaySystemMessage(systemMessage) {
             content: systemMessage.content
         });
     }
+
+    // Set the activeSystemMessageId
+    activeSystemMessageId = systemMessage.id;
+    console.log('Active System Message ID set to:', activeSystemMessageId);
 }
 
 
@@ -889,8 +1223,9 @@ function modelNameMapping(modelName) {
     switch(modelName) {
         case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
-        case "gpt-4o-2024-05-13": mappedName = "GPT-4o"; break;
+        case "gpt-4o-2024-08-06": mappedName = "GPT-4o"; break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
+        case "claude-3-5-sonnet-20241022": mappedName = "Claude 3.5 (Sonnet)"; break;
         case "gemini-pro": mappedName = "Gemini Pro"; break;
         default: mappedName = "Unknown Model"; break;
     }
@@ -911,7 +1246,7 @@ function populateModelDropdownInModal() {
     modalModelDropdownMenu.innerHTML = '';
 
     // Define the available models
-    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-05-13","claude-3-opus-20240229","gemini-pro"];
+    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-08-06","claude-3-opus-20240229","claude-3-5-sonnet-20241022","gemini-pro"];
     console.log("Available models:", models);
 
     // Add each model to the dropdown
@@ -960,26 +1295,61 @@ $('#systemMessageModal').on('show.bs.modal', function () {
     // Show the selected group
     $('#' + targetGroup).removeClass('hidden');
 
-    // Setup the dropdown for selecting the model.
-    populateModelDropdownInModal();
+    // Fetch the latest system messages data
+    fetchAndProcessSystemMessages().then(() => {
+        // Setup the dropdown for selecting the model.
+        populateModelDropdownInModal();
 
-    // Set the system message name if there's an active system message
-    if (activeSystemMessageId) {
-        const activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
+        let activeSystemMessage;
+        if (activeSystemMessageId) {
+            activeSystemMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
+        } else if (systemMessages.length > 0) {
+            // If no active message, use the first one (or the default one if it exists)
+            activeSystemMessage = systemMessages.find(msg => msg.name === "Default System Message") || systemMessages[0];
+            activeSystemMessageId = activeSystemMessage.id;
+        }
+
         if (activeSystemMessage) {
+            // Populate all fields with the active system message data
             document.getElementById('systemMessageName').value = activeSystemMessage.name;
-            console.log("System message name set to:", activeSystemMessage.name);
-            // Ensure the model dropdown is set to the correct model
+            document.getElementById('systemMessageDescription').value = activeSystemMessage.description;
+            document.getElementById('systemMessageContent').value = activeSystemMessage.content;
+            document.getElementById('enableWebSearch').checked = activeSystemMessage.enable_web_search;
             updateModelDropdownInModal(activeSystemMessage.model_name);
+            updateTemperatureSelectionInModal(activeSystemMessage.temperature);
+
+            console.log("System message data loaded:", activeSystemMessage.name);
+
             // Load websites for the active system message
             loadWebsitesForSystemMessage(activeSystemMessageId);
+
+            // Fetch and display file list for the active system message
+            fetchFileList(activeSystemMessageId);
+        } else {
+            // Handle the case where no system messages are available
+            console.log("No system messages available. Setting default values.");
+            document.getElementById('systemMessageName').value = "New System Message";
+            document.getElementById('systemMessageDescription').value = "";
+            document.getElementById('systemMessageContent').value = "";
+            document.getElementById('enableWebSearch').checked = false;
+            updateModelDropdownInModal("gpt-3.5-turbo"); // Set a default model
+            updateTemperatureSelectionInModal(0.7); // Set a default temperature
         }
-    } else {
-        // Optionally set a default name if no active message is found
-        document.getElementById('systemMessageName').value = "Default Name";
-        console.log("No active system message. Setting default name.");
-        // Set a default model or handle the case where no model is set
-        updateModelDropdownInModal("default-model-name"); // Adjust "default-model-name" as needed
+
+        // Reset the isSaved flag
+        isSaved = false;
+    }).catch(error => {
+        console.error("Error loading system messages:", error);
+        showModalFlashMessage("Error loading system messages", "danger");
+    });
+});
+
+$('#systemMessageModal').on('shown.bs.modal', function () {
+    updateMoreFilesIndicator();
+    
+    // If there's an active system message, initialize and update the file list
+    if (activeSystemMessageId) {
+        initializeAndUpdateFileList(activeSystemMessageId);
     }
 });
 
@@ -1009,12 +1379,39 @@ $('#systemMessageModal').on('hidden.bs.modal', function () {
     $('.modal-content-group').addClass('hidden');
 
     // Reset any specific flags or settings
-    $(this).removeData('targetGroup'); // Remove the data attribute for safety
+    $(this).removeData('targetGroup');
 
     // Clear active website ID and website details
     activeWebsiteId = null;
     clearWebsiteDetails();
     updateWebsiteControls();
+
+    // Reset the temporary web search state
+    tempWebSearchState = false;
+    
+    // Reset the UI to reflect the actual saved state
+    if (activeSystemMessageId) {
+        const activeMessage = systemMessages.find(msg => msg.id === activeSystemMessageId);
+        if (activeMessage) {
+            document.getElementById('systemMessageName').value = activeMessage.name;
+            document.getElementById('systemMessageDescription').value = activeMessage.description;
+            document.getElementById('systemMessageContent').value = activeMessage.content;
+            document.getElementById('enableWebSearch').checked = activeMessage.enable_web_search;
+            updateModelDropdownInModal(activeMessage.model_name);
+            updateTemperatureSelectionInModal(activeMessage.temperature);
+        }
+    } else {
+        // Clear all fields if no active message
+        document.getElementById('systemMessageName').value = '';
+        document.getElementById('systemMessageDescription').value = '';
+        document.getElementById('systemMessageContent').value = '';
+        document.getElementById('enableWebSearch').checked = false;
+        updateModelDropdownInModal('gpt-3.5-turbo'); // Set to default model
+        updateTemperatureSelectionInModal(0.7); // Set to default temperature
+    }
+
+    // Reset the isSaved flag
+    isSaved = false;
 });
 
 // Handles switching between different layers of orchestration within the modal.
@@ -1098,25 +1495,61 @@ function copyCodeToClipboard(button) {
 }
 
 function createMessageElement(message) {
-    // Handle the system message differently to include the model name and temperature
     if (message.role === 'system') {
-        let systemMessageContent = renderOpenAI(message.content);
-        // Prepare the display content for system message
+        // Handle system messages
+        let systemMessageContent = message.content;
+
+        // Extract and format vector search results
+        const vectorSearchRegex = /<Added Context Provided by Vector Search>([\s\S]*?)<\/Added Context Provided by Vector Search>/g;
+        let vectorSearchResults = [];
+        let match;
+
+        while ((match = vectorSearchRegex.exec(systemMessageContent)) !== null) {
+            let content = match[1].trim();
+            if (content !== "Empty Response") {
+                vectorSearchResults.push(`<br><strong>Added context from vector search on files:</strong><br> ${escapeHtml(content)}<br>`);
+            }
+        }
+
+        // Extract and format web search results
+        const webSearchRegex = /<Added Context Provided by Web Search>([\s\S]*?)<\/Added Context Provided by Web Search>/g;
+        let webSearchResults = [];
+
+        while ((match = webSearchRegex.exec(systemMessageContent)) !== null) {
+            let content = match[1].trim();
+            if (content !== "No web search results") {
+                // Convert URLs to clickable links
+                content = content.replace(
+                    /(https?:\/\/[^\s]+)/g, 
+                    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+                );
+                webSearchResults.push(`<br><strong>Added context from web search:</strong><br>${content}<br>`);
+            }
+        }
+
+        // Remove vector search and web search tags from the system message
+        systemMessageContent = systemMessageContent.replace(vectorSearchRegex, '').replace(webSearchRegex, '').trim();
+
+        // Render the main system message content
+        let renderedContent = renderOpenAI(systemMessageContent);
+
+        // Combine the main content with vector search and web search results
+        let fullContent = renderedContent + vectorSearchResults.join('') + webSearchResults.join('');
+
         const systemMessageHTML = `
             <div class="chat-entry system system-message">
-                <strong>System:</strong> ${systemMessageContent}<br>
+                <strong>System:</strong> ${fullContent}<br>
                 <strong>Model:</strong> ${modelNameMapping(model)} &nbsp; <strong>Temperature:</strong> ${selectedTemperature.toFixed(2)}
             </div>`;
         return $(systemMessageHTML);
     } else {
+        // Handle user and assistant messages as before
         const prefix = message.role === 'user' ? '<i class="far fa-user"></i> ' : '<i class="fas fa-robot"></i> ';
         const messageClass = message.role === 'user' ? 'user-message' : 'bot-message';
         let processedContent;
         if (message.role === 'user') {
-            // Escape HTML entities in user input to prevent rendering
             processedContent = escapeHtml(message.content);
         } else {
-            // Use renderOpenAI to process both Markdown and code
             processedContent = renderOpenAI(message.content);
         }
         const messageHTML = `<div class="chat-entry ${message.role} ${messageClass}">${prefix}${processedContent}</div>`;
@@ -1338,7 +1771,6 @@ function showConversationControls(title = "AI &infin; UI", tokens = {prompt: 0, 
 }
 
 
-// This function fetches and displays a conversation.
 function loadConversation(conversationId) {
     console.log(`Fetching conversation with id: ${conversationId}...`);
     fetch(`/conversations/${conversationId}`)
@@ -1350,60 +1782,52 @@ function loadConversation(conversationId) {
             return response.json();
         })
         .then(data => {
-            // Update the conversation title in the UI
-            $('#conversation-title').text(data.title);
-
-            // Update the messages array with the conversation history
             console.log('Parsed JSON data from conversation:', data);
 
+            // Existing code for updating UI elements...
+            $('#conversation-title').text(data.title);
             messages = data.history;
-            console.log(`Received conversation data for id: ${conversationId}`);
-            console.log('Token Count:', data.token_count);
-            console.log("Retrieved model name:", data.model_name); // Log the retrieved model name
-
-            // Update the dropdown display based on the model name from the conversation
             const modelName = data.model_name;
             $('.current-model-btn').text(modelNameMapping(modelName));
-            // Also update the global model variable
             model = modelName;
-
-            // Retrieve and handle the temperature setting
-            selectedTemperature = data.temperature || 0.3; // Use the temperature from the data, or default to 0.3 if it's null/undefined
-
-            // Update the token data in the UI for restored conversations
+            selectedTemperature = data.temperature || 0.3;
             const tokens = {
                 prompt_tokens: 'NA',
                 completion_tokens: 'NA',
                 total_tokens: data.token_count || 'NA'
             };
             showConversationControls(data.title || "AI ∞ UI", tokens);
-
-            // Save this conversation id as the active conversation
             activeConversationId = conversationId;
 
             // Clear the chat
             $('#chat').empty();
 
-            // Add each message to the chat. Style the messages based on their role.
-            data.history.forEach(message => {
-                const messageElement = createMessageElement(message);
+            // Repopulate the chat with messages and search results
+            data.history.forEach((message, index) => {
+                let messageElement;
+                if (message.role === 'assistant') {
+                    // For assistant messages, we need to add the search results before the message
+                    displayVectorSearchResults(data.vector_search_results);
+                    displayGeneratedSearchQueries(data.generated_search_queries);
+                    displayWebSearchResults(data.web_search_results);
+
+                    const renderedContent = renderOpenAIWithFootnotes(message.content, true);
+                    messageElement = $('<div class="chat-entry bot bot-message">')
+                        .append('<i class="fas fa-robot"></i> ')
+                        .append(renderedContent);
+                } else {
+                    messageElement = createMessageElement(message);
+                }
                 $('#chat').append(messageElement);
             });
 
-            // After all messages are added to the DOM, call MathJax to typeset the entire chat container
-            // We use setTimeout to delay the call to MathJax.typesetPromise to ensure the DOM is fully updated
+            // Existing code for MathJax and Prism...
             setTimeout(function() {
                 MathJax.typesetPromise().then(() => {
                     console.log('MathJax has finished typesetting.');
                 }).catch((err) => console.log('Error typesetting math content: ', err));
-            }, 0); // You can increase the delay if needed, but sometimes even a delay of 0 is enough
-
-            Prism.highlightAll(); // Highlight code blocks after adding content to the DOM
-
-            // Important! Update the 'messages' array with the loaded conversation history
-            messages = data.history;
-
-            console.log(`Chat updated with messages from conversation id: ${conversationId}`);
+            }, 0);
+            Prism.highlightAll();
 
             // Scroll to the bottom after populating the chat
             const chatContainer = document.getElementById('chat');
@@ -1414,17 +1838,130 @@ function loadConversation(conversationId) {
         });
 }
 
+function displayVectorSearchResults(results) {
+    if (results && results !== "No results found") {
+        const vectorSearchDiv = $('<div class="chat-entry vector-search">')
+            .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
+            .append('<strong>Semantic Search Results:</strong> ')
+            .append($('<span>').text(results));
+        $('#chat').append(vectorSearchDiv);
+    } else {
+        const noVectorResultsDiv = $('<div class="chat-entry vector-search">')
+            .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
+            .append('<strong>Semantic Search Results:</strong> ')
+            .append($('<span>').text("No results found"));
+        $('#chat').append(noVectorResultsDiv);
+    }
+}
+
+function displayGeneratedSearchQueries(queries) {
+    if (queries) {
+        const generatedQueryDiv = $('<div class="chat-entry generated-query">');
+        
+        generatedQueryDiv.append('<img src="/static/images/SearchIcon.png" alt="Search Icon" class="search-icon"> ');
+        generatedQueryDiv.append('<strong>Generated Search Queries:</strong> ');
+        
+        const queryList = $('<ul class="query-list">');
+        
+        if (Array.isArray(queries)) {
+            // Handle array of queries
+            queries.forEach((query) => {
+                queryList.append($('<li>').text(query));
+            });
+        } else if (typeof queries === 'string') {
+            // Handle single query string
+            queryList.append($('<li>').text(queries));
+        }
+        
+        generatedQueryDiv.append(queryList);
+        $('#chat').append(generatedQueryDiv);
+    }
+}
+
+function displayWebSearchResults(results) {
+    if (results && results !== "No web search performed") {
+        const webSearchDiv = $('<div class="chat-entry web-search">')
+            .append('<img src="/static/images/BraveIcon.png" alt="Brave Icon" class="brave-icon"> ')
+            .append('<strong>Web Search Results:</strong> ')
+            .append(renderOpenAI(results));
+        $('#chat').append(webSearchDiv);
+    } else {
+        const noWebResultsDiv = $('<div class="chat-entry web-search">')
+            .append('<img src="/static/images/BraveIcon.png" alt="Brave Icon" class="brave-icon"> ')
+            .append('<strong>Web Search Results:</strong> ')
+            .append($('<span>').text("No results found"));
+        $('#chat').append(noWebResultsDiv);
+    }
+}
 
 
 
 //Record the default height 
 var defaultHeight = $('#user_input').css('height');
 
-// This function is called when the user submits the form.
+
+function renderOpenAIWithFootnotes(content, enableWebSearch) {
+    console.log('Content received:', content);
+    console.log('Enable web search:', enableWebSearch);
+
+    // Check if content is undefined or not a string
+    if (typeof content !== 'string') {
+        console.error('Invalid content received:', content);
+        return 'Error: Invalid response from server';
+    }
+
+    if (!enableWebSearch) {
+        return renderOpenAI(content);
+    }
+
+    // Split the content into main text and sources
+    let [mainText, sources] = content.split(/Sources?:/i, 2);
+
+    if (!sources) {
+        console.warn('No sources found in the content');
+        return renderOpenAI(content);
+    }
+
+    // Parse sources
+    let sourcesList = $('<ol class="sources-list">');
+    let sourcesMap = {};
+    sources.trim().split('\n').forEach((source, index) => {
+        console.log(`Processing source ${index}:`, source);
+        if (source && source.trim()) {
+            let match = source.match(/\[(\d+)\]\s*(.*)/);
+            if (match) {
+                let [, index, url] = match;
+                sourcesMap[index] = url.trim();
+                sourcesList.append($('<li>').append($('<a>').attr('href', url.trim()).attr('target', '_blank').text(url.trim())));
+            } else {
+                console.warn(`Invalid source format:`, source);
+            }
+        }
+    });
+
+    // Render main text with hyperlinked footnotes
+    let renderedContent = mainText.replace(/\[(\d+)\]/g, (match, p1) => {
+        let url = sourcesMap[p1];
+        return url ? `<a href="${url}" class="footnote" target="_blank">[${p1}]</a>` : match;
+    });
+    renderedContent = renderOpenAI(renderedContent);
+
+    // Add sources section
+    let sourcesSection = $('<div class="sources-section">')
+        .append('<h4>Sources:</h4>')
+        .append(sourcesList);
+
+    return renderedContent + sourcesSection[0].outerHTML;
+}
+
 $('#chat-form').on('submit', function (e) {
     console.log('Chat form submitted with user input:', $('#user_input').val());
     e.preventDefault();
     var userInput = $('#user_input').val();
+
+    if (!messages) {
+        messages = [];
+    }
 
     var userInputDiv = $('<div class="chat-entry user user-message">')
         .append('<i class="far fa-user"></i> ')
@@ -1441,56 +1978,13 @@ $('#chat-form').on('submit', function (e) {
 
     document.getElementById('loading').style.display = 'block';
 
-    // Check if the user input is a command to generate an image
-    if (userInput.toLowerCase().startsWith("generate image of")) {
-        let prompt = userInput.substring("generate image of".length).trim();
-        console.log('Generating image with prompt:', prompt);
-
-        fetch('/generate-image', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt: prompt })
-        })
-        .then(response => {
-            console.log('Received response from /generate-image endpoint:', response);
-
-            document.getElementById('loading').style.display = 'none';
-
-            if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(text);
-                });
-            }
-
-            return response.json();
-        })
-        .then(data => {
-            console.log("Complete server response from image generation:", data);
-            const imageElement = $('<img>').attr('src', data.image_url).addClass('img-fluid');
-            const botMessageDiv = $('<div class="chat-entry bot bot-message">')
-                .append('<i class="fas fa-robot"></i> ')
-                .append(imageElement);
-            $('#chat').append(botMessageDiv);
-
-            $('#chat').scrollTop($('#chat')[0].scrollHeight);
-            messages.push({ "role": "assistant", "content": data.image_url });
-
-            console.log('End of image generation handling');
-        })
-        .catch(error => {
-            console.error('Error processing image generation:', error);
-            document.getElementById('loading').style.display = 'none';
-        });
-
-        return; // Exit the function early since we handled the image generation
-    }
-
     let requestPayload = {
         messages: messages,
         model: model,
-        temperature: selectedTemperature
+        temperature: selectedTemperature,
+        system_message_id: activeSystemMessageId,
+        enable_web_search: $('#enableWebSearch').is(':checked'),
+        enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
     };
 
     if (activeConversationId !== null) {
@@ -1519,15 +2013,81 @@ $('#chat-form').on('submit', function (e) {
         return response.json();
     })
     .then(data => {
-        console.log("Complete server response:", data);
-        const renderedBotOutput = renderOpenAI(data.chat_output);
+        console.log("Complete server response:", JSON.stringify(data, null, 2));
+        
+        console.log("Generated search queries:", data.generated_search_queries);
+
+        // Display vector search results
+        if (data.vector_search_results && data.vector_search_results !== "No results found") {
+            const vectorSearchDiv = $('<div class="chat-entry vector-search">')
+                .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
+                .append('<strong>Semantic Search Results:</strong> ')
+                .append($('<span>').text(data.vector_search_results));
+            $('#chat').append(vectorSearchDiv);
+        } else {
+            const noVectorResultsDiv = $('<div class="chat-entry vector-search">')
+                .append('<img src="/static/images/PineconeIcon.png" alt="Pinecone Icon" class="pinecone-icon"> ')
+                .append('<strong>Semantic Search Results:</strong> ')
+                .append($('<span>').text("No results found"));
+            $('#chat').append(noVectorResultsDiv);
+        }
+
+        // Display generated search queries
+        if (data.generated_search_queries && Array.isArray(data.generated_search_queries) && data.generated_search_queries.length > 0) {
+            console.log("Creating generated query div");
+            const generatedQueryDiv = $('<div class="chat-entry generated-query">');
+            
+            generatedQueryDiv.append('<img src="/static/images/SearchIcon.png" alt="Search Icon" class="search-icon"> ');
+            generatedQueryDiv.append('<strong>Generated Search Queries:</strong> ');
+            
+            const queryList = $('<ul class="query-list">');
+            
+            data.generated_search_queries.forEach((query) => {
+                queryList.append($('<li>').text(query));
+            });
+            
+            generatedQueryDiv.append(queryList);
+            $('#chat').append(generatedQueryDiv);
+            console.log("Generated query div appended");
+        } else {
+            console.log("No generated search queries received, not an array, or empty array");
+        }
+
+        // Display web search results
+        if (data.web_search_results && data.web_search_results !== "No web search performed") {
+            const webSearchDiv = $('<div class="chat-entry web-search">')
+                .append('<img src="/static/images/BraveIcon.png" alt="Brave Icon" class="brave-icon"> ')
+                .append('<strong>Web Search Results:</strong> ')
+                .append(renderOpenAI(data.web_search_results));
+            $('#chat').append(webSearchDiv);
+        } else if ($('#enableWebSearch').is(':checked')) {
+            const noWebResultsDiv = $('<div class="chat-entry web-search">')
+                .append('<img src="/static/images/BraveIcon.png" alt="Brave Icon" class="brave-icon"> ')
+                .append('<strong>Web Search Results:</strong> ')
+                .append($('<span>').text("No results found"));
+            $('#chat').append(noWebResultsDiv);
+        }
+
+        // Render bot output with footnotes
+        const renderedBotOutput = renderOpenAIWithFootnotes(data.chat_output, data.enable_web_search);
         const botMessageDiv = $('<div class="chat-entry bot bot-message">')
             .append('<i class="fas fa-robot"></i> ')
             .append(renderedBotOutput);
         $('#chat').append(botMessageDiv);
-
         $('#chat').scrollTop($('#chat')[0].scrollHeight);
+        
+        // Update messages array with the new assistant message
         messages.push({ "role": "assistant", "content": data.chat_output });
+
+        // Update the system message in the messages array only if there's new content
+        if (data.system_message_content) {
+            const systemMessageIndex = messages.findIndex(msg => msg.role === 'system');
+            if (systemMessageIndex !== -1) {
+                messages[systemMessageIndex].content = data.system_message_content;
+            } else {
+                messages.unshift({ "role": "system", "content": data.system_message_content });
+            }
+        }
 
         // Call MathJax to typeset the new message
         MathJax.typesetPromise().then(() => {
@@ -1558,8 +2118,6 @@ $('#chat-form').on('submit', function (e) {
         document.getElementById('loading').style.display = 'none';
     });
 });
-
-
 
 // This function checks if there's an active conversation in the session.
 function checkActiveConversation() {
