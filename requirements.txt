@@ -47,3 +47,5 @@ aiodns==3.2.0
 
 # Web Processing
 beautifulsoup4==4.12.3
+gunicorn==21.2.0
+uvicorn==0.27.0
