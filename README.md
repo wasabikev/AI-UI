@@ -1,11 +1,12 @@
-# AI ∞ UI -- A Web Interface for LLM APIs
+# AI ∞ UI -- A Web Interface for AI Systems
 
 ## Overview
 
-AI ∞ UI is a web-based conversational interface that facilitates interactions with various AI models and is intended for crafting and architecting layered (multi-system) AI orchestration using a variety of tools and models.
+AI ∞ UI serves as a comprehensive orchestration interface that enables the dynamic coordination and integration of multiple AI models, tools, and data sources while maintaining a fluid, intuitive user experience.  This project is designed to provide a seamless interface for users to interact with AI models, enabling them to manage conversations, switch between AI models, and access a wide range of AI services.
 
 ## Features
 
+**Leveraging Quart's async capabilities the system provides responsive, non-blocking orchestration of multiple AI services, ensuring smooth interaction even during complex operations.
 **Persisted Conversations**: Conversations are stored in a database, allowing for historical review and continuation of discussions.
 **Real-time Chat**: Immediate communication with AI models, simulating a real-time conversation.
 **Conversation Management**: Users can create, read, update, and delete conversations.
@@ -302,17 +303,8 @@ Ensure that the `.env` file is added to your `.gitignore` to keep your API keys 
 **Token Usage Tracking**: Extend the token usage tracking functionality to provide detailed insights into token consumption across different models and conversations.
 **API Orchestration Layer**: Develop a robust API orchestration layer that allows for seamless integration and coordination of multiple AI services, data sources, and external tools. This layer will enable complex workflows, chained API calls, and dynamic selection of AI models based on task requirements, enhancing the system's ability to handle diverse and complex user queries efficiently.
 
-## Setting up API Keys
-1. Create a new file called `.env` in the project's root directory.
-2. Add the following line to the `.env` file, replacing `<your_api_key_here>` with your actual API key:
-
-## Getting Started
-
-1. Clone the repository: `git clone <repository-url>`
-2. Install dependencies: `pip install -r requirements.txt`
-3. Initialize the database: `flask db upgrade`
-4. Start the Flask server: `flask run`
-5. Access the application at `http://localhost:5000/`
+## Development Environment Setup
+This project uses Docker to ensure consistency between development and production environments. The development environment is configured to run under WSL (Windows Subsystem for Linux) on Windows systems.
 
 ## License
 

@@ -17,6 +17,10 @@ let activeWebsiteId = null;  // This will store the currently active website ID 
 let tempWebSearchState = false; // This will store the temporary web search state
 let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
 
+// variables to support streaming status updates
+let statusUpdateContainer = null;
+let currentEventSource = null;
+
 
 document.addEventListener("DOMContentLoaded", function() {
     // Fetch and process system messages
@@ -63,6 +67,111 @@ document.addEventListener("DOMContentLoaded", function() {
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
     });
+});
+
+
+
+function createStatusUpdateContainer() {
+    if (!statusUpdateContainer) {
+        statusUpdateContainer = $('<div class="chat-entry status-message">')
+            .append('<i class="fas fa-robot"></i> ');
+        $('#chat').append(statusUpdateContainer);
+        $('#chat').scrollTop($('#chat')[0].scrollHeight);
+    }
+    return statusUpdateContainer;
+}
+
+function addStatusUpdate(message) {
+    console.log('Adding status update:', message);
+    const container = createStatusUpdateContainer();
+    
+    // Find existing status content or create new container for it
+    let statusContentContainer = container.find('.status-content');
+    if (statusContentContainer.length === 0) {
+        statusContentContainer = $('<div class="status-content"></div>');
+        container.append(statusContentContainer);
+    }
+    
+    // Create new status content with animated dots
+    const baseMessage = message.replace(/\.+$/, ''); // Remove any existing dots at the end
+    const messageSpan = $('<span>').text(baseMessage);
+    const dotsSpan = $('<span class="animated-dots">...</span>');
+    
+    // Fade out existing content, then update with new content
+    statusContentContainer.fadeOut(200, function() {
+        statusContentContainer.empty()
+            .append(messageSpan)
+            .append(dotsSpan)
+            .fadeIn(200);
+    });
+    
+    // Scroll to the bottom to show the new status
+    $('#chat').scrollTop($('#chat')[0].scrollHeight);
+    
+    return container;
+}
+
+function clearStatusUpdates() {
+    if (statusUpdateContainer) {
+        statusUpdateContainer.fadeOut(300, function() {
+            $(this).remove();
+            statusUpdateContainer = null;
+        });
+    }
+    if (currentEventSource) {
+        currentEventSource.close();
+        currentEventSource = null;
+    }
+}
+
+function initStatusEventSource() {
+    if (currentEventSource) {
+        currentEventSource.close();
+        currentEventSource = null;
+    }
+
+    currentEventSource = new EventSource('/chat/status');
+    console.log('Status EventSource initialized');
+    
+    currentEventSource.onopen = function(event) {
+        console.log('Status connection opened:', event);
+    };
+    
+    currentEventSource.addEventListener('message', function(event) {
+        try {
+            const data = JSON.parse(event.data);
+            console.log('Received status update:', data);
+            
+            if (data.type === 'status' && data.message !== 'ping') {
+                addStatusUpdate(data.message);
+            }
+        } catch (error) {
+            console.error('Error processing status update:', error);
+        }
+    });
+    
+    currentEventSource.onerror = function(error) {
+        console.error('Status connection error:', error);
+        if (currentEventSource) {
+            if (currentEventSource.readyState === EventSource.CLOSED) {
+                currentEventSource.close();
+                currentEventSource = null;
+                // Try to reconnect after a delay
+                setTimeout(initStatusEventSource, 5000);
+            }
+        }
+    };
+    
+    return currentEventSource;
+}
+
+
+// Add this function to handle cleanup when leaving the page
+window.addEventListener('beforeunload', function() {
+    if (currentEventSource) {
+        currentEventSource.close();
+        currentEventSource = null;
+    }
 });
 
 function updateSearchSettings() {
@@ -1929,7 +2038,13 @@ $('#chat-form').on('submit', function (e) {
         .append($('<span>').text(userInput));
 
     $('#chat').append(userInputDiv);
-    $('#chat').scrollTop($('#chat')[0].scrollHeight);
+
+    // Clear existing status updates and initialize new ones
+    clearStatusUpdates();
+    createStatusUpdateContainer();
+    
+    // Initialize the EventSource for status updates
+    initStatusEventSource(); // This will handle creating and managing the EventSource
 
     messages.push({ "role": "user", "content": userInput });
 
@@ -1962,10 +2077,13 @@ $('#chat-form').on('submit', function (e) {
     })
     .then(response => {
         console.log('Received response from /chat endpoint:', response);
-
+        if (currentEventSource) {
+            currentEventSource.close(); // Close the EventSource when we get the response
+        }
         document.getElementById('loading').style.display = 'none';
 
         if (!response.ok) {
+            clearStatusUpdates();
             return response.text().then(text => {
                 throw new Error(text);
             });
@@ -1975,6 +2093,7 @@ $('#chat-form').on('submit', function (e) {
     })
     .then(data => {
         console.log("Complete server response:", JSON.stringify(data, null, 2));
+        clearStatusUpdates(); // Clear status updates before showing results
         
         console.log("Generated search queries:", data.generated_search_queries);
 
@@ -2035,7 +2154,6 @@ $('#chat-form').on('submit', function (e) {
             .append('<i class="fas fa-robot"></i> ')
             .append(renderedBotOutput);
         $('#chat').append(botMessageDiv);
-        $('#chat').scrollTop($('#chat')[0].scrollHeight);
         
         // Update messages array with the new assistant message
         messages.push({ "role": "assistant", "content": data.chat_output });
@@ -2050,12 +2168,30 @@ $('#chat-form').on('submit', function (e) {
             }
         }
 
-        // Call MathJax to typeset the new message
-        MathJax.typesetPromise().then(() => {
-            console.log('MathJax has finished typesetting the new message.');
-        }).catch((err) => console.log('Error typesetting math content: ', err));
+        // Wait for content to be rendered and then scroll
+        Promise.all([
+            MathJax.typesetPromise().then(() => {
+                console.log('MathJax has finished typesetting the new message.');
+            }).catch((err) => console.log('Error typesetting math content: ', err)),
+            new Promise(resolve => {
+                Prism.highlightAll();
+                resolve();
+            })
+        ]).then(() => {
+            // Additional small delay to ensure all rendering is complete
+            setTimeout(() => {
+                const chatContainer = $('#chat');
+                const botMessageDiv = chatContainer.find('.bot-message').last();
+                const botMessageTop = botMessageDiv.position().top;
+                const containerScrollTop = chatContainer.scrollTop();
+                const adjustedScroll = botMessageTop + containerScrollTop - 50; // 50px buffer from top
 
-        Prism.highlightAll();
+                chatContainer.animate({
+                    scrollTop: adjustedScroll
+                }, 500);
+            }, 100);
+        });
+
         updateConversationList();
 
         // Update the URL with the received conversation_id
@@ -2076,9 +2212,15 @@ $('#chat-form').on('submit', function (e) {
     })
     .catch(error => {
         console.error('Error processing chat form submission:', error);
+        if (currentEventSource) {
+            currentEventSource.close();
+        }
         document.getElementById('loading').style.display = 'none';
+        clearStatusUpdates();
     });
 });
+
+
 
 // This function checks if there's an active conversation in the session.
 function checkActiveConversation() {

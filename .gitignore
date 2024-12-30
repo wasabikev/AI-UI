@@ -1,14 +1,25 @@
 private/
-.env
-venv/
 app.log
 app.log.*
 
+# Enviroment 
+.env
+venv/
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+
+# Documents
 uploads/
 processed_texts/
 # Ignore the entire user_files directory. The user_files directory is dynamically created based on user IDs and system IDs.
 user_files/
 
+# Local backup files
 chat.backup.html
 styles.backup.css
 chat.backup.html
@@ -22,9 +33,15 @@ docker-compose.yml
 Dockerfile
 .dockerignore
 entrypoint.sh
+wait-for-it.sh
 
 #Python
 __pycache__/
 *.py[cod]
 *$py.class
 .vscode/
+
+#Local Dev Tools
+test_db_direct.py
+test_db.py
+full_requirements.txt
