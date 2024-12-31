@@ -314,14 +314,13 @@ async def shutdown():
         await engine.dispose()
         app.logger.info("Database connection closed")
 
-        # Cleanup FileProcessor if it exists
-        if hasattr(app, 'file_processor') and hasattr(app.file_processor, 'cleanup'):
-            await app.file_processor.cleanup()
-            app.logger.info("FileProcessor cleanup completed")
+        # Add explicit cleanup of any active connections
+        if hasattr(app, '_connection_pool'):
+            await app._connection_pool.close()
+            app.logger.info("Connection pool closed")
 
         # Clear FileUtils cache if it exists
         if hasattr(app, 'file_utils'):
-            # Clear the LRU caches
             app.file_utils.get_user_folder.cache_clear()
             app.file_utils.get_system_message_folder.cache_clear()
             app.file_utils.get_uploads_folder.cache_clear()
@@ -330,7 +329,6 @@ async def shutdown():
             app.file_utils.get_web_search_results_folder.cache_clear()
             app.logger.info("FileUtils caches cleared")
 
-            # Remove the reference
             delattr(app, 'file_utils')
             app.logger.info("FileUtils cleanup completed")
 
@@ -346,14 +344,17 @@ class StatusUpdateManager:
         self.queues = {}
         self.locks = {}
         self.MAX_QUEUE_SIZE = 100
+        self.connection_count = 0
 
     async def create_queue(self, session_id):
         """Create or get an async queue for a session"""
-        if session_id not in self.queues:
-            self.queues[session_id] = asyncio.Queue(maxsize=self.MAX_QUEUE_SIZE)
-            self.locks[session_id] = asyncio.Lock()
-            app.logger.info(f"Queue created for session ID: {session_id}")
-        return self.queues[session_id]
+        async with asyncio.Lock():
+            if session_id not in self.queues:
+                self.queues[session_id] = asyncio.Queue(maxsize=self.MAX_QUEUE_SIZE)
+                self.locks[session_id] = asyncio.Lock()
+                self.connection_count += 1
+                app.logger.info(f"Queue created for session ID: {session_id}. Active connections: {self.connection_count}")
+            return self.queues[session_id]
 
     async def send_update(self, session_id, message):
         """Send an update to a specific session"""
@@ -364,11 +365,12 @@ class StatusUpdateManager:
                     await asyncio.wait_for(
                         self.queues[session_id].put({
                             'type': 'status',
-                            'message': message
+                            'message': message,
+                            'timestamp': datetime.now().isoformat()
                         }),
                         timeout=1.0
                     )
-                    app.logger.info(f"Status update sent to {session_id}: {message}")
+                    app.logger.debug(f"Status update sent to {session_id}: {message}")
                 except asyncio.TimeoutError:
                     app.logger.warning(f"Queue full for session {session_id}, dropping message")
                 except Exception as e:
@@ -378,18 +380,38 @@ class StatusUpdateManager:
 
     async def remove_queue(self, session_id):
         """Remove a session's queue"""
-        if session_id in self.queues:
-            lock = self.locks.get(session_id) or asyncio.Lock()
-            async with lock:
-                try:
-                    await self.queues[session_id].put(None)  # Signal to close
-                except:
-                    pass
-                self.queues.pop(session_id, None)
-                self.locks.pop(session_id, None)
-                app.logger.info(f"Queue removed for session ID: {session_id}")
+        async with asyncio.Lock():
+            if session_id in self.queues:
+                lock = self.locks.get(session_id) or asyncio.Lock()
+                async with lock:
+                    try:
+                        await self.queues[session_id].put(None)  # Signal to close
+                    except:
+                        pass
+                    self.queues.pop(session_id, None)
+                    self.locks.pop(session_id, None)
+                    self.connection_count -= 1
+                    app.logger.info(f"Queue removed for session ID: {session_id}. Active connections: {self.connection_count}")
 
+# Error logging middleware to catch any SSE-related issues.
+@app.before_request
+async def log_sse_request():
+    if request.path == '/chat/status':
+        app.logger.debug(f"New SSE request received from {request.remote_addr}")
 
+@app.after_request
+async def log_sse_response(response):
+    if request.path == '/chat/status':
+        app.logger.debug(f"SSE Response headers: {dict(response.headers)}")
+    return response
+
+# Add error handling for SSE specifically
+@app.errorhandler(Exception)
+async def handle_exception(error):
+    if request.path == '/chat/status':
+        app.logger.error(f"Error in SSE connection: {str(error)}")
+        app.logger.exception("Full traceback:")
+    return await render_template('error.html', error=str(error)), 500
 
 # Initialize the status manager
 status_manager = StatusUpdateManager()
@@ -410,31 +432,33 @@ async def chat_status():
 
     def format_sse(data, event=None):
         try:
-            msg = f"data: {json.dumps(data)}\n\n"
+            message = []
             if event is not None:
-                msg = f"event: {event}\n{msg}"
-            app.logger.debug(f"Formatting SSE message: {msg}")
-            return msg
+                message.append(f"event: {event}")
+            message.append(f"data: {json.dumps(data)}")
+            message.append("")  # Empty line to complete the message
+            return "\n".join(message)
         except Exception as e:
             app.logger.error(f"Error formatting SSE message: {str(e)}")
             return ""
 
     async def generate():
-        yield format_sse({
-            'type': 'status',
-            'message': 'Connected to status updates'
-        })
-        
         try:
+            # Send initial connection message
+            yield format_sse({
+                'type': 'status',
+                'message': 'Connected to status updates'
+            }) + "\n"
+            
             while True:
                 try:
                     status = await queue.get()
                     if status is None:
                         break
-                        
+                    
                     formatted_message = format_sse(status)
                     if formatted_message:
-                        yield formatted_message
+                        yield formatted_message + "\n"
                         
                 except asyncio.CancelledError:
                     break
@@ -450,10 +474,11 @@ async def chat_status():
         generate(),
         mimetype='text/event-stream',
         headers={
-            'Cache-Control': 'no-cache',
-            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache, no-transform',
             'Connection': 'keep-alive',
-            'X-Accel-Buffering': 'no'
+            'X-Accel-Buffering': 'no',
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Transfer-Encoding': 'chunked'
         }
     )
     
