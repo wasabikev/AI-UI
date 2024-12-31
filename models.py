@@ -50,15 +50,16 @@ print("DEBUG in models.py: final db_url =", db_url)
 # Create async engine with logging disabled
 engine = create_async_engine(
     db_url,
-    echo=False,  # Disable SQL logging
-    echo_pool=False,  # Disable connection pool logging
+    echo=False,
+    echo_pool=False,
     pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=2,  # Reduced from 5
+    max_overflow=3,  # Reduced from 10
     pool_timeout=30,
-    logging_name=None,  # Disable logging name
-    hide_parameters=True,  # Hide SQL parameters in logs
-    pool_logging_name=None,  # Disable pool logging name
+    pool_recycle=1800,  # Add connection recycling every 30 minutes
+    logging_name=None,
+    hide_parameters=True,
+    pool_logging_name=None,
     future=True
 )
 
