@@ -1,1 +1,1 @@
-web: gunicorn app:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 300 --access-logfile -
+web: gunicorn app:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 300 --access-logfile - --keep-alive 65 --worker-connections 1000
