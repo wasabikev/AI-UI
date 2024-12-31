@@ -32,6 +32,7 @@ from quart_auth import (
     QuartAuth, AuthUser, current_user, login_user, 
     logout_user, Unauthorized
 )
+import pkg_resources
 
 # Third-party imports - Database and ORM
 from sqlalchemy import select
@@ -456,7 +457,21 @@ async def chat_status():
     
     async def generate():
         try:
-            # Send initial messages
+            # Send initial messages with more detailed headers
+            headers = {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'GET',
+            }
+            
+            # Send headers
+            for key, value in headers.items():
+                yield f'{key}: {value}\n'
+            
             yield 'retry: 1000\n'
             yield 'event: open\n'
             yield 'data: {"type":"status","message":"Connected to status updates"}\n\n'
@@ -521,10 +536,23 @@ async def chat_status():
 @login_required
 async def status_health():
     """Health check endpoint for SSE connections"""
+    try:
+        quart_version = pkg_resources.get_distribution('quart').version
+    except:
+        quart_version = "unknown"
+
+    connection_id = str(current_user.auth_id)
+    queue_exists = connection_id in status_manager.queues
     return jsonify({
         'status': 'healthy',
         'active_connections': status_manager.connection_count,
-        'server_time': datetime.now().isoformat()
+        'queue_exists': queue_exists,
+        'server_time': datetime.now().isoformat(),
+        'server_info': {
+            'worker_pid': os.getpid(),
+            'python_version': sys.version,
+            'quart_version': quart_version
+        }
     })
 
 # Ending of status update manager
