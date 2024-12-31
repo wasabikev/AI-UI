@@ -2426,16 +2426,30 @@ def trigger_flash():
     flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
     return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
 
+async def get_conversation_by_id(conversation_id):
+    async with get_session() as session:
+        result = await session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        )
+        conversation = result.scalar_one_or_none()
+        if conversation is None:
+            # mimic "get_or_404"
+            abort(404, description="Conversation not found")
+        return conversation
+    
 @app.route('/chat/<int:conversation_id>')
 @login_required
-def chat_interface(conversation_id):
-    conversation = Conversation.query.get_or_404(conversation_id)
-    return render_template('chat.html', conversation=conversation)
+async def chat_interface(conversation_id):
+    conversation = await get_conversation_by_id(conversation_id)
+    return await render_template('chat.html', conversation=conversation)
+
 
 # Fetch all conversations from the database and convert them to a list of dictionaries
-def get_conversations_from_db():
-    conversations = Conversation.query.all()
-    return [conv.to_dict() for conv in conversations]
+async def get_conversations_from_db():
+    async with get_session() as session:
+        result = await session.execute(select(Conversation))
+        conversations = result.scalars().all()
+        return [c.to_dict() for c in conversations]
 
 @app.route('/database')
 def database():
@@ -2622,23 +2636,26 @@ async def get_conversation(conversation_id):
         return jsonify(conversation_dict)
 
 @app.route('/c/<conversation_id>')
-def show_conversation(conversation_id):
+@login_required
+async def show_conversation(conversation_id):
     print(f"Attempting to load conversation {conversation_id}")  # Log the attempt
-    # Your logic to load the specific conversation by conversation_id from the database
-    conversation = Conversation.query.get(conversation_id)
     
-    if not conversation:
-        # If no conversation is found with that ID, you can either:
-        # 1. Render a 404 page
-        # return render_template('404.html'), 404
-        # 2. Redirect to a default page
-        print(f"No conversation found for ID {conversation_id}")  # Log the error
-        return redirect(url_for('index'))
-    
-    # If a conversation is found, you'll render the chat interface.
-    # You'll also pass the conversation data to the template, 
-    # so the frontend can load the conversation when the page loads.
-    return render_template('chat.html', conversation_id=conversation.id)
+    async with get_session() as session:
+        # Use an async query (select) instead of .query
+        result = await session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        )
+        conversation = result.scalar_one_or_none()
+        
+        if not conversation:
+            print(f"No conversation found for ID {conversation_id}")
+            # You can render 404 or redirect:
+            # return await render_template('404.html'), 404
+            return redirect(url_for('home'))
+        
+        # Render the chat interface passing conversation ID
+        return await render_template('chat.html', conversation_id=conversation.id)
+
 
 @app.route('/api/conversations/<int:conversation_id>/update_title', methods=['POST'])
 @login_required
