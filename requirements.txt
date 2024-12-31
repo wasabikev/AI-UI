@@ -6,6 +6,9 @@ quart-auth==0.10.1
 quart-cors==0.7.0
 quart-schema==0.20.0
 hypercorn==0.17.3
+gunicorn==21.2.0
+uvicorn==0.27.0
+async-timeout>=4.0.0
 
 # Database
 SQLAlchemy==2.0.36
@@ -47,5 +50,3 @@ aiodns==3.2.0
 
 # Web Processing
 beautifulsoup4==4.12.3
-gunicorn==21.2.0
-uvicorn==0.27.0
