@@ -9,6 +9,7 @@ hypercorn==0.17.3
 gunicorn==21.2.0
 uvicorn==0.27.0
 async-timeout>=4.0.0
+dnspython>=2.4.0
 
 # Database
 SQLAlchemy==2.0.36
