@@ -23,6 +23,10 @@ let currentEventSource = null;
 
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Initialize status updates first
+    console.log('Initializing status updates...');
+    initStatusEventSource();
+    
     // Fetch and process system messages
     fetchAndProcessSystemMessages().then(() => {
         // Populate the system message modal
@@ -64,8 +68,21 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             updateSearchSettings();
         });
+
+        // Add periodic connection check for status updates
+        setInterval(checkStatusConnection, 30000); // Check every 30 seconds
+        
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
+    });
+
+    // Add cleanup handler for page unload
+    window.addEventListener('beforeunload', function() {
+        if (currentEventSource) {
+            console.log('Closing EventSource connection due to page unload');
+            currentEventSource.close();
+            currentEventSource = null;
+        }
     });
 });
 
@@ -97,6 +114,12 @@ function addStatusUpdate(message) {
     const messageSpan = $('<span>').text(baseMessage);
     const dotsSpan = $('<span class="animated-dots">...</span>');
     
+    // Add timestamp to status updates in debug mode
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+        messageSpan.prepend(`[${timestamp}] `);
+    }
+    
     // Fade out existing content, then update with new content
     statusContentContainer.fadeOut(200, function() {
         statusContentContainer.empty()
@@ -112,6 +135,7 @@ function addStatusUpdate(message) {
 }
 
 function clearStatusUpdates() {
+    console.log('Clearing status updates');
     if (statusUpdateContainer) {
         statusUpdateContainer.fadeOut(300, function() {
             $(this).remove();
@@ -119,10 +143,27 @@ function clearStatusUpdates() {
         });
     }
     if (currentEventSource) {
+        console.log('Closing current EventSource connection');
         currentEventSource.close();
         currentEventSource = null;
     }
+    // Reset reconnection attempts when clearing
+    reconnectAttempts = 0;
 }
+
+// Function to check connection status
+function checkStatusConnection() {
+    if (!currentEventSource || currentEventSource.readyState === EventSource.CLOSED) {
+        console.log('Status connection lost or not established, reconnecting...');
+        initStatusEventSource();
+    }
+}
+
+// Periodic connection check
+setInterval(checkStatusConnection, 30000); // Check every 30 seconds
+
+// Add reconnection attempt counter
+let reconnectAttempts = 0;
 
 function initStatusEventSource() {
     if (currentEventSource) {
@@ -130,40 +171,68 @@ function initStatusEventSource() {
         currentEventSource = null;
     }
 
-    currentEventSource = new EventSource('/chat/status');
-    console.log('Status EventSource initialized');
+    // Add timestamp to URL to prevent caching
+    const timestamp = new Date().getTime();
+    currentEventSource = new EventSource(`/chat/status?t=${timestamp}`);
+    console.log('Status EventSource initialized with timestamp:', timestamp);
     
     currentEventSource.onopen = function(event) {
         console.log('Status connection opened:', event);
+        // Add visual indicator that connection is established
+        addStatusUpdate('Connection established');
     };
     
     currentEventSource.addEventListener('message', function(event) {
         try {
+            console.log('Raw event data received:', event.data);
             const data = JSON.parse(event.data);
-            console.log('Received status update:', data);
+            console.log('Parsed status update:', data);
             
-            if (data.type === 'status' && data.message !== 'ping') {
-                addStatusUpdate(data.message);
+            if (data.type === 'status') {
+                if (data.message === 'Connected to status updates') {
+                    console.log('Initial connection message received');
+                } else if (data.message !== 'ping') {
+                    addStatusUpdate(data.message);
+                }
             }
         } catch (error) {
             console.error('Error processing status update:', error);
+            console.error('Raw event data:', event.data);
         }
     });
     
     currentEventSource.onerror = function(error) {
         console.error('Status connection error:', error);
+        console.log('EventSource readyState:', currentEventSource.readyState);
+        
         if (currentEventSource) {
             if (currentEventSource.readyState === EventSource.CLOSED) {
+                console.log('Connection closed, attempting to reconnect...');
                 currentEventSource.close();
                 currentEventSource = null;
-                // Try to reconnect after a delay
-                setTimeout(initStatusEventSource, 5000);
+                // Exponential backoff for reconnection
+                const backoffDelay = Math.min(5000 * Math.pow(2, reconnectAttempts), 30000);
+                console.log(`Reconnecting in ${backoffDelay}ms...`);
+                setTimeout(initStatusEventSource, backoffDelay);
+                reconnectAttempts++;
+            } else if (currentEventSource.readyState === EventSource.CONNECTING) {
+                console.log('Connection in progress...');
             }
         }
     };
     
+    // Add event listener for beforeunload to clean up the connection
+    window.addEventListener('beforeunload', function() {
+        if (currentEventSource) {
+            console.log('Closing EventSource connection due to page unload');
+            currentEventSource.close();
+            currentEventSource = null;
+        }
+    });
+    
     return currentEventSource;
 }
+
 
 
 // Add this function to handle cleanup when leaving the page

@@ -417,20 +417,42 @@ async def handle_exception(error):
 status_manager = StatusUpdateManager()
 
 async def send_status_update(message: str):
-    """Helper function to send status updates with error handling"""
+    """Helper function to send status updates with error handling and buffering control"""
     app.logger.info(f"Sending status update: {message}")
     
     dead_sessions = []
     for session_id in list(status_manager.queues.keys()):
         try:
-            await status_manager.send_update(session_id, message)
+            # Format the status update with a timestamp
+            status_data = {
+                'type': 'status',
+                'message': message,
+                'timestamp': datetime.now().isoformat(),
+                'id': str(uuid.uuid4())  # Add unique ID for debugging
+            }
+            
+            # Try to send the update with a timeout
+            try:
+                await asyncio.wait_for(
+                    status_manager.queues[session_id].put(status_data),
+                    timeout=1.0
+                )
+                app.logger.debug(f"Status update sent to session {session_id}: {status_data}")
+            except asyncio.TimeoutError:
+                app.logger.warning(f"Queue full for session {session_id}, message dropped")
+                dead_sessions.append(session_id)
+                
         except Exception as e:
             app.logger.error(f"Error sending update to session {session_id}: {str(e)}")
             dead_sessions.append(session_id)
             
     # Clean up dead sessions
     for session_id in dead_sessions:
-        await status_manager.remove_queue(session_id)
+        try:
+            await status_manager.remove_queue(session_id)
+            app.logger.info(f"Removed dead session: {session_id}")
+        except Exception as e:
+            app.logger.error(f"Error removing dead session {session_id}: {str(e)}")
 
 
 @app.route('/chat/status')
@@ -442,7 +464,8 @@ async def chat_status():
 
     async def generate():
         try:
-            # Send initial connection message
+            # Send initial connection message with extra newline
+            yield 'retry: 1000\n'  # Retry every 1 second if connection is lost
             yield 'data: {"type":"status","message":"Connected to status updates"}\n\n'
             
             while True:
@@ -465,20 +488,26 @@ async def chat_status():
             app.logger.info(f"Cleaning up connection {connection_id}")
             await status_manager.remove_queue(connection_id)
 
-    return Response(
+    response = Response(
         generate(),
         mimetype='text/event-stream',
         headers={
-            'Cache-Control': 'no-cache, no-transform',
+            'Cache-Control': 'no-cache, no-store, must-revalidate, public, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
             'Connection': 'keep-alive',
             'X-Accel-Buffering': 'no',
             'Content-Type': 'text/event-stream; charset=utf-8',
             'Transfer-Encoding': 'chunked',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'GET'
+            'Access-Control-Allow-Methods': 'GET',
+            'X-Nginx-Proxy': 'true',  # Custom header to help with debugging
+            'X-Content-Type-Options': 'nosniff'
         }
     )
+    
+    return response
 
 @app.route('/chat/status/health')
 @login_required
