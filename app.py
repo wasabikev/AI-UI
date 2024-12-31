@@ -18,6 +18,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from queue import Queue, Empty, Full
 from typing import List, Dict
+import time
 
 # Third-party imports - Core Web Framework
 from quart import (
@@ -362,21 +363,28 @@ class StatusUpdateManager:
             lock = self.locks.get(session_id) or asyncio.Lock()
             async with lock:
                 try:
+                    status_data = {
+                        'type': 'status',
+                        'message': message,
+                        'timestamp': datetime.now().isoformat(),
+                        'id': str(uuid.uuid4())
+                    }
+                    
                     await asyncio.wait_for(
-                        self.queues[session_id].put({
-                            'type': 'status',
-                            'message': message,
-                            'timestamp': datetime.now().isoformat()
-                        }),
+                        self.queues[session_id].put(status_data),
                         timeout=1.0
                     )
-                    app.logger.debug(f"Status update sent to {session_id}: {message}")
+                    app.logger.debug(f"Status update sent to {session_id}: {status_data}")
+                    return True
                 except asyncio.TimeoutError:
                     app.logger.warning(f"Queue full for session {session_id}, dropping message")
+                    return False
                 except Exception as e:
                     app.logger.error(f"Error sending status update: {str(e)}")
+                    return False
         else:
             app.logger.debug(f"No queue found for session ID: {session_id}")
+            return False
 
     async def remove_queue(self, session_id):
         """Remove a session's queue"""
@@ -417,35 +425,26 @@ async def handle_exception(error):
 status_manager = StatusUpdateManager()
 
 async def send_status_update(message: str):
-    """Helper function to send status updates with error handling and buffering control"""
+    """Helper function to send status updates with error handling"""
     app.logger.info(f"Sending status update: {message}")
     
+    success_count = 0
+    failed_count = 0
     dead_sessions = []
+    
     for session_id in list(status_manager.queues.keys()):
         try:
-            # Format the status update with a timestamp
-            status_data = {
-                'type': 'status',
-                'message': message,
-                'timestamp': datetime.now().isoformat(),
-                'id': str(uuid.uuid4())  # Add unique ID for debugging
-            }
-            
-            # Try to send the update with a timeout
-            try:
-                await asyncio.wait_for(
-                    status_manager.queues[session_id].put(status_data),
-                    timeout=1.0
-                )
-                app.logger.debug(f"Status update sent to session {session_id}: {status_data}")
-            except asyncio.TimeoutError:
-                app.logger.warning(f"Queue full for session {session_id}, message dropped")
+            success = await status_manager.send_update(session_id, message)
+            if success:
+                success_count += 1
+            else:
+                failed_count += 1
                 dead_sessions.append(session_id)
-                
         except Exception as e:
             app.logger.error(f"Error sending update to session {session_id}: {str(e)}")
+            failed_count += 1
             dead_sessions.append(session_id)
-            
+    
     # Clean up dead sessions
     for session_id in dead_sessions:
         try:
@@ -453,6 +452,8 @@ async def send_status_update(message: str):
             app.logger.info(f"Removed dead session: {session_id}")
         except Exception as e:
             app.logger.error(f"Error removing dead session {session_id}: {str(e)}")
+    
+    app.logger.info(f"Status update complete. Success: {success_count}, Failed: {failed_count}")
 
 
 @app.route('/chat/status')
@@ -464,24 +465,44 @@ async def chat_status():
 
     async def generate():
         try:
-            # Send initial connection message with extra newline
+            # Send initial messages
             yield 'retry: 1000\n'  # Retry every 1 second if connection is lost
+            yield 'event: open\n'
             yield 'data: {"type":"status","message":"Connected to status updates"}\n\n'
+            
+            last_keep_alive = time.time()
             
             while True:
                 try:
-                    status = await queue.get()
-                    if status is None:
-                        break
+                    # Send keep-alive every 15 seconds
+                    current_time = time.time()
+                    if current_time - last_keep_alive >= 15:
+                        yield f': keepalive {datetime.now().isoformat()}\n\n'
+                        last_keep_alive = current_time
                     
-                    message = f'data: {json.dumps(status)}\n\n'
-                    yield message
-                    await asyncio.sleep(0)  # Allow other coroutines to run
+                    # Try to get a message from the queue with a timeout
+                    try:
+                        status = await asyncio.wait_for(queue.get(), timeout=1.0)
+                        if status is None:
+                            app.logger.info(f"Queue closed for connection {connection_id}")
+                            break
+                        
+                        message = f'data: {json.dumps(status)}\n\n'
+                        app.logger.debug(f"Sending message to {connection_id}: {message}")
+                        yield message
+                        
+                    except asyncio.TimeoutError:
+                        # Timeout is expected, continue the loop
+                        continue
+                    except Exception as e:
+                        app.logger.error(f"Error getting message from queue: {str(e)}")
+                        break
                         
                 except asyncio.CancelledError:
+                    app.logger.info(f"Connection {connection_id} cancelled")
                     break
                 except Exception as e:
-                    app.logger.error(f"Error in status generation: {str(e)}")
+                    app.logger.error(f"Error in status generation for {connection_id}: {str(e)}")
                     break
                     
         finally:
@@ -502,7 +523,7 @@ async def chat_status():
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'Content-Type',
             'Access-Control-Allow-Methods': 'GET',
-            'X-Nginx-Proxy': 'true',  # Custom header to help with debugging
+            'X-Nginx-Proxy': 'true',
             'X-Content-Type-Options': 'nosniff'
         }
     )
@@ -511,8 +532,8 @@ async def chat_status():
 
 @app.route('/chat/status/health')
 @login_required
-async def chat_status_health():
-    """Health check endpoint for SSE connection"""
+async def status_health():
+    """Health check endpoint for SSE connections"""
     return jsonify({
         'status': 'healthy',
         'active_connections': status_manager.connection_count,
