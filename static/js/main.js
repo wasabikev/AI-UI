@@ -167,71 +167,69 @@ let reconnectAttempts = 0;
 
 function initStatusEventSource() {
     if (currentEventSource) {
+        console.log('Closing existing EventSource connection');
         currentEventSource.close();
         currentEventSource = null;
     }
 
-    // Add timestamp to URL to prevent caching
+    // Add timestamp and client info to URL
     const timestamp = new Date().getTime();
-    currentEventSource = new EventSource(`/chat/status?t=${timestamp}`);
+    const clientInfo = encodeURIComponent(JSON.stringify({
+        userAgent: navigator.userAgent,
+        timestamp: timestamp
+    }));
+    
+    currentEventSource = new EventSource(`/chat/status?t=${timestamp}&client=${clientInfo}`);
     console.log('Status EventSource initialized with timestamp:', timestamp);
     
-    currentEventSource.onopen = function(event) {
+    // Add more detailed event listeners
+    currentEventSource.addEventListener('open', function(event) {
         console.log('Status connection opened:', event);
-        // Add visual indicator that connection is established
-        addStatusUpdate('Connection established');
-    };
-    
-    currentEventSource.addEventListener('message', function(event) {
-        try {
-            console.log('Raw event data received:', event.data);
-            const data = JSON.parse(event.data);
-            console.log('Parsed status update:', data);
-            
-            if (data.type === 'status') {
-                if (data.message === 'Connected to status updates') {
-                    console.log('Initial connection message received');
-                } else if (data.message !== 'ping') {
-                    addStatusUpdate(data.message);
-                }
-            }
-        } catch (error) {
-            console.error('Error processing status update:', error);
-            console.error('Raw event data:', event.data);
-        }
-    });
-    
-    currentEventSource.onerror = function(error) {
-        console.error('Status connection error:', error);
-        console.log('EventSource readyState:', currentEventSource.readyState);
+        console.log('ReadyState:', currentEventSource.readyState);
         
-        if (currentEventSource) {
-            if (currentEventSource.readyState === EventSource.CLOSED) {
-                console.log('Connection closed, attempting to reconnect...');
-                currentEventSource.close();
-                currentEventSource = null;
-                // Exponential backoff for reconnection
-                const backoffDelay = Math.min(5000 * Math.pow(2, reconnectAttempts), 30000);
-                console.log(`Reconnecting in ${backoffDelay}ms...`);
-                setTimeout(initStatusEventSource, backoffDelay);
-                reconnectAttempts++;
-            } else if (currentEventSource.readyState === EventSource.CONNECTING) {
-                console.log('Connection in progress...');
-            }
-        }
-    };
-    
-    // Add event listener for beforeunload to clean up the connection
-    window.addEventListener('beforeunload', function() {
-        if (currentEventSource) {
-            console.log('Closing EventSource connection due to page unload');
-            currentEventSource.close();
-            currentEventSource = null;
-        }
+        // Verify connection with health check
+        fetch('/chat/status/health')
+            .then(response => response.json())
+            .then(data => console.log('Health check response:', data))
+            .catch(error => console.error('Health check failed:', error));
     });
     
+    currentEventSource.addEventListener('error', function(error) {
+        console.error('Status connection error:', error);
+        console.log('ReadyState:', currentEventSource.readyState);
+        console.log('Error details:', {
+            type: error.type,
+            target: error.target,
+            eventPhase: error.eventPhase,
+            bubbles: error.bubbles,
+            cancelable: error.cancelable,
+            defaultPrevented: error.defaultPrevented,
+            timeStamp: error.timeStamp,
+            isTrusted: error.isTrusted
+        });
+        
+        if (currentEventSource.readyState === EventSource.CLOSED) {
+            console.log('Connection closed, attempting to reconnect...');
+            setTimeout(initStatusEventSource, 5000);
+        }
+    });
+
     return currentEventSource;
 }
+
+// Add periodic health checks
+setInterval(function() {
+    fetch('/chat/status/health')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Health check:', data);
+            if (!data.queue_exists) {
+                console.log('Queue not found, reinitializing connection');
+                initStatusEventSource();
+            }
+        })
+        .catch(error => console.error('Health check failed:', error));
+}, 30000);
 
 
 
