@@ -104,7 +104,7 @@ debug_mode = True
 
 # Initialize application
 app = Quart(__name__)
-app = cors(app)
+app = cors(app, allow_origin="*")
 QuartSchema(app)
 
 # Application configuration
@@ -417,10 +417,20 @@ async def handle_exception(error):
 status_manager = StatusUpdateManager()
 
 async def send_status_update(message: str):
-    """Helper function to send status updates"""
+    """Helper function to send status updates with error handling"""
     app.logger.info(f"Sending status update: {message}")
+    
+    dead_sessions = []
     for session_id in list(status_manager.queues.keys()):
-        await status_manager.send_update(session_id, message)
+        try:
+            await status_manager.send_update(session_id, message)
+        except Exception as e:
+            app.logger.error(f"Error sending update to session {session_id}: {str(e)}")
+            dead_sessions.append(session_id)
+            
+    # Clean up dead sessions
+    for session_id in dead_sessions:
+        await status_manager.remove_queue(session_id)
 
 
 @app.route('/chat/status')
@@ -430,25 +440,10 @@ async def chat_status():
     app.logger.info(f"New status connection established: {connection_id}")
     queue = await status_manager.create_queue(connection_id)
 
-    def format_sse(data, event=None):
-        try:
-            message = []
-            if event is not None:
-                message.append(f"event: {event}")
-            message.append(f"data: {json.dumps(data)}")
-            message.append("")  # Empty line to complete the message
-            return "\n".join(message)
-        except Exception as e:
-            app.logger.error(f"Error formatting SSE message: {str(e)}")
-            return ""
-
     async def generate():
         try:
             # Send initial connection message
-            yield format_sse({
-                'type': 'status',
-                'message': 'Connected to status updates'
-            }) + "\n"
+            yield 'data: {"type":"status","message":"Connected to status updates"}\n\n'
             
             while True:
                 try:
@@ -456,9 +451,9 @@ async def chat_status():
                     if status is None:
                         break
                     
-                    formatted_message = format_sse(status)
-                    if formatted_message:
-                        yield formatted_message + "\n"
+                    message = f'data: {json.dumps(status)}\n\n'
+                    yield message
+                    await asyncio.sleep(0)  # Allow other coroutines to run
                         
                 except asyncio.CancelledError:
                     break
@@ -470,7 +465,7 @@ async def chat_status():
             app.logger.info(f"Cleaning up connection {connection_id}")
             await status_manager.remove_queue(connection_id)
 
-    response = Response(
+    return Response(
         generate(),
         mimetype='text/event-stream',
         headers={
@@ -478,11 +473,22 @@ async def chat_status():
             'Connection': 'keep-alive',
             'X-Accel-Buffering': 'no',
             'Content-Type': 'text/event-stream; charset=utf-8',
-            'Transfer-Encoding': 'chunked'
+            'Transfer-Encoding': 'chunked',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Methods': 'GET'
         }
     )
-    
-    return response
+
+@app.route('/chat/status/health')
+@login_required
+async def chat_status_health():
+    """Health check endpoint for SSE connection"""
+    return jsonify({
+        'status': 'healthy',
+        'active_connections': status_manager.connection_count,
+        'server_time': datetime.now().isoformat()
+    })
 
 # Ending of status update manager
 
