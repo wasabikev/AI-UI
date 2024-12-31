@@ -346,10 +346,11 @@ class StatusUpdateManager:
         self.locks = {}
         self.MAX_QUEUE_SIZE = 100
         self.connection_count = 0
+        self._cleanup_lock = asyncio.Lock()
 
     async def create_queue(self, session_id):
         """Create or get an async queue for a session"""
-        async with asyncio.Lock():
+        async with self._cleanup_lock:
             if session_id not in self.queues:
                 self.queues[session_id] = asyncio.Queue(maxsize=self.MAX_QUEUE_SIZE)
                 self.locks[session_id] = asyncio.Lock()
@@ -359,46 +360,54 @@ class StatusUpdateManager:
 
     async def send_update(self, session_id, message):
         """Send an update to a specific session"""
-        if session_id in self.queues:
-            lock = self.locks.get(session_id) or asyncio.Lock()
-            async with lock:
+        if session_id not in self.queues:
+            app.logger.debug(f"Creating new queue for session {session_id}")
+            await self.create_queue(session_id)
+            
+        lock = self.locks.get(session_id) or asyncio.Lock()
+        async with lock:
+            try:
+                status_data = {
+                    'type': 'status',
+                    'message': message,
+                    'timestamp': datetime.now().isoformat(),
+                    'id': str(uuid.uuid4())
+                }
+                
+                # Use put_nowait to avoid blocking
                 try:
-                    status_data = {
-                        'type': 'status',
-                        'message': message,
-                        'timestamp': datetime.now().isoformat(),
-                        'id': str(uuid.uuid4())
-                    }
-                    
-                    await asyncio.wait_for(
-                        self.queues[session_id].put(status_data),
-                        timeout=1.0
-                    )
+                    self.queues[session_id].put_nowait(status_data)
                     app.logger.debug(f"Status update sent to {session_id}: {status_data}")
                     return True
-                except asyncio.TimeoutError:
-                    app.logger.warning(f"Queue full for session {session_id}, dropping message")
-                    return False
-                except Exception as e:
-                    app.logger.error(f"Error sending status update: {str(e)}")
-                    return False
-        else:
-            app.logger.debug(f"No queue found for session ID: {session_id}")
-            return False
+                except asyncio.QueueFull:
+                    # If queue is full, remove oldest message and try again
+                    try:
+                        self.queues[session_id].get_nowait()
+                        self.queues[session_id].put_nowait(status_data)
+                        app.logger.debug(f"Removed oldest message and sent update to {session_id}")
+                        return True
+                    except (asyncio.QueueEmpty, asyncio.QueueFull):
+                        app.logger.warning(f"Queue operations failed for session {session_id}")
+                        return False
+                        
+            except Exception as e:
+                app.logger.error(f"Error sending status update: {str(e)}")
+                return False
 
     async def remove_queue(self, session_id):
         """Remove a session's queue"""
-        async with asyncio.Lock():
+        async with self._cleanup_lock:
             if session_id in self.queues:
                 lock = self.locks.get(session_id) or asyncio.Lock()
                 async with lock:
                     try:
-                        await self.queues[session_id].put(None)  # Signal to close
+                        # Signal to close
+                        await self.queues[session_id].put(None)
                     except:
                         pass
                     self.queues.pop(session_id, None)
                     self.locks.pop(session_id, None)
-                    self.connection_count -= 1
+                    self.connection_count = max(0, self.connection_count - 1)
                     app.logger.info(f"Queue removed for session ID: {session_id}. Active connections: {self.connection_count}")
 
 # Error logging middleware to catch any SSE-related issues.
@@ -441,12 +450,14 @@ async def send_status_update(message: str):
 async def chat_status():
     connection_id = str(current_user.auth_id)
     app.logger.info(f"New status connection established: {connection_id}")
+    
+    # Create queue if it doesn't exist
     queue = await status_manager.create_queue(connection_id)
-
+    
     async def generate():
         try:
             # Send initial messages
-            yield 'retry: 1000\n'  # Retry every 1 second if connection is lost
+            yield 'retry: 1000\n'
             yield 'event: open\n'
             yield 'data: {"type":"status","message":"Connected to status updates"}\n\n'
             
@@ -459,10 +470,11 @@ async def chat_status():
                     if current_time - last_keep_alive >= 15:
                         yield f': keepalive {datetime.now().isoformat()}\n\n'
                         last_keep_alive = current_time
+                        app.logger.debug(f"Sent keepalive to {connection_id}")
                     
-                    # Try to get a message from the queue with a timeout
+                    # Try to get a message with a shorter timeout
                     try:
-                        status = await asyncio.wait_for(queue.get(), timeout=1.0)
+                        status = await asyncio.wait_for(queue.get(), timeout=0.5)
                         if status is None:
                             app.logger.info(f"Queue closed for connection {connection_id}")
                             break
@@ -472,7 +484,7 @@ async def chat_status():
                         yield message
                         
                     except asyncio.TimeoutError:
-                        # Timeout is expected, continue the loop
+                        # Expected timeout, continue the loop
                         continue
                     except Exception as e:
                         app.logger.error(f"Error getting message from queue: {str(e)}")
@@ -493,18 +505,13 @@ async def chat_status():
         generate(),
         mimetype='text/event-stream',
         headers={
-            'Cache-Control': 'no-cache, no-store, must-revalidate, public, max-age=0',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0',
             'Connection': 'keep-alive',
             'X-Accel-Buffering': 'no',
             'Content-Type': 'text/event-stream; charset=utf-8',
-            'Transfer-Encoding': 'chunked',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'GET',
-            'X-Nginx-Proxy': 'true',
-            'X-Content-Type-Options': 'nosniff'
+            'Transfer-Encoding': 'chunked'
         }
     )
     
