@@ -425,41 +425,21 @@ async def handle_exception(error):
 status_manager = StatusUpdateManager()
 
 async def send_status_update(message: str):
-    """Helper function to send status updates with error handling"""
-    app.logger.info(f"Sending status update: {message}")
-    
-    success_count = 0
-    failed_count = 0
-    dead_sessions = []
-    
-    for session_id in list(status_manager.queues.keys()):
-        try:
-            success = await status_manager.send_update(session_id, message)
-            if success:
-                success_count += 1
-            else:
-                failed_count += 1
-                dead_sessions.append(session_id)
-        except Exception as e:
-            app.logger.error(f"Error sending update to session {session_id}: {str(e)}")
-            failed_count += 1
-            dead_sessions.append(session_id)
-    
-    # Clean up dead sessions
-    for session_id in dead_sessions:
-        try:
-            await status_manager.remove_queue(session_id)
-            app.logger.info(f"Removed dead session: {session_id}")
-        except Exception as e:
-            app.logger.error(f"Error removing dead session {session_id}: {str(e)}")
-    
-    app.logger.info(f"Status update complete. Success: {success_count}, Failed: {failed_count}")
+    """Send a status update ONLY to the current user."""
+    app.logger.info(f"Sending status update (for user {current_user.auth_id}): {message}")
+
+    user_id = str(current_user.auth_id)
+    success = await status_manager.send_update(user_id, message)
+    if success:
+        app.logger.info("Status update complete. Success: 1, Failed: 0")
+    else:
+        app.logger.info("Status update complete. Success: 0, Failed: 1")
 
 
 @app.route('/chat/status')
 @login_required
 async def chat_status():
-    connection_id = str(uuid.uuid4())
+    connection_id = str(current_user.auth_id)
     app.logger.info(f"New status connection established: {connection_id}")
     queue = await status_manager.create_queue(connection_id)
 
