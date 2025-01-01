@@ -456,12 +456,15 @@ async def send_status_update(message: str):
 @login_required
 async def chat_status():
     """WebSocket endpoint for status updates"""
-    connection_id = str(current_user.auth_id)
-    app.logger.debug(f"New WebSocket connection request from: {connection_id}")
-    
     try:
+        connection_id = str(current_user.auth_id)
+        app.logger.debug(f"New WebSocket connection request from: {connection_id}")
+        
+        # Get the WebSocket object
+        ws = websocket._get_current_object()
+        
         # Register the connection
-        await status_manager.register_connection(connection_id, websocket._get_current_object())
+        await status_manager.register_connection(connection_id, ws)
         
         # Only send initial message if this is an active session
         if connection_id in status_manager.active_sessions:
@@ -470,15 +473,16 @@ async def chat_status():
         # Keep the connection alive only while session is active
         while connection_id in status_manager.active_sessions:
             try:
-                message = await websocket.receive()
+                message = await ws.receive()
                 if message.type == "websocket.disconnect":
                     break
             except Exception as e:
                 app.logger.debug(f"WebSocket error for session {connection_id}: {str(e)}")
                 break
-                
+                    
     except Exception as e:
         app.logger.error(f"Error in WebSocket connection: {str(e)}")
+        app.logger.exception("Full traceback:")
     finally:
         status_manager.mark_session_inactive(connection_id)
         await status_manager.remove_connection(connection_id)
