@@ -1,24 +1,32 @@
 # .do/app.yaml
 name: ai-ui
 services:
-name: web
-  github:
-    branch: main
-    deploy_on_push: true
-    repo: wasabikev/ai-ui
-  http_port: 8080
-  instance_count: 1
-  instance_size_slug: basic-xxs
-  routes:
-path: /
-  envs:
-key: PYTHONUNBUFFERED
-    value: "1"
-key: WEB_CONCURRENCY
-    value: "2"
-  health_check:
-    http_path: /health
-  websocket:
-    enabled: true
-    timeout: 300
-    path: /chat/status  # Explicitly specify the WebSocket path
+  - name: web
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: wasabikev/ai-ui
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+
+    # Routes must be a list
+    routes:
+      - path: "/"
+
+    # Environment variables must be a list of key-value pairs
+    envs:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: WEB_CONCURRENCY
+        value: "2"
+
+    # Health check
+    health_check:
+      http_path: /health
+
+    # WebSocket configuration
+    websocket:
+      enabled: true
+      timeout: 300
+      path: /chat/status
