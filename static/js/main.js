@@ -17,16 +17,18 @@ let activeWebsiteId = null;  // This will store the currently active website ID 
 let tempWebSearchState = false; // This will store the temporary web search state
 let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
 
-// variables to support streaming status updates
+// Constants for WebSocket management
+const MAX_WS_RECONNECT_ATTEMPTS = 5;
+const INITIAL_RECONNECT_DELAY = 1000;
+let wsReconnectAttempts = 0;
+let wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+let maintainWebSocketConnection = false;
+let statusWebSocket = null;
 let statusUpdateContainer = null;
-let currentEventSource = null;
 
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Initialize status updates first
-    console.log('Initializing status updates...');
-    initStatusEventSource();
-    
+
     // Fetch and process system messages
     fetchAndProcessSystemMessages().then(() => {
         // Populate the system message modal
@@ -76,14 +78,8 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error('Error during system message fetch and display:', error);
     });
 
-    // Add cleanup handler for page unload
-    window.addEventListener('beforeunload', function() {
-        if (currentEventSource) {
-            console.log('Closing EventSource connection due to page unload');
-            currentEventSource.close();
-            currentEventSource = null;
-        }
-    });
+    // Add periodic connection check for WebSocket
+    setInterval(checkStatusConnection, 30000); // Check every 30 seconds
 });
 
 
@@ -102,25 +98,18 @@ function addStatusUpdate(message) {
     console.log('Adding status update:', message);
     const container = createStatusUpdateContainer();
     
-    // Find existing status content or create new container for it
     let statusContentContainer = container.find('.status-content');
     if (statusContentContainer.length === 0) {
         statusContentContainer = $('<div class="status-content"></div>');
         container.append(statusContentContainer);
     }
     
-    // Create new status content with animated dots
-    const baseMessage = message.replace(/\.+$/, ''); // Remove any existing dots at the end
+    const baseMessage = message.replace(/\.+$/, '');
     const messageSpan = $('<span>').text(baseMessage);
     const dotsSpan = $('<span class="animated-dots">...</span>');
     
-    // Add timestamp to status updates in debug mode
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
-        messageSpan.prepend(`[${timestamp}] `);
-    }
+    // Remove timestamp logic completely
     
-    // Fade out existing content, then update with new content
     statusContentContainer.fadeOut(200, function() {
         statusContentContainer.empty()
             .append(messageSpan)
@@ -128,7 +117,6 @@ function addStatusUpdate(message) {
             .fadeIn(200);
     });
     
-    // Scroll to the bottom to show the new status
     $('#chat').scrollTop($('#chat')[0].scrollHeight);
     
     return container;
@@ -136,108 +124,170 @@ function addStatusUpdate(message) {
 
 function clearStatusUpdates() {
     console.log('Clearing status updates');
+    
+    // Clear the status container
     if (statusUpdateContainer) {
         statusUpdateContainer.fadeOut(300, function() {
             $(this).remove();
             statusUpdateContainer = null;
         });
     }
-    if (currentEventSource) {
-        console.log('Closing current EventSource connection');
-        currentEventSource.close();
-        currentEventSource = null;
+
+    // Clean up WebSocket connection
+    maintainWebSocketConnection = false;
+    if (statusWebSocket) {
+        console.log('Closing WebSocket connection');
+        if (statusWebSocket.readyState === WebSocket.OPEN) {
+            statusWebSocket.close(1000, "Intentional closure");
+        }
+        statusWebSocket = null;
     }
-    // Reset reconnection attempts when clearing
-    reconnectAttempts = 0;
+
+    // Reset reconnection parameters
+    wsReconnectAttempts = 0;
+    wsReconnectDelay = INITIAL_RECONNECT_DELAY;
 }
 
-// Function to check connection status
+// Simplified connection check - only run when needed
 function checkStatusConnection() {
-    if (!currentEventSource || currentEventSource.readyState === EventSource.CLOSED) {
+    if (maintainWebSocketConnection && (!statusWebSocket || statusWebSocket.readyState === WebSocket.CLOSED)) {
         console.log('Status connection lost or not established, reconnecting...');
-        initStatusEventSource();
+        wsReconnectAttempts = 0;
+        wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+        initStatusWebSocket();
     }
 }
 
 // Periodic connection check
-setInterval(checkStatusConnection, 30000); // Check every 30 seconds
-
-// Add reconnection attempt counter
-let reconnectAttempts = 0;
-
-function initStatusEventSource() {
-    if (currentEventSource) {
-        console.log('Closing existing EventSource connection');
-        currentEventSource.close();
-        currentEventSource = null;
-    }
-
-    // Add timestamp and client info to URL
-    const timestamp = new Date().getTime();
-    const clientInfo = encodeURIComponent(JSON.stringify({
-        userAgent: navigator.userAgent,
-        timestamp: timestamp
-    }));
-    
-    currentEventSource = new EventSource(`/chat/status?t=${timestamp}&client=${clientInfo}`);
-    console.log('Status EventSource initialized with timestamp:', timestamp);
-    
-    // Add more detailed event listeners
-    currentEventSource.addEventListener('open', function(event) {
-        console.log('Status connection opened:', event);
-        console.log('ReadyState:', currentEventSource.readyState);
-        
-        // Verify connection with health check
-        fetch('/chat/status/health')
-            .then(response => response.json())
-            .then(data => console.log('Health check response:', data))
-            .catch(error => console.error('Health check failed:', error));
-    });
-    
-    currentEventSource.addEventListener('error', function(error) {
-        console.error('Status connection error:', error);
-        console.log('ReadyState:', currentEventSource.readyState);
-        console.log('Error details:', {
-            type: error.type,
-            target: error.target,
-            eventPhase: error.eventPhase,
-            bubbles: error.bubbles,
-            cancelable: error.cancelable,
-            defaultPrevented: error.defaultPrevented,
-            timeStamp: error.timeStamp,
-            isTrusted: error.isTrusted
-        });
-        
-        if (currentEventSource.readyState === EventSource.CLOSED) {
-            console.log('Connection closed, attempting to reconnect...');
-            setTimeout(initStatusEventSource, 5000);
-        }
-    });
-
-    return currentEventSource;
-}
-
-// Add periodic health checks
 setInterval(function() {
     fetch('/chat/status/health')
         .then(response => response.json())
         .then(data => {
             console.log('Health check:', data);
-            if (!data.queue_exists) {
-                console.log('Queue not found, reinitializing connection');
-                initStatusEventSource();
+            if (!data.connection_exists) {
+                console.log('Connection not found, reinitializing WebSocket');
+                initStatusWebSocket();
             }
         })
         .catch(error => console.error('Health check failed:', error));
 }, 30000);
 
+// Add reconnection attempt counter
+let reconnectAttempts = 0;
 
 
-// Add this function to handle cleanup when leaving the page
+function initStatusWebSocket() {
+    if (!maintainWebSocketConnection) {
+        console.log('WebSocket connection not needed at this time');
+        return null;
+    }
+
+    if (statusWebSocket) {
+        if (statusWebSocket.readyState === WebSocket.CONNECTING) {
+            console.log('WebSocket connection already in progress');
+            return statusWebSocket;
+        }
+        if (statusWebSocket.readyState === WebSocket.OPEN) {
+            console.log('WebSocket connection already established');
+            return statusWebSocket;
+        }
+        // Close existing socket if it's in a closing or closed state
+        statusWebSocket.close();
+        statusWebSocket = null;
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/chat/status`;
+    
+    console.log('Initializing WebSocket connection');
+    
+    try {
+        statusWebSocket = new WebSocket(wsUrl);
+        let initialMessageReceived = false;
+
+        statusWebSocket.onopen = function(event) {
+            console.log('WebSocket connection established');
+            wsReconnectAttempts = 0;
+            wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+        };
+
+        statusWebSocket.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'status') {
+                    // Only show 'Connected to status updates' message once
+                    if (data.message === 'Connected to status updates') {
+                        if (initialMessageReceived) {
+                            return;
+                        }
+                        initialMessageReceived = true;
+                    }
+
+                    if (!statusUpdateContainer) {
+                        createStatusUpdateContainer();
+                    }
+                    addStatusUpdate(data.message);
+                }
+            } catch (e) {
+                console.error('Error processing WebSocket message:', e);
+            }
+        };
+
+        statusWebSocket.onclose = function(event) {
+            console.log('WebSocket connection closed:', event);
+            if (maintainWebSocketConnection) {
+                handleWebSocketReconnect();
+            } else {
+                console.log('WebSocket connection closed and will not reconnect');
+                statusWebSocket = null;
+            }
+        };
+
+        statusWebSocket.onerror = function(error) {
+            console.log('WebSocket error:', error);
+            // Log the error but let onclose handle reconnection
+        };
+
+        return statusWebSocket;
+    } catch (error) {
+        console.error('Error creating WebSocket:', error);
+        return null;
+    }
+}
+
+
+function handleWebSocketReconnect() {
+    if (!maintainWebSocketConnection) {
+        console.log('Reconnection cancelled - connection no longer needed');
+        return;
+    }
+
+    if (wsReconnectAttempts >= MAX_WS_RECONNECT_ATTEMPTS) {
+        console.error('Max reconnection attempts reached');
+        maintainWebSocketConnection = false;
+        return;
+    }
+
+    wsReconnectAttempts++;
+    console.log(`Attempting to reconnect (${wsReconnectAttempts}/${MAX_WS_RECONNECT_ATTEMPTS})...`);
+    
+    setTimeout(() => {
+        if (maintainWebSocketConnection) {
+            initStatusWebSocket();
+        }
+    }, wsReconnectDelay);
+    
+    // Exponential backoff with max delay of 10 seconds
+    wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
+}
+
+
+// Handles cleanup when leaving the page
 window.addEventListener('beforeunload', function() {
-    if (currentEventSource) {
-        currentEventSource.close();
-        currentEventSource = null;
+    if (statusWebSocket) {
+        console.log('Closing WebSocket connection due to page unload');
+        statusWebSocket.close();
+        statusWebSocket = null;
     }
 });
 
@@ -2091,36 +2141,71 @@ function renderOpenAIWithFootnotes(content, enableWebSearch) {
     return renderedContent + sourcesSection[0].outerHTML;
 }
 
-$('#chat-form').on('submit', function (e) {
+$('#chat-form').on('submit', async function (e) {
     console.log('Chat form submitted with user input:', $('#user_input').val());
     e.preventDefault();
-    var userInput = $('#user_input').val();
+    
+    const userInput = $('#user_input').val();
+    if (!userInput.trim()) return; // Don't process empty messages
 
     if (!messages) {
         messages = [];
     }
 
-    var userInputDiv = $('<div class="chat-entry user user-message">')
-        .append('<i class="far fa-user"></i> ')
-        .append($('<span>').text(userInput));
-
-    $('#chat').append(userInputDiv);
-
-    // Clear existing status updates and initialize new ones
-    clearStatusUpdates();
-    createStatusUpdateContainer();
-    
-    // Initialize the EventSource for status updates
-    initStatusEventSource(); // This will handle creating and managing the EventSource
-
-    messages.push({ "role": "user", "content": userInput });
-
-    var userInputTextarea = $('#user_input');
+    // Immediately clear the input and reset its height
+    const userInputTextarea = $('#user_input');
     userInputTextarea.val('');
     userInputTextarea.css('height', defaultHeight);
 
+    // Immediately show the user's message
+    const userInputDiv = $('<div class="chat-entry user user-message">')
+        .append('<i class="far fa-user"></i> ')
+        .append($('<span>').text(userInput));
+    $('#chat').append(userInputDiv);
+    $('#chat').scrollTop($('#chat')[0].scrollHeight);
+
+    // Add to messages array immediately
+    messages.push({ "role": "user", "content": userInput });
+
+    // Show loading indicator
     document.getElementById('loading').style.display = 'block';
 
+    // Now handle WebSocket initialization
+    clearStatusUpdates();
+    maintainWebSocketConnection = true;
+
+    // Initialize WebSocket in the background
+    (async () => {
+        let attempts = 0;
+        const maxAttempts = 2;
+        
+        while (attempts < maxAttempts) {
+            if (!statusWebSocket || statusWebSocket.readyState === WebSocket.CLOSED) {
+                statusWebSocket = initStatusWebSocket();
+                if (statusWebSocket) {
+                    if (statusWebSocket.readyState === WebSocket.OPEN) {
+                        createStatusUpdateContainer();
+                        break;
+                    }
+                    await new Promise((resolve) => {
+                        statusWebSocket.onopen = () => {
+                            createStatusUpdateContainer();
+                            resolve();
+                        };
+                        setTimeout(resolve, 300);
+                    });
+                    if (statusWebSocket.readyState === WebSocket.OPEN) break;
+                }
+            } else if (statusWebSocket.readyState === WebSocket.OPEN) {
+                createStatusUpdateContainer();
+                break;
+            }
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    })().catch(console.error);
+
+    // Prepare and send the request
     let requestPayload = {
         messages: messages,
         model: model,
@@ -2133,6 +2218,7 @@ $('#chat-form').on('submit', function (e) {
     if (activeConversationId !== null) {
         requestPayload.conversation_id = activeConversationId;
     }
+
     console.log('Sending request payload:', JSON.stringify(requestPayload));
 
     fetch('/chat', {
@@ -2144,8 +2230,11 @@ $('#chat-form').on('submit', function (e) {
     })
     .then(response => {
         console.log('Received response from /chat endpoint:', response);
-        if (currentEventSource) {
-            currentEventSource.close(); // Close the EventSource when we get the response
+        // Set the flag to stop maintaining the connection
+        maintainWebSocketConnection = false;
+        if (statusWebSocket) {
+            statusWebSocket.close();
+            statusWebSocket = null;
         }
         document.getElementById('loading').style.display = 'none';
 
@@ -2279,8 +2368,10 @@ $('#chat-form').on('submit', function (e) {
     })
     .catch(error => {
         console.error('Error processing chat form submission:', error);
-        if (currentEventSource) {
-            currentEventSource.close();
+        maintainWebSocketConnection = false;
+        if (statusWebSocket) {
+            statusWebSocket.close();
+            statusWebSocket = null;
         }
         document.getElementById('loading').style.display = 'none';
         clearStatusUpdates();
