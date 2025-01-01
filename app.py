@@ -24,7 +24,7 @@ import time
 from quart import (
     Quart, request, jsonify, render_template, url_for, redirect, 
     session, abort, Response, send_file, make_response, request,
-    render_template_string, flash, send_from_directory
+    render_template_string, flash, send_from_directory, websocket
 )
 from quart_cors import cors
 from quart_schema import QuartSchema
@@ -343,28 +343,38 @@ async def shutdown():
 
 class StatusUpdateManager:
     def __init__(self):
-        self.queues = {}
+        self.connections = {}  # Store WebSocket connections
         self.locks = {}
-        self.MAX_QUEUE_SIZE = 100
         self.connection_count = 0
         self._cleanup_lock = asyncio.Lock()
+        self.active_sessions = set()  # Track active chat sessions
+        self.initial_messages_sent = set()  # Track which sessions have received initial message
 
-    async def create_queue(self, session_id):
-        """Create or get an async queue for a session"""
+    async def register_connection(self, session_id, websocket):
+        """Register a new WebSocket connection"""
         async with self._cleanup_lock:
-            if session_id not in self.queues:
-                self.queues[session_id] = asyncio.Queue(maxsize=self.MAX_QUEUE_SIZE)
-                self.locks[session_id] = asyncio.Lock()
-                self.connection_count += 1
-                app.logger.info(f"Queue created for session ID: {session_id}. Active connections: {self.connection_count}")
-            return self.queues[session_id]
+            # If there's an existing connection, close it first
+            if session_id in self.connections:
+                try:
+                    old_connection = self.connections[session_id]
+                    await old_connection['websocket'].close(1000, "New connection established")
+                except Exception as e:
+                    app.logger.debug(f"Error closing old connection: {str(e)}")
+
+            self.connections[session_id] = {
+                'websocket': websocket,
+                'active': True
+            }
+            self.locks[session_id] = asyncio.Lock()
+            self.connection_count = len(self.connections)
+            app.logger.debug(f"WebSocket connection registered for session ID: {session_id}. Active connections: {self.connection_count}")
 
     async def send_update(self, session_id, message):
-        """Send an update to a specific session"""
-        if session_id not in self.queues:
-            app.logger.debug(f"Creating new queue for session {session_id}")
-            await self.create_queue(session_id)
-            
+        """Send an update to a specific session via WebSocket"""
+        if session_id not in self.connections or not self.connections[session_id]['active']:
+            app.logger.debug(f"No active connection found for session {session_id}")
+            return False
+
         lock = self.locks.get(session_id) or asyncio.Lock()
         async with lock:
             try:
@@ -375,61 +385,57 @@ class StatusUpdateManager:
                     'id': str(uuid.uuid4())
                 }
                 
-                # Use put_nowait to avoid blocking
-                try:
-                    self.queues[session_id].put_nowait(status_data)
-                    app.logger.debug(f"Status update sent to {session_id}: {status_data}")
-                    return True
-                except asyncio.QueueFull:
-                    # If queue is full, remove oldest message and try again
-                    try:
-                        self.queues[session_id].get_nowait()
-                        self.queues[session_id].put_nowait(status_data)
-                        app.logger.debug(f"Removed oldest message and sent update to {session_id}")
-                        return True
-                    except (asyncio.QueueEmpty, asyncio.QueueFull):
-                        app.logger.warning(f"Queue operations failed for session {session_id}")
-                        return False
-                        
+                websocket = self.connections[session_id]['websocket']
+                await websocket.send(json.dumps(status_data))
+                app.logger.debug(f"Status update sent to {session_id}: {message}")
+                return True
             except Exception as e:
                 app.logger.error(f"Error sending status update: {str(e)}")
+                await self.remove_connection(session_id)
                 return False
 
-    async def remove_queue(self, session_id):
-        """Remove a session's queue"""
+    async def send_initial_message(self, session_id):
+        """Send initial connection message if not already sent"""
+        if session_id not in self.initial_messages_sent:
+            try:
+                websocket = self.connections[session_id]['websocket']
+                initial_message = {
+                    'type': 'status',
+                    'message': 'Connected to status updates',
+                    'timestamp': datetime.now().isoformat(),
+                    'id': str(uuid.uuid4())
+                }
+                await websocket.send(json.dumps(initial_message))
+                self.initial_messages_sent.add(session_id)
+            except Exception as e:
+                app.logger.error(f"Error sending initial message: {str(e)}")
+
+    async def remove_connection(self, session_id):
+        """Remove a session's WebSocket connection"""
         async with self._cleanup_lock:
-            if session_id in self.queues:
-                lock = self.locks.get(session_id) or asyncio.Lock()
-                async with lock:
-                    try:
-                        # Signal to close
-                        await self.queues[session_id].put(None)
-                    except:
-                        pass
-                    self.queues.pop(session_id, None)
-                    self.locks.pop(session_id, None)
-                    self.connection_count = max(0, self.connection_count - 1)
-                    app.logger.info(f"Queue removed for session ID: {session_id}. Active connections: {self.connection_count}")
+            if session_id in self.connections:
+                try:
+                    connection = self.connections[session_id]
+                    connection['active'] = False
+                    await connection['websocket'].close(1000, "Connection closed normally")
+                except Exception as e:
+                    app.logger.debug(f"Error closing websocket: {str(e)}")
+                
+                self.connections.pop(session_id, None)
+                self.locks.pop(session_id, None)
+                self.initial_messages_sent.discard(session_id)  # Remove from initial messages tracking
+                self.connection_count = len(self.connections)
+                app.logger.debug(f"WebSocket connection removed for session ID: {session_id}. Active connections: {self.connection_count}")
 
-# Error logging middleware to catch any SSE-related issues.
-@app.before_request
-async def log_sse_request():
-    if request.path == '/chat/status':
-        app.logger.debug(f"New SSE request received from {request.remote_addr}")
+    def mark_session_active(self, session_id):
+        """Mark a session as active (during chat)"""
+        self.active_sessions.add(session_id)
 
-@app.after_request
-async def log_sse_response(response):
-    if request.path == '/chat/status':
-        app.logger.debug(f"SSE Response headers: {dict(response.headers)}")
-    return response
+    def mark_session_inactive(self, session_id):
+        """Mark a session as inactive (after chat completion)"""
+        self.active_sessions.discard(session_id)
 
-# Add error handling for SSE specifically
-@app.errorhandler(Exception)
-async def handle_exception(error):
-    if request.path == '/chat/status':
-        app.logger.error(f"Error in SSE connection: {str(error)}")
-        app.logger.exception("Full traceback:")
-    return await render_template('error.html', error=str(error)), 500
+
 
 # Initialize the status manager
 status_manager = StatusUpdateManager()
@@ -446,107 +452,78 @@ async def send_status_update(message: str):
         app.logger.info("Status update complete. Success: 0, Failed: 1")
 
 
-@app.route('/chat/status')
+@app.websocket('/chat/status')
 @login_required
 async def chat_status():
+    """WebSocket endpoint for status updates"""
     connection_id = str(current_user.auth_id)
-    app.logger.info(f"New status connection established: {connection_id}")
+    app.logger.debug(f"New WebSocket connection request from: {connection_id}")
     
-    # Create queue if it doesn't exist
-    queue = await status_manager.create_queue(connection_id)
-    
-    async def generate():
-        try:
-            # Send initial messages with more detailed headers
-            headers = {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-                'X-Accel-Buffering': 'no',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'GET',
-            }
-            
-            # Send headers
-            for key, value in headers.items():
-                yield f'{key}: {value}\n'
-            
-            yield 'retry: 1000\n'
-            yield 'event: open\n'
-            yield 'data: {"type":"status","message":"Connected to status updates"}\n\n'
-            
-            last_keep_alive = time.time()
-            
-            while True:
-                try:
-                    # Send keep-alive every 15 seconds
-                    current_time = time.time()
-                    if current_time - last_keep_alive >= 15:
-                        yield f': keepalive {datetime.now().isoformat()}\n\n'
-                        last_keep_alive = current_time
-                        app.logger.debug(f"Sent keepalive to {connection_id}")
-                    
-                    # Try to get a message with a shorter timeout
-                    try:
-                        status = await asyncio.wait_for(queue.get(), timeout=0.5)
-                        if status is None:
-                            app.logger.info(f"Queue closed for connection {connection_id}")
-                            break
-                        
-                        message = f'data: {json.dumps(status)}\n\n'
-                        app.logger.debug(f"Sending message to {connection_id}: {message}")
-                        yield message
-                        
-                    except asyncio.TimeoutError:
-                        # Expected timeout, continue the loop
-                        continue
-                    except Exception as e:
-                        app.logger.error(f"Error getting message from queue: {str(e)}")
-                        break
-                        
-                except asyncio.CancelledError:
-                    app.logger.info(f"Connection {connection_id} cancelled")
+    try:
+        # Register the connection
+        await status_manager.register_connection(connection_id, websocket._get_current_object())
+        
+        # Only send initial message if this is an active session
+        if connection_id in status_manager.active_sessions:
+            await status_manager.send_initial_message(connection_id)
+        
+        # Keep the connection alive only while session is active
+        while connection_id in status_manager.active_sessions:
+            try:
+                message = await websocket.receive()
+                if message.type == "websocket.disconnect":
                     break
-                except Exception as e:
-                    app.logger.error(f"Error in status generation for {connection_id}: {str(e)}")
-                    break
-                    
-        finally:
-            app.logger.info(f"Cleaning up connection {connection_id}")
-            await status_manager.remove_queue(connection_id)
+            except Exception as e:
+                app.logger.debug(f"WebSocket error for session {connection_id}: {str(e)}")
+                break
+                
+    except Exception as e:
+        app.logger.error(f"Error in WebSocket connection: {str(e)}")
+    finally:
+        status_manager.mark_session_inactive(connection_id)
+        await status_manager.remove_connection(connection_id)
 
-    response = Response(
-        generate(),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0',
-            'Connection': 'keep-alive',
-            'X-Accel-Buffering': 'no',
-            'Content-Type': 'text/event-stream; charset=utf-8',
-            'Transfer-Encoding': 'chunked'
-        }
-    )
-    
-    return response
+
+async def send_status_update(message: str):
+    """Send a status update ONLY to the current user."""
+    user_id = str(current_user.auth_id)
+    app.logger.debug(f"Sending status update (for user {user_id}): {message}")
+
+    success = await status_manager.send_update(user_id, message)
+    if success:
+        app.logger.debug("Status update sent successfully")
+    else:
+        app.logger.debug("Status update failed")
+
+
+async def periodic_ping(connection_id):
+    """Periodically send ping messages to keep the connection alive"""
+    try:
+        while True:
+            await asyncio.sleep(status_manager.PING_INTERVAL)
+            if not await status_manager.send_ping(connection_id):
+                break
+    except asyncio.CancelledError:
+        pass
+    except Exception as e:
+        app.logger.error(f"Error in periodic ping: {str(e)}")
 
 @app.route('/chat/status/health')
 @login_required
 async def status_health():
-    """Health check endpoint for SSE connections"""
+    """Health check endpoint for WebSocket connections"""
     try:
         quart_version = pkg_resources.get_distribution('quart').version
     except:
         quart_version = "unknown"
 
     connection_id = str(current_user.auth_id)
-    queue_exists = connection_id in status_manager.queues
+    connection_exists = connection_id in status_manager.connections
+    
     return jsonify({
         'status': 'healthy',
         'active_connections': status_manager.connection_count,
-        'queue_exists': queue_exists,
+        'connection_exists': connection_exists,
         'server_time': datetime.now().isoformat(),
         'server_info': {
             'worker_pid': os.getpid(),
@@ -3033,6 +3010,12 @@ async def get_response_from_model_sync(client, model, messages, temperature):
 @login_required
 async def chat():
     try:
+        # Mark the session as active at the start
+        status_manager.mark_session_active(str(current_user.auth_id))
+        
+        # Send initial connection message
+        await status_manager.send_initial_message(str(current_user.auth_id))
+
         # Get JSON data with await
         request_data = await request.get_json()
         
@@ -3261,13 +3244,21 @@ async def chat():
             except Exception as db_error:
                 app.logger.error(f'Database error: {str(db_error)}')
                 await db_session.rollback()
+                status_manager.mark_session_inactive(str(current_user.auth_id))
                 raise
 
     except Exception as e:
         app.logger.error(f'Unexpected error in chat route: {str(e)}')
         app.logger.exception("Full traceback:")
         await send_status_update("An error occurred during processing")
+        status_manager.mark_session_inactive(str(current_user.auth_id))
         return jsonify({'error': 'An unexpected error occurred'}), 500
+        
+    finally:
+        # Ensure the session is marked as inactive when the chat is complete
+        status_manager.mark_session_inactive(str(current_user.auth_id))
+        # Small delay to allow final status messages to be sent
+        await asyncio.sleep(0.5)
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
