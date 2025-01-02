@@ -20,15 +20,16 @@ let tempIntelligentSearchState = false; // This will store the temporary intelli
 // Constants for WebSocket management
 const MAX_WS_RECONNECT_ATTEMPTS = 5;
 const INITIAL_RECONNECT_DELAY = 1000;
+const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
 let wsReconnectAttempts = 0;
 let wsReconnectDelay = INITIAL_RECONNECT_DELAY;
 let maintainWebSocketConnection = false;
 let statusWebSocket = null;
 let statusUpdateContainer = null;
+let healthCheckInterval = null;
 
 
 document.addEventListener("DOMContentLoaded", function() {
-
     // Fetch and process system messages
     fetchAndProcessSystemMessages().then(() => {
         // Populate the system message modal
@@ -71,17 +72,43 @@ document.addEventListener("DOMContentLoaded", function() {
             updateSearchSettings();
         });
 
-        // Add periodic connection check for status updates
-        setInterval(checkStatusConnection, 30000); // Check every 30 seconds
+        // Initialize health check interval
+        startHealthCheck();
         
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
     });
-
-    // Add periodic connection check for WebSocket
-    setInterval(checkStatusConnection, 30000); // Check every 30 seconds
 });
 
+function startHealthCheck() {
+    if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+    }
+    
+    healthCheckInterval = setInterval(() => {
+        if (maintainWebSocketConnection) {
+            checkConnectionHealth();
+        }
+    }, HEALTH_CHECK_INTERVAL);
+}
+
+async function checkConnectionHealth() {
+    try {
+        const response = await fetch('/chat/status/health');
+        const data = await response.json();
+        
+        if (!data.connection_exists && maintainWebSocketConnection) {
+            console.log('Health check: Connection not found, reinitializing WebSocket');
+            initStatusWebSocket();
+        }
+    } catch (error) {
+        console.error('Health check failed:', error);
+        // Only attempt reconnection if we're supposed to maintain connection
+        if (maintainWebSocketConnection) {
+            handleWebSocketReconnect();
+        }
+    }
+}
 
 
 function createStatusUpdateContainer() {
@@ -137,15 +164,19 @@ function clearStatusUpdates() {
     maintainWebSocketConnection = false;
     if (statusWebSocket) {
         console.log('Closing WebSocket connection');
-        if (statusWebSocket.readyState === WebSocket.OPEN) {
-            statusWebSocket.close(1000, "Intentional closure");
-        }
+        statusWebSocket.close(1000, "Intentional closure");
         statusWebSocket = null;
     }
 
     // Reset reconnection parameters
     wsReconnectAttempts = 0;
     wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+    
+    // Clear health check interval
+    if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+        healthCheckInterval = null;
+    }
 }
 
 // Simplified connection check - only run when needed
@@ -158,19 +189,6 @@ function checkStatusConnection() {
     }
 }
 
-// Periodic connection check
-setInterval(function() {
-    fetch('/chat/status/health')
-        .then(response => response.json())
-        .then(data => {
-            console.log('Health check:', data);
-            if (!data.connection_exists) {
-                console.log('Connection not found, reinitializing WebSocket');
-                initStatusWebSocket();
-            }
-        })
-        .catch(error => console.error('Health check failed:', error));
-}, 30000);
 
 // Add reconnection attempt counter
 let reconnectAttempts = 0;
@@ -182,6 +200,7 @@ function initStatusWebSocket() {
         return null;
     }
 
+    // Close existing connection if any
     if (statusWebSocket) {
         if (statusWebSocket.readyState === WebSocket.CONNECTING) {
             console.log('WebSocket connection already in progress');
@@ -196,17 +215,12 @@ function initStatusWebSocket() {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/chat/status`;
-    
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat/status`; // Note the /ws/ prefix
+
     console.log('Initializing WebSocket connection to:', wsUrl);
     
     try {
-        statusWebSocket = new WebSocket(wsUrl, [], {
-            headers: {
-                'Upgrade': 'websocket',
-                'Connection': 'Upgrade'
-            }
-        });
+        statusWebSocket = new WebSocket(wsUrl);
 
         statusWebSocket.onopen = function(event) {
             console.log('WebSocket connection established');
@@ -214,35 +228,9 @@ function initStatusWebSocket() {
             wsReconnectDelay = INITIAL_RECONNECT_DELAY;
         };
 
-        statusWebSocket.onmessage = function(event) {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'status') {
-                    if (!statusUpdateContainer) {
-                        createStatusUpdateContainer();
-                    }
-                    addStatusUpdate(data.message);
-                }
-            } catch (e) {
-                console.error('Error processing WebSocket message:', e);
-            }
-        };
-
-        statusWebSocket.onerror = function(error) {
-            console.error('WebSocket error:', error);
-            // Log additional connection details for debugging
-            console.log('WebSocket readyState:', statusWebSocket.readyState);
-            console.log('WebSocket URL:', wsUrl);
-        };
-
-        statusWebSocket.onclose = function(event) {
-            console.log('WebSocket connection closed:', event);
-            console.log('Close code:', event.code);
-            console.log('Close reason:', event.reason);
-            if (maintainWebSocketConnection) {
-                handleWebSocketReconnect();
-            }
-        };
+        statusWebSocket.onmessage = handleWebSocketMessage;
+        statusWebSocket.onerror = handleWebSocketError;
+        statusWebSocket.onclose = handleWebSocketClose;
 
         return statusWebSocket;
     } catch (error) {
@@ -251,6 +239,31 @@ function initStatusWebSocket() {
     }
 }
 
+function handleWebSocketMessage(event) {
+    try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'status') {
+            if (!statusUpdateContainer) {
+                createStatusUpdateContainer();
+            }
+            addStatusUpdate(data.message);
+        }
+    } catch (e) {
+        console.error('Error processing WebSocket message:', e);
+    }
+}
+
+function handleWebSocketError(error) {
+    console.error('WebSocket error:', error);
+    console.log('WebSocket readyState:', statusWebSocket?.readyState);
+}
+
+function handleWebSocketClose(event) {
+    console.log('WebSocket connection closed:', event);
+    if (maintainWebSocketConnection) {
+        handleWebSocketReconnect();
+    }
+}
 
 function handleWebSocketReconnect() {
     if (!maintainWebSocketConnection) {
@@ -278,14 +291,12 @@ function handleWebSocketReconnect() {
 }
 
 
-// Handles cleanup when leaving the page
+// Cleanup on page unload
 window.addEventListener('beforeunload', function() {
-    if (statusWebSocket) {
-        console.log('Closing WebSocket connection due to page unload');
-        statusWebSocket.close();
-        statusWebSocket = null;
-    }
+    clearStatusUpdates();
 });
+
+// End WebSocket section
 
 function updateSearchSettings() {
     // Only send an update if the temporary state differs from the current system message state
