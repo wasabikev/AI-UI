@@ -10,9 +10,12 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
 
-    # Routes must be a list
     routes:
-      - path: "/"
+      - path: /
+        preserve_path_prefix: true
+      - path: /ws/chat/status
+        preserve_path_prefix: true
+        type: websocket
 
     # Environment variables must be a list of key-value pairs
     envs:
@@ -20,6 +23,10 @@ services:
         value: "1"
       - key: WEB_CONCURRENCY
         value: "2"
+      - key: WEBSOCKET_ENABLED
+        value: "true"
+      - key: WEBSOCKET_PATH
+        value: "/ws/chat/status"
 
     # Health check
     health_check:
@@ -29,4 +36,6 @@ services:
     websocket:
       enabled: true
       timeout: 300
-      path: /ws/chat/status
+      routes:
+        - path: /ws/chat/status
+          preserve_path_prefix: true
