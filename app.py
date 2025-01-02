@@ -613,6 +613,21 @@ async def debug_config_full():
         }
     })
 
+@app.route('/debug/websocket-config')
+@login_required
+async def debug_websocket_config():
+    """Debug endpoint to check WebSocket configuration"""
+    return jsonify({
+        'websocket_enabled': True,
+        'websocket_path': '/ws/chat/status',
+        'current_connections': len(status_manager.connections),
+        'active_sessions': len(status_manager.active_sessions),
+        'server_info': {
+            'worker_class': 'uvicorn.workers.UvicornWorker',
+            'websocket_timeout': 300
+        }
+    })
+
 # Ending of status update manager
 
 # Begining of web search 
