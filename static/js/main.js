@@ -195,8 +195,14 @@ let reconnectAttempts = 0;
 
 
 function initStatusWebSocket() {
-    console.log('initStatusWebSocket called. Stack trace:', new Error().stack);
-    console.log('maintainWebSocketConnection:', maintainWebSocketConnection);
+    console.log('initStatusWebSocket called');
+    console.log('Current state:', {
+        maintainWebSocketConnection,
+        existingWebSocket: statusWebSocket ? {
+            readyState: statusWebSocket.readyState,
+            url: statusWebSocket?.url
+        } : null
+    });
     
     if (!maintainWebSocketConnection) {
         console.log('WebSocket connection not needed at this time');
@@ -223,31 +229,64 @@ function initStatusWebSocket() {
     const wsUrl = `${protocol}//${window.location.host}/ws/chat/status`;
 
     console.log('Attempting new WebSocket connection to:', wsUrl);
-    console.log('Current location:', window.location.href);
     
     try {
         statusWebSocket = new WebSocket(wsUrl);
-        console.log('WebSocket object created:', statusWebSocket);
+        console.log('WebSocket object created, current state:', statusWebSocket.readyState);
 
         statusWebSocket.onopen = function(event) {
-            console.log('WebSocket connection established successfully');
+            console.log('WebSocket connection opened:', {
+                readyState: statusWebSocket.readyState,
+                protocol: statusWebSocket.protocol,
+                extensions: statusWebSocket.extensions
+            });
             wsReconnectAttempts = 0;
             wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+            
+            // Send an initial ping to verify the connection
+            try {
+                statusWebSocket.send(JSON.stringify({ type: 'ping' }));
+                console.log('Initial ping sent');
+            } catch (e) {
+                console.error('Error sending initial ping:', e);
+            }
         };
 
         statusWebSocket.onmessage = function(event) {
-            console.log('WebSocket message received:', event.data);
-            handleWebSocketMessage(event);
+            console.log('WebSocket message received:', {
+                data: event.data,
+                lastEventId: event.lastEventId,
+                origin: event.origin,
+                timeStamp: event.timeStamp
+            });
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'status') {
+                    if (!statusUpdateContainer) {
+                        createStatusUpdateContainer();
+                    }
+                    addStatusUpdate(data.message);
+                }
+            } catch (e) {
+                console.error('Error processing WebSocket message:', e);
+            }
         };
 
         statusWebSocket.onerror = function(error) {
-            console.error('WebSocket error occurred:', error);
-            console.log('WebSocket state at error:', statusWebSocket.readyState);
-            console.log('WebSocket URL at error:', wsUrl);
+            console.error('WebSocket error occurred:', {
+                error,
+                readyState: statusWebSocket.readyState,
+                url: wsUrl
+            });
         };
 
         statusWebSocket.onclose = function(event) {
-            console.log('WebSocket connection closed. Code:', event.code, 'Reason:', event.reason);
+            console.log('WebSocket connection closed:', {
+                code: event.code,
+                reason: event.reason,
+                wasClean: event.wasClean,
+                readyState: statusWebSocket.readyState
+            });
             if (maintainWebSocketConnection) {
                 handleWebSocketReconnect();
             }
@@ -257,7 +296,7 @@ function initStatusWebSocket() {
     } catch (error) {
         console.error('Error creating WebSocket:', error);
         console.log('Error details:', {
-            error: error.toString(),
+            message: error.message,
             stack: error.stack,
             wsUrl: wsUrl
         });
