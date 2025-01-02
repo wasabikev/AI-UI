@@ -551,6 +551,26 @@ async def chat_status_health():
     
     return jsonify(response_data)
 
+@app.route('/debug/config')
+async def debug_config():
+    """Debug endpoint to verify configuration"""
+    return jsonify({
+        'env_vars': {
+            'DEBUG_CONFIG': os.getenv('DEBUG_CONFIG'),
+            'WEBSOCKET_PATH': os.getenv('WEBSOCKET_PATH'),
+            'PORT': os.getenv('PORT'),
+        },
+        'routes': {
+            'websocket': '/ws/chat/status',
+            'health': '/chat/status/health'
+        },
+        'server_info': {
+            'worker_class': 'uvicorn.workers.UvicornWorker',
+            'gunicorn_config_path': os.path.exists('gunicorn.conf.py'),
+            'app_yaml_path': os.path.exists('.do/app.yaml')
+        }
+    })
+
 # Ending of status update manager
 
 # Begining of web search 
