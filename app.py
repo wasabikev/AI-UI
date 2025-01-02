@@ -571,6 +571,48 @@ async def debug_config():
         }
     })
 
+@app.route('/debug/config/full')
+async def debug_config_full():
+    """Detailed debug endpoint to verify configuration"""
+    import os
+    
+    # Get all files in the current directory
+    files = os.listdir('.')
+    do_files = os.listdir('.do') if os.path.exists('.do') else []
+    
+    # Read the contents of the config files
+    gunicorn_config = ''
+    if os.path.exists('gunicorn.conf.py'):
+        with open('gunicorn.conf.py', 'r') as f:
+            gunicorn_config = f.read()
+    
+    app_yaml = ''
+    if os.path.exists('.do/app.yaml'):
+        with open('.do/app.yaml', 'r') as f:
+            app_yaml = f.read()
+            
+    return jsonify({
+        'env_vars': dict(os.environ),
+        'files': {
+            'root': files,
+            'do_directory': do_files
+        },
+        'configs': {
+            'gunicorn': gunicorn_config,
+            'app_yaml': app_yaml
+        },
+        'routes': {
+            'websocket': '/ws/chat/status',
+            'health': '/chat/status/health'
+        },
+        'server_info': {
+            'worker_class': 'uvicorn.workers.UvicornWorker',
+            'gunicorn_config_path': os.path.exists('gunicorn.conf.py'),
+            'app_yaml_path': os.path.exists('.do/app.yaml'),
+            'current_directory': os.getcwd()
+        }
+    })
+
 # Ending of status update manager
 
 # Begining of web search 
