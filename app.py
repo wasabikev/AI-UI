@@ -474,43 +474,55 @@ async def send_status_update(message: str):
 
 
 
-@app.websocket('/ws/chat/status')  # Changed path to include /ws/ prefix
+@app.websocket('/ws/chat/status')
 @login_required
 async def ws_chat_status():
     """WebSocket endpoint for status updates"""
+    connection_id = str(current_user.auth_id)
+    app.logger.info(f"WebSocket connection attempt from {connection_id}")
+    
     try:
-        connection_id = str(current_user.auth_id)
-        app.logger.debug(f"New WebSocket connection request from: {connection_id}")
-        
+        app.logger.info("Getting WebSocket object")
         ws = websocket._get_current_object()
+        
+        app.logger.info(f"Registering connection for {connection_id}")
         await status_manager.register_connection(connection_id, ws)
         
-        # Start ping task
-        ping_task = asyncio.create_task(periodic_ping(connection_id))
+        app.logger.info(f"Connection registered. Active sessions: {status_manager.active_sessions}")
+        app.logger.info(f"Is session active? {connection_id in status_manager.active_sessions}")
         
-        try:
-            while True:
+        # Mark the session as active
+        status_manager.mark_session_active(connection_id)
+        app.logger.info(f"Session marked active. Active sessions now: {status_manager.active_sessions}")
+        
+        # Send initial message
+        app.logger.info("Attempting to send initial message")
+        await status_manager.send_initial_message(connection_id)
+        app.logger.info("Initial message sent successfully")
+        
+        while connection_id in status_manager.active_sessions:
+            try:
+                app.logger.debug("Waiting for message...")
                 message = await ws.receive()
-                if message.type == "websocket.disconnect":
-                    break
+                app.logger.debug(f"Received message: {message}")
                 
-                # Handle ping responses if needed
-                if message.type == "websocket.receive":
-                    data = json.loads(message.get('text', '{}'))
-                    if data.get('type') == 'pong':
-                        continue
+                if message.type == "websocket.disconnect":
+                    app.logger.info("Received disconnect message")
+                    break
                     
-        except Exception as e:
-            app.logger.debug(f"WebSocket error for session {connection_id}: {str(e)}")
-        finally:
-            ping_task.cancel()
-            
+            except Exception as e:
+                app.logger.error(f"Error in message loop: {str(e)}")
+                app.logger.exception("Full traceback:")
+                break
+                
     except Exception as e:
         app.logger.error(f"Error in WebSocket connection: {str(e)}")
         app.logger.exception("Full traceback:")
     finally:
+        app.logger.info(f"Cleaning up connection for {connection_id}")
         status_manager.mark_session_inactive(connection_id)
         await status_manager.remove_connection(connection_id)
+        app.logger.info("Cleanup complete")
 
 
 async def periodic_ping(connection_id):
