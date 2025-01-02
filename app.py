@@ -2513,27 +2513,42 @@ async def get_current_model():
 @app.route('/system-messages', methods=['POST'])
 @login_required
 async def create_system_message():
-    if not current_user.is_admin:
-        return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        if not await current_user.check_admin():
+            return jsonify({'error': 'Unauthorized'}), 401
 
-    data = await request.get_json()
-    
-    async with get_session() as session:
-        new_system_message = SystemMessage(
-            name=data['name'],
-            content=data['content'],
-            description=data.get('description', ''),
-            model_name=data.get('model_name', ''),
-            temperature=data.get('temperature', 0.7),
-            created_by=current_user.id,
-            enable_web_search=data.get('enable_web_search', False)
-        )
-        session.add(new_system_message)
-        await session.commit()
+        data = await request.get_json()
         
-        # Refresh to get the generated ID and any default values
-        await session.refresh(new_system_message)
-        return jsonify(new_system_message.to_dict()), 201
+        async with get_session() as session:
+            # Create naive datetime from UTC time
+            current_time = datetime.now(timezone.utc).replace(tzinfo=None)
+            
+            new_system_message = SystemMessage(
+                name=data['name'],
+                content=data['content'],
+                description=data.get('description', ''),
+                model_name=data.get('model_name', ''),
+                temperature=data.get('temperature', 0.7),
+                created_by=current_user.id,
+                created_at=current_time,  # Use naive datetime
+                updated_at=current_time,  # Use naive datetime
+                enable_web_search=data.get('enable_web_search', False)
+            )
+            
+            session.add(new_system_message)
+            try:
+                await session.commit()
+                await session.refresh(new_system_message)
+                return jsonify(new_system_message.to_dict()), 201
+            except Exception as db_error:
+                await session.rollback()
+                app.logger.error(f"Database error creating system message: {str(db_error)}")
+                raise
+
+    except Exception as e:
+        app.logger.error(f"Error in create_system_message: {str(e)}")
+        app.logger.exception("Full traceback:")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/system_messages', methods=['GET'])
 @login_required
@@ -2612,7 +2627,7 @@ async def update_system_message(message_id):
 @app.route('/system-messages/<int:message_id>', methods=['DELETE'])
 @login_required
 async def delete_system_message(message_id):
-    if not current_user.is_admin:
+    if not await current_user.check_admin():
         return jsonify({'error': 'Unauthorized'}), 401
 
     async with get_session() as session:
