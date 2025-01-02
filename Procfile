@@ -1,1 +1,1 @@
-web: gunicorn app:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 300 --keep-alive 65 --worker-connections 1000 --forwarded-allow-ips="*" --access-logfile - --error-logfile - --log-level debug --worker-class uvicorn.workers.UvicornWorker 
+web: gunicorn app:app -c gunicorn.conf.py --bind 0.0.0.0:$PORT --access-logfile - --error-logfile - --forwarded-allow-ips="*"
