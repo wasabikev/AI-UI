@@ -584,46 +584,73 @@ async def debug_config():
     })
 
 @app.route('/debug/config/full')
+@login_required
 async def debug_config_full():
-    """Detailed debug endpoint to verify configuration"""
+    """Detailed debug endpoint to verify configuration (login required)"""
     import os
     
-    # Get all files in the current directory
-    files = os.listdir('.')
-    do_files = os.listdir('.do') if os.path.exists('.do') else []
-    
-    # Read the contents of the config files
-    gunicorn_config = ''
-    if os.path.exists('gunicorn.conf.py'):
-        with open('gunicorn.conf.py', 'r') as f:
-            gunicorn_config = f.read()
-    
-    app_yaml = ''
-    if os.path.exists('.do/app.yaml'):
-        with open('.do/app.yaml', 'r') as f:
-            app_yaml = f.read()
-            
-    return jsonify({
-        'env_vars': dict(os.environ),
-        'files': {
-            'root': files,
-            'do_directory': do_files
-        },
-        'configs': {
-            'gunicorn': gunicorn_config,
-            'app_yaml': app_yaml
-        },
-        'routes': {
-            'websocket': '/ws/chat/status',
-            'health': '/chat/status/health'
-        },
-        'server_info': {
-            'worker_class': 'uvicorn.workers.UvicornWorker',
-            'gunicorn_config_path': os.path.exists('gunicorn.conf.py'),
-            'app_yaml_path': os.path.exists('.do/app.yaml'),
-            'current_directory': os.getcwd()
+    def mask_sensitive_value(key: str, value: str) -> str:
+        """Mask sensitive values in environment variables"""
+        sensitive_keys = {'API_KEY', 'SECRET', 'PASSWORD', 'TOKEN', 'DATABASE_URL'}
+        if any(sensitive_word in key.upper() for sensitive_word in sensitive_keys):
+            if len(str(value)) > 8:
+                return f"{value[:4]}...{value[-4:]}"
+            return "****"
+        return value
+
+    try:
+        # Get all files in the current directory
+        files = os.listdir('.')
+        do_files = os.listdir('.do') if os.path.exists('.do') else []
+        
+        # Read the contents of the config files
+        gunicorn_config = ''
+        if os.path.exists('gunicorn.conf.py'):
+            with open('gunicorn.conf.py', 'r') as f:
+                gunicorn_config = f.read()
+        
+        app_yaml = ''
+        if os.path.exists('.do/app.yaml'):
+            with open('.do/app.yaml', 'r') as f:
+                app_yaml = f.read()
+        
+        # Mask sensitive environment variables
+        masked_env_vars = {
+            key: mask_sensitive_value(key, value)
+            for key, value in os.environ.items()
         }
-    })
+            
+        response_data = {
+            'env_vars': masked_env_vars,
+            'files': {
+                'root': files,
+                'do_directory': do_files
+            },
+            'configs': {
+                'gunicorn': gunicorn_config,
+                'app_yaml': app_yaml
+            },
+            'routes': {
+                'websocket': '/ws/chat/status',
+                'health': '/chat/status/health'
+            },
+            'server_info': {
+                'worker_class': 'uvicorn.workers.UvicornWorker',
+                'gunicorn_config_path': os.path.exists('gunicorn.conf.py'),
+                'app_yaml_path': os.path.exists('.do/app.yaml'),
+                'current_directory': os.getcwd()
+            },
+            'user_info': {
+                'is_authenticated': current_user.is_authenticated
+            }
+        }
+        
+        app.logger.info("Debug configuration accessed by authenticated user")
+        return jsonify(response_data)
+        
+    except Exception as e:
+        app.logger.error("Error in debug configuration endpoint: %s", str(e))
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/debug/websocket-config')
 @login_required
