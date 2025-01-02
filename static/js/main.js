@@ -195,6 +195,9 @@ let reconnectAttempts = 0;
 
 
 function initStatusWebSocket() {
+    console.log('initStatusWebSocket called. Stack trace:', new Error().stack);
+    console.log('maintainWebSocketConnection:', maintainWebSocketConnection);
+    
     if (!maintainWebSocketConnection) {
         console.log('WebSocket connection not needed at this time');
         return null;
@@ -202,6 +205,7 @@ function initStatusWebSocket() {
 
     // Close existing connection if any
     if (statusWebSocket) {
+        console.log('Existing WebSocket state:', statusWebSocket.readyState);
         if (statusWebSocket.readyState === WebSocket.CONNECTING) {
             console.log('WebSocket connection already in progress');
             return statusWebSocket;
@@ -210,31 +214,53 @@ function initStatusWebSocket() {
             console.log('WebSocket connection already established');
             return statusWebSocket;
         }
+        console.log('Closing existing WebSocket');
         statusWebSocket.close();
         statusWebSocket = null;
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/chat/status`; // Note the /ws/ prefix
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat/status`;
 
-    console.log('Initializing WebSocket connection to:', wsUrl);
+    console.log('Attempting new WebSocket connection to:', wsUrl);
+    console.log('Current location:', window.location.href);
     
     try {
         statusWebSocket = new WebSocket(wsUrl);
+        console.log('WebSocket object created:', statusWebSocket);
 
         statusWebSocket.onopen = function(event) {
-            console.log('WebSocket connection established');
+            console.log('WebSocket connection established successfully');
             wsReconnectAttempts = 0;
             wsReconnectDelay = INITIAL_RECONNECT_DELAY;
         };
 
-        statusWebSocket.onmessage = handleWebSocketMessage;
-        statusWebSocket.onerror = handleWebSocketError;
-        statusWebSocket.onclose = handleWebSocketClose;
+        statusWebSocket.onmessage = function(event) {
+            console.log('WebSocket message received:', event.data);
+            handleWebSocketMessage(event);
+        };
+
+        statusWebSocket.onerror = function(error) {
+            console.error('WebSocket error occurred:', error);
+            console.log('WebSocket state at error:', statusWebSocket.readyState);
+            console.log('WebSocket URL at error:', wsUrl);
+        };
+
+        statusWebSocket.onclose = function(event) {
+            console.log('WebSocket connection closed. Code:', event.code, 'Reason:', event.reason);
+            if (maintainWebSocketConnection) {
+                handleWebSocketReconnect();
+            }
+        };
 
         return statusWebSocket;
     } catch (error) {
         console.error('Error creating WebSocket:', error);
+        console.log('Error details:', {
+            error: error.toString(),
+            stack: error.stack,
+            wsUrl: wsUrl
+        });
         return null;
     }
 }
