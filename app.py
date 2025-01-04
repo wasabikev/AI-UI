@@ -19,6 +19,7 @@ from pathlib import Path
 from queue import Queue, Empty, Full
 from typing import List, Dict
 import time
+import math
 
 # Third-party imports - Core Web Framework
 from quart import (
@@ -35,7 +36,7 @@ from quart_auth import (
 import pkg_resources
 
 # Third-party imports - Database and ORM
-from sqlalchemy import select
+from sqlalchemy import select, func
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from dotenv import load_dotenv
@@ -2670,27 +2671,54 @@ async def create_conversation_in_folder(folder_id):
 @app.route('/api/conversations', methods=['GET'])
 @login_required
 async def get_conversations():
-    async with get_session() as session:
-        # Use select() to build the query
-        query = select(Conversation).filter_by(user_id=current_user.id).order_by(Conversation.updated_at.desc())
+    try:
+        # Get pagination parameters from request
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
         
-        # Execute the query asynchronously
-        result = await session.execute(query)
-        # Get all results
-        conversations = result.scalars().all()
-        
-        # Convert the list of Conversation objects into a list of dictionaries
-        conversations_dict = [{
-            "id": c.id, 
-            "title": c.title, 
-            "history": json.loads(c.history), 
-            "model_name": c.model_name, 
-            "token_count": c.token_count,
-            "updated_at": c.updated_at,
-            "temperature": c.temperature
-        } for c in conversations]
-        
-        return jsonify(conversations_dict)
+        async with get_session() as session:
+            # Get total count using a subquery
+            count_query = select(func.count()).select_from(
+                select(Conversation).filter_by(user_id=current_user.id).subquery()
+            )
+            count_result = await session.execute(count_query)
+            total_count = count_result.scalar()
+            
+            # Build paginated query
+            query = (
+                select(Conversation)
+                .filter_by(user_id=current_user.id)
+                .order_by(Conversation.updated_at.desc())
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+            )
+            
+            # Execute the query
+            result = await session.execute(query)
+            conversations = result.scalars().all()
+            
+            # Convert to list of dictionaries
+            conversations_dict = [{
+                "id": c.id, 
+                "title": c.title,
+                "model_name": c.model_name,
+                "token_count": c.token_count,
+                "updated_at": c.updated_at,
+                "temperature": c.temperature
+            } for c in conversations]
+            
+            return jsonify({
+                "conversations": conversations_dict,
+                "total": total_count,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": math.ceil(total_count / per_page)
+            })
+            
+    except Exception as e:
+        app.logger.error(f"Error fetching conversations: {str(e)}")
+        app.logger.exception("Full traceback:")
+        return jsonify({'error': 'Error fetching conversations'}), 500
 
 # Fetch a specific conversation from the database to display in the chat interface
 @app.route('/conversations/<int:conversation_id>', methods=['GET'])

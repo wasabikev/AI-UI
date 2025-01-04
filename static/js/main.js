@@ -21,6 +21,10 @@ let tempIntelligentSearchState = false; // This will store the temporary intelli
 let statusUpdateContainer = null;
 let currentEventSource = null;
 
+// variables to manage pagination of converstation list
+let isLoadingConversations = false;
+let currentPage = 1;
+let hasMoreConversations = true;
 
 document.addEventListener("DOMContentLoaded", function() {
     // Initialize status updates first
@@ -1794,9 +1798,18 @@ function handleLists(content) {
 
 
 
-function updateConversationList() {
-    console.log('Starting to update conversation list...');
-    fetch('/api/conversations')
+function updateConversationList(page = 1, append = false) {
+    if (isLoadingConversations) return;
+    
+    console.log(`Updating conversation list - Page: ${page}, Append: ${append}`);
+    isLoadingConversations = true;
+
+    // Show loading indicator
+    if (!append) {
+        $('#conversation-list').append('<div id="conversation-loading" class="text-center p-2">Loading conversations...</div>');
+    }
+
+    fetch(`/api/conversations?page=${page}&per_page=20`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -1804,44 +1817,85 @@ function updateConversationList() {
             return response.json();
         })
         .then(data => {
-            console.log(`Received ${data.length} conversations from server.`);
+            console.log(`Received ${data.conversations.length} conversations from server.`);
+            
+            // Remove loading indicator
+            $('#conversation-loading').remove();
 
-            // Prepare new HTML content for conversation list
-            let newConversationListContent = '';
-            // Add each conversation to the new content.
-            data.forEach((conversation, index) => {
-                const temperatureInfo = (typeof conversation.temperature !== 'undefined' && conversation.temperature !== null) ? `${conversation.temperature}°` : 'N/A°';
-                newConversationListContent += `
+            // Update pagination state
+            hasMoreConversations = page < data.total_pages;
+            currentPage = page;
+
+            // Prepare new HTML content
+            let newContent = '';
+            data.conversations.forEach(conversation => {
+                const temperatureInfo = (typeof conversation.temperature !== 'undefined' && conversation.temperature !== null) 
+                    ? `${conversation.temperature}°` 
+                    : 'N/A°';
+                
+                newContent += `
                     <div class="conversation-item" data-id="${conversation.id}">
                         <div class="conversation-title">${conversation.title}</div>
                         <div class="conversation-meta">
-                            <span class="model-name" title="AI Model used for this conversation">${conversation.model_name}</span>
-                            <span class="temperature-info" title="Temperature setting">${temperatureInfo}</span>
+                            <span class="model-name" title="AI Model used for this conversation">
+                                ${conversation.model_name}
+                            </span>
+                            <span class="temperature-info" title="Temperature setting">
+                                ${temperatureInfo}
+                            </span>
                         </div>
                     </div>
                 `;
             });
-            
-            // Replace conversation list content with new content
-            $('#conversation-list').html(newConversationListContent);
-            console.log('Conversation list updated.');
 
-            // Add click event handlers to the conversation elements.
-            $('.conversation-item').click(function() {
+            // Update the conversation list
+            if (append) {
+                $('#conversation-list').append(newContent);
+            } else {
+                $('#conversation-list').html(newContent);
+            }
+
+            // Add click handlers to new conversation items
+            $('.conversation-item').off('click').on('click', function() {
                 const conversationId = $(this).data('id');
                 console.log(`Loading conversation with id: ${conversationId}`);
-                
-                // Update the URL to reflect the conversation being loaded
                 window.history.pushState({}, '', `/c/${conversationId}`);
-
-                // Load the conversation data
                 loadConversation(conversationId);
             });
+
+            // Setup infinite scroll if there are more conversations
+            if (hasMoreConversations) {
+                setupInfiniteScroll();
+            }
+
         })
         .catch(error => {
             console.error(`Error updating conversation list: ${error}`);
+            $('#conversation-loading').html('Error loading conversations. <a href="#" onclick="updateConversationList(1, false)">Retry</a>');
+        })
+        .finally(() => {
+            isLoadingConversations = false;
         });
 }
+
+// Add infinite scroll functionality
+function setupInfiniteScroll() {
+    const conversationList = document.getElementById('conversation-list');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && hasMoreConversations && !isLoadingConversations) {
+                updateConversationList(currentPage + 1, true);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    // Observe the last conversation item
+    const lastConversation = conversationList.lastElementChild;
+    if (lastConversation) {
+        observer.observe(lastConversation);
+    }
+}
+
 
 
 
@@ -2326,6 +2380,9 @@ $(document).ready(function() {  // Document Ready (initialization)
 
     // Set default title
     $("#conversation-title").html("AI &infin; UI");
+
+    // initialize the conversation list with pagination
+    updateConversationList(1, false);
 
     // Function to update the temperature modal
     function updateTemperatureModal() {
