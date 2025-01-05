@@ -1,7 +1,7 @@
 #requirements.txt
 
 # Core Web Framework
-quart==0.19.9
+quart>=0.20.0,<0.21.0
 quart-auth==0.10.1
 quart-cors==0.7.0
 quart-schema==0.20.0

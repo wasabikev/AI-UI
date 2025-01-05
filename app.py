@@ -117,6 +117,8 @@ app.config.update(
     SSE_RETRY_TIMEOUT=30000,
     SECRET_KEY=os.getenv('SECRET_KEY'),
     TEMPLATES_AUTO_RELOAD=True,
+    MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16 MB max-body-size
+    MAX_FORM_MEMORY_SIZE=16 * 1024 * 1024,  # 16 MB max-form-size
 )
 
 
