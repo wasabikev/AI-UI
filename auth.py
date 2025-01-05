@@ -68,7 +68,14 @@ class UserWrapper(AuthUser):
     async def check_admin(self) -> bool:
         """Utility method to check admin status"""
         return await self.is_admin
-    
+
+async def check_authenticated(self) -> bool:
+    """Async method to check authentication status"""
+    if not self.is_authenticated:
+        return False
+    user = await self.get_user()
+    return user is not None and user.status == 'Active'
+
 def login_required(func: RouteCallable) -> RouteCallable:
     """
     Drop-in replacement for Quart-Auth's login_required decorator.
@@ -105,8 +112,13 @@ def async_login_required():
             if not current_user.is_authenticated:
                 return redirect(url_for('auth.login'))
             
-            authenticated = await current_user.check_authenticated()
-            if not authenticated:
+            # Get user and verify status
+            try:
+                user = await current_user.get_user()
+                if user is None or user.status != 'Active':
+                    return redirect(url_for('auth.login'))
+            except Exception as e:
+                current_app.logger.error(f"Error checking user status: {str(e)}")
                 return redirect(url_for('auth.login'))
                 
             return await f(*args, **kwargs)
@@ -118,7 +130,7 @@ def init_auth(app):
     auth_manager.init_app(app)
 
 @auth_bp.route('/update-password/<int:user_id>', methods=['POST'])
-@async_login_required()
+@login_required
 async def update_password(user_id):
     async with get_session() as session:
         result = await session.execute(
@@ -138,7 +150,7 @@ async def update_password(user_id):
     return redirect(url_for('auth.admin_dashboard'))
 
 @auth_bp.route('/update-admin/<int:user_id>', methods=['POST'])
-@async_login_required()
+@login_required
 async def update_admin(user_id):
     async with get_session() as session:
         result = await session.execute(
@@ -156,7 +168,7 @@ async def update_admin(user_id):
     return redirect(url_for('auth.admin_dashboard'))
 
 @auth_bp.route('/update-status/<int:user_id>', methods=['POST'])
-@async_login_required()
+@login_required
 async def update_status(user_id):
     async with get_session() as session:
         result = await session.execute(
@@ -175,24 +187,30 @@ async def update_status(user_id):
     return redirect(url_for('auth.admin_dashboard'))
 
 @auth_bp.route('/admin')
-@async_login_required()
+@login_required
 async def admin_dashboard():
-    current_user_obj = await current_user.get_user()
-    
-    if not current_user_obj.is_admin:
-        await flash("Sorry, you do not have permission to access the admin dashboard.", "danger")
+    try:
+        current_user_obj = await current_user.get_user()
+        
+        if not current_user_obj or not current_user_obj.is_admin:
+            await flash("Sorry, you do not have permission to access the admin dashboard.", "danger")
+            return redirect(url_for('home'))
+
+        async with get_session() as session:
+            result = await session.execute(
+                select(User).order_by(User.username)
+            )
+            users = result.scalars().all()
+        
+        return await render_template('admin.html', users=users)
+    except Exception as e:
+        current_app.logger.error(f"Error in admin_dashboard: {str(e)}")
+        current_app.logger.exception("Full traceback:")
+        await flash("An error occurred while accessing the admin dashboard.", "danger")
         return redirect(url_for('home'))
 
-    async with get_session() as session:
-        result = await session.execute(
-            select(User).order_by(User.username)
-        )
-        users = result.scalars().all()
-    
-    return await render_template('admin.html', users=users)
-
 @auth_bp.route('/delete-user/<int:user_id>', methods=['POST'])
-@async_login_required()
+@login_required
 async def delete_user(user_id):
     async with get_session() as session:
         result = await session.execute(
@@ -252,7 +270,7 @@ async def login():
     return await render_template('login.html')
 
 @auth_bp.route('/logout')
-@async_login_required()
+@login_required
 async def logout():
     logout_user()
     return redirect(url_for('home'))
