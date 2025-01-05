@@ -355,6 +355,7 @@ class StatusUpdateManager:
         self._cleanup_lock = asyncio.Lock()
         self.active_sessions = set()  # Track active chat sessions
         self.initial_messages_sent = set()  # Track which sessions have received initial message
+        self.last_ping_times = {}
 
     async def register_connection(self, session_id, websocket):
         """Register a new WebSocket connection"""
@@ -372,6 +373,7 @@ class StatusUpdateManager:
                 'active': True,
                 'last_ping': datetime.now()
             }
+            self.last_ping_times[session_id] = datetime.now()
             self.locks[session_id] = asyncio.Lock()
             self.connection_count = len(self.connections)
             app.logger.debug(f"WebSocket connection registered for session ID: {session_id}. Active connections: {self.connection_count}")
