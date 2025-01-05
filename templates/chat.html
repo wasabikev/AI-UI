@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 
     <link href="/static/css/prism.css" rel="stylesheet" />
 
@@ -18,13 +19,6 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
     
-    <script>
-        var conversation_id = {{ conversation_id | default('null', true) }};
-    </script>
-
-    <script type="text/javascript">
-        var isAdmin = {{ user.is_admin | tojson if user else 'false' }};
-    </script>
 
     <style>
         .full-height {
@@ -450,9 +444,15 @@
     <script src="/static/js/prism.js"></script>
 
 
-    <!-- Include MathJax -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Include MathJax with built-in polyfills -->
+    <script>
+        MathJax = {
+            options: {
+                enableMenu: false    // Disable the right-click menu
+            }
+        };
+        </script>
+        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
     <!-- Include Chart.js for rendering graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -495,6 +495,13 @@
         console.log('System messages:', systemMessages);
     </script>
 
+    <script type="text/javascript">
+        // @ts-ignore
+        window.APP_DATA = {
+            conversationId: {% if conversation_id is defined %}{{ conversation_id | tojson | safe }}{% else %}null{% endif %},
+            isAdmin: {% if user and user.is_admin is defined %}{{ user.is_admin | tojson | safe }}{% else %}false{% endif %}
+        };
+    </script>
 
 </body>
 
