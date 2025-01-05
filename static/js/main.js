@@ -152,7 +152,6 @@ function addStatusUpdate(message) {
     
     return container;
 }
-
 function clearStatusUpdates() {
     console.log('Clearing status updates');
     
@@ -166,17 +165,24 @@ function clearStatusUpdates() {
 
     // Clean up WebSocket connection
     maintainWebSocketConnection = false;
-    if (statusWebSocket) {
-        console.log('Closing WebSocket connection');
-        statusWebSocket.close(1000, "Intentional closure");
-        statusWebSocket = null;
+    
+    // Store the WebSocket reference locally before nullifying
+    const ws = statusWebSocket;
+    statusWebSocket = null; // Set to null first
+    
+    // Safely close the WebSocket if it exists and is active
+    if (isWebSocketActive(ws)) {
+        try {
+            ws.close(1000, "Intentional closure");
+        } catch (e) {
+            console.error('Error closing WebSocket:', e);
+        }
     }
 
     // Reset reconnection parameters
     wsReconnectAttempts = 0;
     wsReconnectDelay = INITIAL_RECONNECT_DELAY;
     
-    // Clear health check interval
     if (healthCheckInterval) {
         clearInterval(healthCheckInterval);
         healthCheckInterval = null;
@@ -200,103 +206,76 @@ let reconnectAttempts = 0;
 
 function initStatusWebSocket() {
     console.log('initStatusWebSocket called');
-    console.log('Current state:', {
-        maintainWebSocketConnection,
-        existingWebSocket: statusWebSocket ? {
-            readyState: statusWebSocket.readyState,
-            url: statusWebSocket?.url
-        } : null
-    });
     
     if (!maintainWebSocketConnection) {
         console.log('WebSocket connection not needed at this time');
         return null;
     }
 
-    // Close existing connection if any
-    if (statusWebSocket) {
-        console.log('Existing WebSocket state:', statusWebSocket.readyState);
-        if (statusWebSocket.readyState === WebSocket.CONNECTING) {
-            console.log('WebSocket connection already in progress');
-            return statusWebSocket;
-        }
-        if (statusWebSocket.readyState === WebSocket.OPEN) {
-            console.log('WebSocket connection already established');
-            return statusWebSocket;
-        }
-        console.log('Closing existing WebSocket');
-        statusWebSocket.close();
-        statusWebSocket = null;
-    }
-
+    // Store the old WebSocket reference
+    const oldWs = statusWebSocket;
+    
+    // Create new WebSocket before closing the old one
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/chat/status`;
 
     console.log('Attempting new WebSocket connection to:', wsUrl);
     
     try {
-        statusWebSocket = new WebSocket(wsUrl);
-        console.log('WebSocket object created, current state:', statusWebSocket.readyState);
+        // Create new WebSocket
+        const newWs = new WebSocket(wsUrl);
+        
+        // Set the new WebSocket
+        statusWebSocket = newWs;
 
-        statusWebSocket.onopen = function(event) {
+        // Now close the old WebSocket if it exists
+        if (oldWs && oldWs.readyState !== WebSocket.CLOSED) {
+            try {
+                oldWs.close(1000, "New connection established");
+            } catch (e) {
+                console.error('Error closing old WebSocket:', e);
+            }
+        }
+
+        newWs.onopen = function(event) {
             console.log('WebSocket connection opened:', {
-                readyState: statusWebSocket.readyState,
-                protocol: statusWebSocket.protocol,
-                extensions: statusWebSocket.extensions
+                readyState: newWs.readyState,
+                protocol: newWs.protocol,
+                extensions: newWs.extensions
             });
             wsReconnectAttempts = 0;
             wsReconnectDelay = INITIAL_RECONNECT_DELAY;
             
-            // Send an initial ping to verify the connection
             try {
-                statusWebSocket.send(JSON.stringify({ type: 'ping' }));
+                newWs.send(JSON.stringify({ type: 'ping' }));
                 console.log('Initial ping sent');
             } catch (e) {
                 console.error('Error sending initial ping:', e);
             }
         };
 
-        statusWebSocket.onmessage = function(event) {
-            console.log('WebSocket message received:', {
-                data: event.data,
-                lastEventId: event.lastEventId,
-                origin: event.origin,
-                timeStamp: event.timeStamp
-            });
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'status') {
-                    if (!statusUpdateContainer) {
-                        createStatusUpdateContainer();
-                    }
-                    addStatusUpdate(data.message);
-                }
-            } catch (e) {
-                console.error('Error processing WebSocket message:', e);
-            }
-        };
+        newWs.onmessage = handleWebSocketMessage;
+        newWs.onerror = handleWebSocketError;
 
-        statusWebSocket.onerror = function(error) {
-            console.error('WebSocket error occurred:', {
-                error,
-                readyState: statusWebSocket.readyState,
-                url: wsUrl
-            });
-        };
-
-        statusWebSocket.onclose = function(event) {
+        // Update the onclose handler to use a local reference
+        newWs.onclose = function(event) {
             console.log('WebSocket connection closed:', {
                 code: event.code,
                 reason: event.reason,
                 wasClean: event.wasClean,
-                readyState: statusWebSocket.readyState
+                readyState: (this && this.readyState) || 'UNKNOWN'
             });
-            if (maintainWebSocketConnection) {
-                handleWebSocketReconnect();
+            
+            // Only attempt reconnection if this is still the current WebSocket
+            if (maintainWebSocketConnection && this === statusWebSocket) {
+                // Use setTimeout to ensure we're not in the closure context
+                setTimeout(() => {
+                    handleWebSocketReconnect();
+                }, 0);
             }
         };
 
-        return statusWebSocket;
+        return newWs;
     } catch (error) {
         console.error('Error creating WebSocket:', error);
         console.log('Error details:', {
@@ -309,18 +288,22 @@ function initStatusWebSocket() {
 }
 
 function handleWebSocketMessage(event) {
+    if (!event || !event.data) {
+        console.error('Invalid WebSocket message event:', event);
+        return;
+    }
+
     try {
         const data = JSON.parse(event.data);
         if (data.type === 'status') {
-            if (!statusUpdateContainer) {
-                createStatusUpdateContainer();
-            }
+            const container = statusUpdateContainer || createStatusUpdateContainer();
             addStatusUpdate(data.message);
         }
     } catch (e) {
         console.error('Error processing WebSocket message:', e);
     }
 }
+
 
 function handleWebSocketError(error) {
     console.error('WebSocket error:', error);
@@ -343,12 +326,14 @@ function handleWebSocketReconnect() {
     if (wsReconnectAttempts >= MAX_WS_RECONNECT_ATTEMPTS) {
         console.error('Max reconnection attempts reached');
         maintainWebSocketConnection = false;
+        statusWebSocket = null; // Ensure cleanup
         return;
     }
 
     wsReconnectAttempts++;
     console.log(`Attempting to reconnect (${wsReconnectAttempts}/${MAX_WS_RECONNECT_ATTEMPTS})...`);
     
+    // Use setTimeout to ensure we're out of the event handler context
     setTimeout(() => {
         if (maintainWebSocketConnection) {
             initStatusWebSocket();
@@ -357,6 +342,14 @@ function handleWebSocketReconnect() {
     
     // Exponential backoff with max delay of 10 seconds
     wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
+}
+
+// Helper function to safely check WebSocket state
+function isWebSocketActive(ws) {
+    return ws && 
+           typeof ws.readyState !== 'undefined' && 
+           ws.readyState !== WebSocket.CLOSED && 
+           ws.readyState !== WebSocket.CLOSING;
 }
 
 
