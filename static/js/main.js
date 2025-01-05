@@ -5,7 +5,7 @@ let systemMessages = []; // An array that stores the system message
 
 
 let model; // This variable stores the selected model name
-let activeConversationId = null; // This keeps track of the currently selected conversation.
+let activeConversationId = window.APP_DATA?.conversationId ?? null // This keeps track of the currently selected conversation.
 let currentSystemMessage; // Stores the currently selected system message.
 let currentSystemMessageDescription; // Stores the description of the current system message.
 let initialTemperature; // Stores the initial temperature setting.
@@ -16,6 +16,8 @@ let selectedTemperature = 0.7; // Default temperature value
 let activeWebsiteId = null;  // This will store the currently active website ID for the Websites Group
 let tempWebSearchState = false; // This will store the temporary web search state
 let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
+
+const isAdmin = window.APP_DATA?.isAdmin ?? false;
 
 // Constants for WebSocket management
 const MAX_WS_RECONNECT_ATTEMPTS = 5;
