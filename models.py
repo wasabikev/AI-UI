@@ -44,7 +44,7 @@ db_url = os.getenv("DATABASE_URL")
 if not db_url:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-print("DEBUG in models.py: final db_url =", db_url)
+
 
 
 # Create async engine with logging disabled
