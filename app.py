@@ -488,6 +488,17 @@ async def ws_chat_status():
         app.logger.info("Getting WebSocket object")
         ws = websocket._get_current_object()
         
+        # Check authentication status
+        if not current_user.is_authenticated:
+            app.logger.warning(f"Unauthorized WebSocket connection attempt from {connection_id}")
+            return
+            
+        # Get user and verify status
+        user = await current_user.get_user()
+        if not user or user.status != 'Active':
+            app.logger.warning(f"Inactive or invalid user attempted WebSocket connection: {connection_id}")
+            return
+        
         app.logger.info(f"Registering connection for {connection_id}")
         await status_manager.register_connection(connection_id, ws)
         
@@ -2805,10 +2816,15 @@ async def get_conversations():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         
+        # Convert current_user.auth_id to integer
+        user_id = int(current_user.auth_id)
+        
         async with get_session() as session:
             # Get total count using a subquery
             count_query = select(func.count()).select_from(
-                select(Conversation).filter_by(user_id=current_user.id).subquery()
+                select(Conversation)
+                .filter(Conversation.user_id == user_id)
+                .subquery()
             )
             count_result = await session.execute(count_query)
             total_count = count_result.scalar()
@@ -2816,7 +2832,7 @@ async def get_conversations():
             # Build paginated query
             query = (
                 select(Conversation)
-                .filter_by(user_id=current_user.id)
+                .filter(Conversation.user_id == user_id)
                 .order_by(Conversation.updated_at.desc())
                 .offset((page - 1) * per_page)
                 .limit(per_page)
@@ -2832,7 +2848,7 @@ async def get_conversations():
                 "title": c.title,
                 "model_name": c.model_name,
                 "token_count": c.token_count,
-                "updated_at": c.updated_at,
+                "updated_at": c.updated_at.isoformat() if c.updated_at else None,
                 "temperature": c.temperature
             } for c in conversations]
             
