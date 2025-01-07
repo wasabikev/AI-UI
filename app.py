@@ -120,6 +120,10 @@ app.config.update(
     TEMPLATES_AUTO_RELOAD=True,
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16 MB max-body-size
     MAX_FORM_MEMORY_SIZE=16 * 1024 * 1024,  # 16 MB max-form-size
+    WEBSOCKET_PING_INTERVAL=20,
+    WEBSOCKET_PING_TIMEOUT=30,
+    WEBSOCKET_MAX_MESSAGE_SIZE=1048576,  # 1MB
+    WEBSOCKET_ENABLED=True
 )
 
 
@@ -528,9 +532,6 @@ async def ws_chat_status():
     app.logger.info(f"WebSocket connection attempt from {connection_id}")
     
     try:
-        app.logger.info("Getting WebSocket object")
-        ws = websocket._get_current_object()
-        
         # Check authentication status
         if not current_user.is_authenticated:
             app.logger.warning(f"Unauthorized WebSocket connection attempt from {connection_id}")
@@ -543,10 +544,9 @@ async def ws_chat_status():
             return
         
         app.logger.info(f"Registering connection for {connection_id}")
-        await status_manager.register_connection(connection_id, ws)
+        await status_manager.register_connection(connection_id, websocket)
         
         app.logger.info(f"Connection registered. Active sessions: {status_manager.active_sessions}")
-        app.logger.info(f"Is session active? {connection_id in status_manager.active_sessions}")
         
         # Mark the session as active
         status_manager.mark_session_active(connection_id)
@@ -557,16 +557,26 @@ async def ws_chat_status():
         await status_manager.send_initial_message(connection_id)
         app.logger.info("Initial message sent successfully")
         
-        while connection_id in status_manager.active_sessions:
+        while True:
             try:
-                app.logger.debug("Waiting for message...")
-                message = await ws.receive()
+                # Wait for messages
+                message = await websocket.receive()
                 app.logger.debug(f"Received message: {message}")
                 
-                if message.type == "websocket.disconnect":
-                    app.logger.info("Received disconnect message")
-                    break
+                # Handle ping messages
+                try:
+                    data = json.loads(message)
+                    if data.get('type') == 'ping':
+                        await websocket.send(json.dumps({
+                            'type': 'pong',
+                            'timestamp': datetime.now().isoformat()
+                        }))
+                except json.JSONDecodeError:
+                    pass
                     
+            except asyncio.CancelledError:
+                app.logger.info("WebSocket connection cancelled")
+                break
             except Exception as e:
                 app.logger.error(f"Error in message loop: {str(e)}")
                 app.logger.exception("Full traceback:")
