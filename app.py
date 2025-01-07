@@ -34,6 +34,7 @@ from quart_auth import (
     logout_user, Unauthorized
 )
 import pkg_resources
+import traceback
 
 # Third-party imports - Database and ORM
 from sqlalchemy import select, func
@@ -478,6 +479,46 @@ async def send_status_update(message: str):
         app.logger.debug("Status update failed")
 
 
+@app.route('/ws/diagnostic')
+async def websocket_diagnostic():
+    """
+    Endpoint to check WebSocket configuration and connectivity
+    """
+    try:
+        # Gather environment information
+        env_info = {
+            'WEBSOCKET_ENABLED': os.getenv('WEBSOCKET_ENABLED'),
+            'WEBSOCKET_PATH': os.getenv('WEBSOCKET_PATH'),
+            'REQUEST_HEADERS': dict(request.headers),
+            'SERVER_SOFTWARE': os.getenv('SERVER_SOFTWARE'),
+            'FORWARDED_ALLOW_IPS': os.getenv('FORWARDED_ALLOW_IPS'),
+            'PROXY_PROTOCOL': os.getenv('PROXY_PROTOCOL'),
+        }
+        
+        # Check if running behind proxy
+        is_proxied = any(h in request.headers for h in [
+            'X-Forwarded-For',
+            'X-Real-IP',
+            'X-Forwarded-Proto'
+        ])
+        
+        diagnostic_info = {
+            'environment': env_info,
+            'is_proxied': is_proxied,
+            'websocket_config': {
+                'ping_interval': app.config.get('WEBSOCKET_PING_INTERVAL'),
+                'ping_timeout': app.config.get('WEBSOCKET_PING_TIMEOUT'),
+                'max_message_size': app.config.get('WEBSOCKET_MAX_MESSAGE_SIZE')
+            }
+        }
+        
+        return jsonify(diagnostic_info)
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @app.websocket('/ws/chat/status')
 @login_required
