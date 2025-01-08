@@ -120,10 +120,6 @@ app.config.update(
     TEMPLATES_AUTO_RELOAD=True,
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16 MB max-body-size
     MAX_FORM_MEMORY_SIZE=16 * 1024 * 1024,  # 16 MB max-form-size
-    WEBSOCKET_PING_INTERVAL=20,
-    WEBSOCKET_PING_TIMEOUT=30,
-    WEBSOCKET_MAX_MESSAGE_SIZE=1048576,  # 1MB
-    WEBSOCKET_ENABLED=True
 )
 
 
@@ -362,6 +358,11 @@ class StatusUpdateManager:
         self.initial_messages_sent = set()  # Track which sessions have received initial message
         self.last_ping_times = {}
 
+    def is_connection_active(self, session_id):
+        """Check if a connection is active for the given session"""
+        connection = self.connections.get(session_id)
+        return connection is not None and connection.get('active', False)
+
     async def register_connection(self, session_id, websocket):
         """Register a new WebSocket connection"""
         async with self._cleanup_lock:
@@ -385,7 +386,7 @@ class StatusUpdateManager:
 
     async def send_update(self, session_id, message):
         """Send an update to a specific session via WebSocket"""
-        if session_id not in self.connections or not self.connections[session_id]['active']:
+        if not self.is_connection_active(session_id):  
             app.logger.debug(f"No active connection found for session {session_id}")
             return False
 
@@ -410,7 +411,7 @@ class StatusUpdateManager:
 
     async def send_ping(self, session_id):
         """Send a ping message to keep the connection alive"""
-        if session_id not in self.connections or not self.connections[session_id]['active']:
+        if not self.is_connection_active(session_id): 
             return False
 
         try:
@@ -473,14 +474,23 @@ status_manager = StatusUpdateManager()
 
 async def send_status_update(message: str):
     """Send a status update to the current user."""
-    user_id = str(current_user.auth_id)
-    app.logger.debug(f"Sending status update (for user {user_id}): {message}")
+    try:
+        user_id = str(current_user.auth_id)
+        app.logger.debug(f"Attempting to send status update for user {user_id}: {message}")
 
-    success = await status_manager.send_update(user_id, message)
-    if success:
-        app.logger.debug("Status update sent successfully")
-    else:
-        app.logger.debug("Status update failed")
+        if user_id not in status_manager.connections:
+            app.logger.debug(f"No active connection found for user {user_id}")
+            return False
+
+        success = await status_manager.send_update(user_id, message)
+        if success:
+            app.logger.debug("Status update sent successfully")
+        else:
+            app.logger.debug("Status update failed")
+        return success
+    except Exception as e:
+        app.logger.error(f"Error in send_status_update: {str(e)}")
+        return False
 
 
 @app.route('/ws/diagnostic')
@@ -542,45 +552,52 @@ async def ws_chat_status():
         if not user or user.status != 'Active':
             app.logger.warning(f"Inactive or invalid user attempted WebSocket connection: {connection_id}")
             return
-        
+
+        # Store the websocket context
         app.logger.info(f"Registering connection for {connection_id}")
         await status_manager.register_connection(connection_id, websocket)
         
-        app.logger.info(f"Connection registered. Active sessions: {status_manager.active_sessions}")
+        # Set up ping task
+        ping_task = asyncio.create_task(periodic_ping(connection_id))
         
-        # Mark the session as active
-        status_manager.mark_session_active(connection_id)
-        app.logger.info(f"Session marked active. Active sessions now: {status_manager.active_sessions}")
-        
-        # Send initial message
-        app.logger.info("Attempting to send initial message")
-        await status_manager.send_initial_message(connection_id)
-        app.logger.info("Initial message sent successfully")
-        
-        while True:
-            try:
-                # Wait for messages
-                message = await websocket.receive()
-                app.logger.debug(f"Received message: {message}")
-                
-                # Handle ping messages
+        try:
+            app.logger.info(f"Connection registered. Active sessions: {status_manager.active_sessions}")
+            status_manager.mark_session_active(connection_id)
+            app.logger.info(f"Session marked active. Active sessions now: {status_manager.active_sessions}")
+            
+            # Send initial message
+            app.logger.info("Attempting to send initial message")
+            await status_manager.send_initial_message(connection_id)
+            app.logger.info("Initial message sent successfully")
+            
+            while True:
                 try:
-                    data = json.loads(message)
-                    if data.get('type') == 'ping':
-                        await websocket.send(json.dumps({
-                            'type': 'pong',
-                            'timestamp': datetime.now().isoformat()
-                        }))
-                except json.JSONDecodeError:
-                    pass
+                    message = await websocket.receive()
+                    app.logger.debug(f"Received message: {message}")
                     
+                    if not message:
+                        continue
+                        
+                    try:
+                        data = json.loads(message)
+                        if data.get('type') == 'ping':
+                            await websocket.send(json.dumps({
+                                'type': 'pong',
+                                'timestamp': datetime.now().isoformat()
+                            }))
+                    except json.JSONDecodeError:
+                        continue
+                        
+                except asyncio.CancelledError:
+                    break
+                    
+        finally:
+            # Cancel ping task
+            ping_task.cancel()
+            try:
+                await ping_task
             except asyncio.CancelledError:
-                app.logger.info("WebSocket connection cancelled")
-                break
-            except Exception as e:
-                app.logger.error(f"Error in message loop: {str(e)}")
-                app.logger.exception("Full traceback:")
-                break
+                pass
                 
     except Exception as e:
         app.logger.error(f"Error in WebSocket connection: {str(e)}")
