@@ -17,7 +17,11 @@ let activeWebsiteId = null;  // This will store the currently active website ID 
 let tempWebSearchState = false; // This will store the temporary web search state
 let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
 
-const isAdmin = window.APP_DATA?.isAdmin ?? false;
+// Safely initialize APP_DATA related variables
+const APP_DATA = window.APP_DATA || {};
+const isAdmin = APP_DATA.isAdmin || false;
+let currentSessionId = APP_DATA?.sessionId ?? null;  // Session ID will be provided by server for speed optimization and to avoid duplicate status updates
+
 
 // Constants for WebSocket management
 const MAX_WS_RECONNECT_ATTEMPTS = 5;
@@ -78,43 +82,11 @@ document.addEventListener("DOMContentLoaded", function() {
             updateSearchSettings();
         });
 
-        // Initialize health check interval
-        startHealthCheck();
         
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
     });
 });
-
-function startHealthCheck() {
-    if (healthCheckInterval) {
-        clearInterval(healthCheckInterval);
-    }
-    
-    healthCheckInterval = setInterval(() => {
-        if (maintainWebSocketConnection) {
-            checkConnectionHealth();
-        }
-    }, HEALTH_CHECK_INTERVAL);
-}
-
-async function checkConnectionHealth() {
-    try {
-        const response = await fetch('/chat/status/health');
-        const data = await response.json();
-        
-        if (!data.connection_exists && maintainWebSocketConnection) {
-            console.log('Health check: Connection not found, reinitializing WebSocket');
-            initStatusWebSocket();
-        }
-    } catch (error) {
-        console.error('Health check failed:', error);
-        // Only attempt reconnection if we're supposed to maintain connection
-        if (maintainWebSocketConnection) {
-            handleWebSocketReconnect();
-        }
-    }
-}
 
 
 function createStatusUpdateContainer() {
@@ -154,10 +126,10 @@ function addStatusUpdate(message) {
     
     return container;
 }
+
 function clearStatusUpdates() {
     console.log('Clearing status updates');
     
-    // Clear the status container
     if (statusUpdateContainer) {
         statusUpdateContainer.fadeOut(300, function() {
             $(this).remove();
@@ -165,30 +137,7 @@ function clearStatusUpdates() {
         });
     }
 
-    // Clean up WebSocket connection
-    maintainWebSocketConnection = false;
-    
-    // Store the WebSocket reference locally before nullifying
-    const ws = statusWebSocket;
-    statusWebSocket = null; // Set to null first
-    
-    // Safely close the WebSocket if it exists and is active
-    if (isWebSocketActive(ws)) {
-        try {
-            ws.close(1000, "Intentional closure");
-        } catch (e) {
-            console.error('Error closing WebSocket:', e);
-        }
-    }
-
-    // Reset reconnection parameters
-    wsReconnectAttempts = 0;
-    wsReconnectDelay = INITIAL_RECONNECT_DELAY;
-    
-    if (healthCheckInterval) {
-        clearInterval(healthCheckInterval);
-        healthCheckInterval = null;
-    }
+    cleanupWebSocketSession();
 }
 
 // Simplified connection check - only run when needed
@@ -197,7 +146,7 @@ function checkStatusConnection() {
         console.log('Status connection lost or not established, reconnecting...');
         wsReconnectAttempts = 0;
         wsReconnectDelay = INITIAL_RECONNECT_DELAY;
-        initStatusWebSocket();
+        //initStatusWebSocket();
     }
 }
 
@@ -214,66 +163,33 @@ function initStatusWebSocket() {
         return null;
     }
 
-    // Store the old WebSocket reference
-    const oldWs = statusWebSocket;
-    
-    // Create new WebSocket before closing the old one
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/chat/status`;
-
+    
     console.log('Attempting new WebSocket connection to:', wsUrl);
     
     try {
-        // Create new WebSocket
         const newWs = new WebSocket(wsUrl);
         
-        // Set the new WebSocket
-        statusWebSocket = newWs;
-
-        // Now close the old WebSocket if it exists
-        if (oldWs && oldWs.readyState !== WebSocket.CLOSED) {
-            try {
-                oldWs.close(1000, "New connection established");
-            } catch (e) {
-                console.error('Error closing old WebSocket:', e);
-            }
-        }
-
         newWs.onopen = function(event) {
-            console.log('WebSocket connection opened:', {
-                readyState: newWs.readyState,
-                protocol: newWs.protocol,
-                extensions: newWs.extensions
-            });
+            console.log('WebSocket connection opened');
             wsReconnectAttempts = 0;
             wsReconnectDelay = INITIAL_RECONNECT_DELAY;
-            
-            try {
-                newWs.send(JSON.stringify({ type: 'ping' }));
-                console.log('Initial ping sent');
-            } catch (e) {
-                console.error('Error sending initial ping:', e);
-            }
         };
 
         newWs.onmessage = handleWebSocketMessage;
-        newWs.onerror = handleWebSocketError;
+        
+        newWs.onerror = function(error) {
+            console.error('WebSocket error:', error);
+            if (error.message) {
+                console.error('Error message:', error.message);
+            }
+        };
 
-        // Update the onclose handler to use a local reference
         newWs.onclose = function(event) {
-            console.log('WebSocket connection closed:', {
-                code: event.code,
-                reason: event.reason,
-                wasClean: event.wasClean,
-                readyState: (this && this.readyState) || 'UNKNOWN'
-            });
-            
-            // Only attempt reconnection if this is still the current WebSocket
-            if (maintainWebSocketConnection && this === statusWebSocket) {
-                // Use setTimeout to ensure we're not in the closure context
-                setTimeout(() => {
-                    handleWebSocketReconnect();
-                }, 0);
+            console.log('WebSocket closed:', event.code, event.reason);
+            if (maintainWebSocketConnection) {
+                handleWebSocketReconnect();
             }
         };
 
@@ -290,21 +206,24 @@ function initStatusWebSocket() {
 }
 
 function handleWebSocketMessage(event) {
-    if (!event || !event.data) {
-        console.error('Invalid WebSocket message event:', event);
-        return;
-    }
-
     try {
         const data = JSON.parse(event.data);
+        console.log('WebSocket message received:', data);
+
         if (data.type === 'status') {
-            const container = statusUpdateContainer || createStatusUpdateContainer();
-            addStatusUpdate(data.message);
+            if (data.session_id) {  // Initial connection message
+                console.log('WebSocket connection confirmed, session ID:', data.session_id);
+                currentSessionId = data.session_id;
+                return;
+            } else if (data.message !== "WebSocket connection established") {  // Skip the initial connection message
+                addStatusUpdate(data.message);
+            }
         }
     } catch (e) {
         console.error('Error processing WebSocket message:', e);
     }
 }
+
 
 
 function handleWebSocketError(error) {
@@ -354,6 +273,46 @@ function isWebSocketActive(ws) {
            ws.readyState !== WebSocket.CLOSING;
 }
 
+function cleanupWebSocketSession() {
+    maintainWebSocketConnection = false;
+    currentSessionId = null;
+    
+    if (statusWebSocket && statusWebSocket.readyState !== WebSocket.CLOSED) {
+        console.log('Closing existing WebSocket connection');
+        try {
+            statusWebSocket.close(1000, "Session cleanup");
+        } catch (e) {
+            console.error('Error during WebSocket cleanup:', e);
+        }
+        statusWebSocket = null;
+    }
+    
+    if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+        healthCheckInterval = null;
+    }
+}
+
+function checkSessionHealth() {
+    if (!currentSessionId) return;
+
+    fetch('/ws/chat/status/health', {
+        headers: {
+            'X-Session-ID': currentSessionId
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.session_valid) {
+            console.log('Session invalid, reinitializing...');
+            cleanupWebSocketSession();
+            //initStatusWebSocket();
+        }
+    })
+    .catch(error => {
+        console.error('Session health check failed:', error);
+    });
+}
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', function() {
@@ -2269,6 +2228,21 @@ $('#chat-form').on('submit', async function (e) {
     const userInput = $('#user_input').val();
     if (!userInput.trim()) return; // Don't process empty messages
 
+    // Set WebSocket connection maintenance flag
+    maintainWebSocketConnection = true;
+    statusWebSocket = initStatusWebSocket();
+
+    // Wait briefly for session ID to be set by the server
+    const startTime = Date.now();
+    while (!currentSessionId && Date.now() - startTime < 2000) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (!currentSessionId) {
+        console.error('Failed to get session ID');
+        return;
+    }
+
     if (!messages) {
         messages = [];
     }
@@ -2291,89 +2265,54 @@ $('#chat-form').on('submit', async function (e) {
     // Show loading indicator
     document.getElementById('loading').style.display = 'block';
 
-    // Now handle WebSocket initialization
-    clearStatusUpdates();
-    maintainWebSocketConnection = true;
+    try {
+        // Prepare and send the request
+        let requestPayload = {
+            messages: messages,
+            model: model,
+            temperature: selectedTemperature,
+            system_message_id: activeSystemMessageId,
+            enable_web_search: $('#enableWebSearch').is(':checked'),
+            enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
+        };
 
-    // Initialize WebSocket in the background
-    (async () => {
-        let attempts = 0;
-        const maxAttempts = 2;
-        
-        while (attempts < maxAttempts) {
-            if (!statusWebSocket || statusWebSocket.readyState === WebSocket.CLOSED) {
-                statusWebSocket = initStatusWebSocket();
-                if (statusWebSocket) {
-                    if (statusWebSocket.readyState === WebSocket.OPEN) {
-                        createStatusUpdateContainer();
-                        break;
-                    }
-                    await new Promise((resolve) => {
-                        statusWebSocket.onopen = () => {
-                            createStatusUpdateContainer();
-                            resolve();
-                        };
-                        setTimeout(resolve, 300);
-                    });
-                    if (statusWebSocket.readyState === WebSocket.OPEN) break;
-                }
-            } else if (statusWebSocket.readyState === WebSocket.OPEN) {
-                createStatusUpdateContainer();
-                break;
-            }
-            attempts++;
-            await new Promise(resolve => setTimeout(resolve, 100));
+        if (activeConversationId !== null) {
+            requestPayload.conversation_id = activeConversationId;
         }
-    })().catch(console.error);
 
-    // Prepare and send the request
-    let requestPayload = {
-        messages: messages,
-        model: model,
-        temperature: selectedTemperature,
-        system_message_id: activeSystemMessageId,
-        enable_web_search: $('#enableWebSearch').is(':checked'),
-        enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
-    };
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Debug': '1',
+                'X-Session-ID': currentSessionId
+            },
+            body: JSON.stringify(requestPayload)
+        });
 
-    if (activeConversationId !== null) {
-        requestPayload.conversation_id = activeConversationId;
-    }
-
-    console.log('Sending request payload:', JSON.stringify(requestPayload));
-
-    fetch('/chat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestPayload)
-    })
-    .then(response => {
         console.log('Received response from /chat endpoint:', response);
-        // Set the flag to stop maintaining the connection
-        maintainWebSocketConnection = false;
-        if (statusWebSocket) {
-            statusWebSocket.close();
-            statusWebSocket = null;
-        }
         document.getElementById('loading').style.display = 'none';
 
         if (!response.ok) {
-            clearStatusUpdates();
-            return response.text().then(text => {
-                throw new Error(text);
+            const errorText = await response.text();
+            console.error('Error response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries()),
+                body: errorText
             });
+            
+            try {
+                const errorJson = JSON.parse(errorText);
+                throw new Error(JSON.stringify(errorJson, null, 2));
+            } catch (e) {
+                throw new Error(errorText);
+            }
         }
 
-        return response.json();
-    })
-    .then(data => {
+        const data = await response.json();
         console.log("Complete server response:", JSON.stringify(data, null, 2));
-        clearStatusUpdates(); // Clear status updates before showing results
         
-        console.log("Generated search queries:", data.generated_search_queries);
-
         // Display vector search results
         if (data.vector_search_results && data.vector_search_results !== "No results found") {
             const vectorSearchDiv = $('<div class="chat-entry vector-search">')
@@ -2398,16 +2337,12 @@ $('#chat-form').on('submit', async function (e) {
             generatedQueryDiv.append('<strong>Generated Search Queries:</strong> ');
             
             const queryList = $('<ul class="query-list">');
-            
             data.generated_search_queries.forEach((query) => {
                 queryList.append($('<li>').text(query));
             });
             
             generatedQueryDiv.append(queryList);
             $('#chat').append(generatedQueryDiv);
-            console.log("Generated query div appended");
-        } else {
-            console.log("No generated search queries received, not an array, or empty array");
         }
 
         // Display web search results
@@ -2432,10 +2367,10 @@ $('#chat-form').on('submit', async function (e) {
             .append(renderedBotOutput);
         $('#chat').append(botMessageDiv);
         
-        // Update messages array with the new assistant message
+        // Update messages array
         messages.push({ "role": "assistant", "content": data.chat_output });
 
-        // Update the system message in the messages array only if there's new content
+        // Update system message if new content exists
         if (data.system_message_content) {
             const systemMessageIndex = messages.findIndex(msg => msg.role === 'system');
             if (systemMessageIndex !== -1) {
@@ -2445,58 +2380,49 @@ $('#chat-form').on('submit', async function (e) {
             }
         }
 
-        // Wait for content to be rendered and then scroll
-        Promise.all([
-            MathJax.typesetPromise().then(() => {
-                console.log('MathJax has finished typesetting the new message.');
-            }).catch((err) => console.log('Error typesetting math content: ', err)),
+        // Render content and scroll
+        await Promise.all([
+            MathJax.typesetPromise().catch(err => console.log('Error typesetting math content: ', err)),
             new Promise(resolve => {
                 Prism.highlightAll();
                 resolve();
             })
-        ]).then(() => {
-            // Additional small delay to ensure all rendering is complete
-            setTimeout(() => {
-                const chatContainer = $('#chat');
-                const botMessageDiv = chatContainer.find('.bot-message').last();
-                const botMessageTop = botMessageDiv.position().top;
-                const containerScrollTop = chatContainer.scrollTop();
-                const adjustedScroll = botMessageTop + containerScrollTop - 50; // 50px buffer from top
+        ]);
 
-                chatContainer.animate({
-                    scrollTop: adjustedScroll
-                }, 500);
-            }, 100);
-        });
+        // Scroll to new content
+        setTimeout(() => {
+            const chatContainer = $('#chat');
+            const botMessageDiv = chatContainer.find('.bot-message').last();
+            const botMessageTop = botMessageDiv.position().top;
+            const containerScrollTop = chatContainer.scrollTop();
+            const adjustedScroll = botMessageTop + containerScrollTop - 50;
+
+            chatContainer.animate({
+                scrollTop: adjustedScroll
+            }, 500);
+        }, 100);
 
         updateConversationList();
 
-        // Update the URL with the received conversation_id
+        // Update URL and conversation controls
         window.history.pushState({}, '', `/c/${data.conversation_id}`);
 
         if (data.conversation_title) {
             console.log("Received conversation_title from server:", data.conversation_title);
-            // Log the token usage data
-            console.log("Token usage data:", data.usage);
-            // Update token data in the UI
             const tokens = data.usage;
             showConversationControls(data.conversation_title, tokens);
         } else {
-            console.log("No conversation_title from server. Showing default.");
             showConversationControls();
         }
-        console.log('End of chat-form submit function');
-    })
-    .catch(error => {
-        console.error('Error processing chat form submission:', error);
-        maintainWebSocketConnection = false;
-        if (statusWebSocket) {
-            statusWebSocket.close();
-            statusWebSocket = null;
-        }
+
+        // Clean up status updates after successful completion
+        clearStatusUpdates();
+
+    } catch (error) {
+        console.error('Error in chat form processing:', error);
         document.getElementById('loading').style.display = 'none';
         clearStatusUpdates();
-    });
+    }
 });
 
 
