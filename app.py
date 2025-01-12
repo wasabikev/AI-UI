@@ -10,16 +10,19 @@ import socket
 import subprocess
 import sys
 import threading
-import uuid
+import uuid 
+import time
+import math
+from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 from functools import lru_cache, partial
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from queue import Queue, Empty, Full
-from typing import List, Dict
-import time
-import math
+from typing import List, Dict, Optional
+from dataclasses import dataclass
+
 
 # Third-party imports - Core Web Framework
 from quart import (
@@ -213,16 +216,44 @@ def setup_logging(app, debug_mode):
     file_handler.setFormatter(unicode_formatter)
     file_handler.setLevel(logging.DEBUG if debug_mode else logging.INFO)
 
-    # Set up console handler
+    # Set up console handler with color formatting
+    class ColorFormatter(logging.Formatter):
+        """Add colors to log levels"""
+        grey = "\x1b[38;21m"
+        blue = "\x1b[34;21m"
+        yellow = "\x1b[33;21m"
+        red = "\x1b[31;21m"
+        bold_red = "\x1b[31;1m"
+        reset = "\x1b[0m"
+        
+        FORMATS = {
+            logging.DEBUG: blue + "%(asctime)s - %(levelname)s - %(message)s" + reset,
+            logging.INFO: grey + "%(asctime)s - %(levelname)s - %(message)s" + reset,
+            logging.WARNING: yellow + "%(asctime)s - %(levelname)s - %(message)s" + reset,
+            logging.ERROR: red + "%(asctime)s - %(levelname)s - %(message)s" + reset,
+            logging.CRITICAL: bold_red + "%(asctime)s - %(levelname)s - %(message)s" + reset,
+        }
+        
+        def format(self, record):
+            log_fmt = self.FORMATS.get(record.levelno)
+            formatter = logging.Formatter(log_fmt, datefmt='%Y-%m-%d %H:%M:%S')
+            return formatter.format(record)
+
+    # Console handler with color formatting
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(unicode_formatter)
-    console_handler.setLevel(logging.INFO if debug_mode else logging.WARNING)
+    console_handler.setFormatter(ColorFormatter())
+    console_handler.setLevel(logging.DEBUG if debug_mode else logging.INFO)  # Show all levels in console
 
     # Configure app logger
     app.logger.addHandler(file_handler)
     app.logger.addHandler(console_handler)
     app.logger.propagate = False
     app.logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
+
+    # Add console handler to root logger as well
+    root_logger = logging.getLogger()
+    root_logger.addHandler(console_handler)
+    root_logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
 
     # Completely silence SQLAlchemy logging
     logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
@@ -237,7 +268,7 @@ def setup_logging(app, debug_mode):
     logging.getLogger('sqlalchemy.engine.impl').setLevel(logging.ERROR)
     logging.getLogger('sqlalchemy.engine.logger').setLevel(logging.ERROR)
 
-    # Reduce noise from other loggers
+    # Reduce noise from other loggers but show their warnings and errors
     noisy_loggers = [
         'httpcore',
         'hypercorn.error',
@@ -252,7 +283,10 @@ def setup_logging(app, debug_mode):
     ]
 
     for logger_name in noisy_loggers:
-        logging.getLogger(logger_name).setLevel(logging.WARNING)
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.WARNING)
+        logger.addHandler(console_handler)
+        logger.propagate = False
 
     # Disable SQL statement logging explicitly
     logging.getLogger('sqlalchemy.engine.Engine.logger').disabled = True
@@ -262,6 +296,7 @@ def setup_logging(app, debug_mode):
 
     if debug_mode:
         app.logger.debug("Debug mode enabled")
+        app.logger.debug("Console logging enabled with colors")
 
 
 # Usage in app.py
@@ -345,152 +380,207 @@ async def shutdown():
 
 # Begin of status update manager
 
-# Begin of status update manager
+@dataclass
+class SessionStatus:
+    user_id: int
+    session_id: str
+    message: str
+    last_updated: float
+    expires_at: float
+    websocket: Optional[object] = None
+    active: bool = False
+
+
 class StatusUpdateManager:
     PING_INTERVAL = 30  # seconds
+    SESSION_TIMEOUT = 3600  # 1 hour in seconds
+    CLEANUP_INTERVAL = 300  # 5 minutes
 
     def __init__(self):
-        self.connections = {}  # Store WebSocket connections
-        self.locks = {}
-        self.connection_count = 0
+        self._sessions: Dict[str, SessionStatus] = {}
         self._cleanup_lock = asyncio.Lock()
-        self.active_sessions = set()  # Track active chat sessions
-        self.initial_messages_sent = set()  # Track which sessions have received initial message
-        self.last_ping_times = {}
+        self._last_cleanup = time.time()
+        self.connection_count = 0
+        self.locks = {}
+        self.initial_messages_sent = set()
 
-    def is_connection_active(self, session_id):
-        """Check if a connection is active for the given session"""
-        connection = self.connections.get(session_id)
-        return connection is not None and connection.get('active', False)
 
-    async def register_connection(self, session_id, websocket):
-        """Register a new WebSocket connection"""
+    def _generate_session_id(self, user_id: int) -> str:
+        """Generate a unique session ID combining user_id and UUID."""
+        return f"{user_id}-{uuid.uuid4()}"
+
+    def create_session(self, user_id: int) -> str:
+        """Create a new session and return its ID."""
+        session_id = self._generate_session_id(user_id)
+        current_time = time.time()
+        
+        self._sessions[session_id] = SessionStatus(
+            user_id=user_id,
+            session_id=session_id,
+            message="Session initialized",
+            last_updated=current_time,
+            expires_at=current_time + self.SESSION_TIMEOUT
+        )
+        
+        self._cleanup_expired_sessions()
+        return session_id
+
+    async def register_connection(self, session_id: str, websocket) -> bool:
+        """Register a WebSocket connection for a session."""
         async with self._cleanup_lock:
-            # If there's an existing connection, close it first
-            if session_id in self.connections:
-                try:
-                    old_connection = self.connections[session_id]
-                    await old_connection['websocket'].close(1000, "New connection established")
-                except Exception as e:
-                    app.logger.debug(f"Error closing old connection: {str(e)}")
-
-            self.connections[session_id] = {
-                'websocket': websocket,
-                'active': True,
-                'last_ping': datetime.now()
-            }
-            self.last_ping_times[session_id] = datetime.now()
-            self.locks[session_id] = asyncio.Lock()
-            self.connection_count = len(self.connections)
-            app.logger.debug(f"WebSocket connection registered for session ID: {session_id}. Active connections: {self.connection_count}")
-
-    async def send_update(self, session_id, message):
-        """Send an update to a specific session via WebSocket"""
-        if not self.is_connection_active(session_id):  
-            app.logger.debug(f"No active connection found for session {session_id}")
-            return False
-
-        lock = self.locks.get(session_id) or asyncio.Lock()
-        async with lock:
-            try:
-                status_data = {
-                    'type': 'status',
-                    'message': message,
-                    'timestamp': datetime.now().isoformat(),
-                    'id': str(uuid.uuid4())
-                }
-                
-                websocket = self.connections[session_id]['websocket']
-                await websocket.send(json.dumps(status_data))
-                app.logger.debug(f"Status update sent to {session_id}: {message}")
-                return True
-            except Exception as e:
-                app.logger.error(f"Error sending status update: {str(e)}")
-                await self.remove_connection(session_id)
+            if session_id not in self._sessions:
                 return False
 
-    async def send_ping(self, session_id):
-        """Send a ping message to keep the connection alive"""
-        if not self.is_connection_active(session_id): 
+            session = self._sessions[session_id]
+            
+            # Only increment if session wasn't already active
+            if not session.active:
+                self.connection_count += 1
+
+            self._sessions[session_id] = SessionStatus(
+                user_id=session.user_id,
+                session_id=session_id,
+                message="Connected to status updates",
+                last_updated=time.time(),
+                expires_at=time.time() + self.SESSION_TIMEOUT,
+                websocket=websocket,
+                active=True
+            )
+
+            self.locks[session_id] = asyncio.Lock()
+            
+            # Send initial connection message with session ID
+            try:
+                await websocket.send(json.dumps({
+                    'type': 'status',
+                    'status': 'connected',
+                    'session_id': session_id,
+                    'timestamp': datetime.now().isoformat()
+                }))
+            except Exception as e:
+                app.logger.error(f"Error sending initial connection message: {str(e)}")
+                return False
+
+            app.logger.debug(f"WebSocket connection registered for session ID: {session_id}. Active connections: {self.connection_count}")
+            return True
+
+    async def send_status_update(self, session_id: str, message: str) -> bool:
+        """Send a status update to a session."""
+        if session_id not in self._sessions or not self._sessions[session_id].active:
             return False
 
+        session = self._sessions[session_id]
+        current_time = time.time()
+
+        # Update session status
+        self._sessions[session_id] = SessionStatus(
+            user_id=session.user_id,
+            session_id=session_id,
+            message=message,
+            last_updated=current_time,
+            expires_at=current_time + self.SESSION_TIMEOUT,
+            websocket=session.websocket,
+            active=session.active
+        )
+
+        # Send WebSocket update
+        lock = self.locks.get(session_id)
+        if lock:
+            async with lock:
+                try:
+                    status_data = {
+                        'type': 'status',
+                        'message': message,
+                        'timestamp': datetime.now().isoformat(),
+                        'id': str(uuid.uuid4())
+                    }
+                    await session.websocket.send(json.dumps(status_data))
+                    return True
+                except Exception as e:
+                    app.logger.error(f"Error sending status update: {str(e)}")
+                    await self.remove_connection(session_id)
+                    return False
+
+        return False
+
+    async def send_ping(self, session_id: str) -> bool:
+        """Send a ping message to keep the connection alive."""
+        if session_id not in self._sessions or not self._sessions[session_id].active:
+            return False
+
+        session = self._sessions[session_id]
         try:
             ping_data = {
                 'type': 'ping',
                 'timestamp': datetime.now().isoformat()
             }
-            websocket = self.connections[session_id]['websocket']
-            await websocket.send(json.dumps(ping_data))
-            self.connections[session_id]['last_ping'] = datetime.now()
+            await session.websocket.send(json.dumps(ping_data))
             return True
         except Exception as e:
             app.logger.debug(f"Error sending ping: {str(e)}")
             await self.remove_connection(session_id)
             return False
 
-    async def send_initial_message(self, session_id):
-        """Send initial connection message if not already sent"""
-        if session_id not in self.initial_messages_sent:
-            try:
-                websocket = self.connections[session_id]['websocket']
-                initial_message = {
-                    'type': 'status',
-                    'message': 'Connected to status updates',
-                    'timestamp': datetime.now().isoformat(),
-                    'id': str(uuid.uuid4())
-                }
-                await websocket.send(json.dumps(initial_message))
-                self.initial_messages_sent.add(session_id)
-            except Exception as e:
-                app.logger.error(f"Error sending initial message: {str(e)}")
-
-    async def remove_connection(self, session_id):
-        """Remove a session's WebSocket connection"""
+    async def remove_connection(self, session_id: str) -> None:
+        """Remove a session's WebSocket connection."""
         async with self._cleanup_lock:
-            if session_id in self.connections:
-                try:
-                    connection = self.connections[session_id]
-                    connection['active'] = False
-                    await connection['websocket'].close(1000, "Connection closed normally")
-                except Exception as e:
-                    app.logger.debug(f"Error closing websocket: {str(e)}")
+            if session_id in self._sessions:
+                session = self._sessions[session_id]
                 
-                self.connections.pop(session_id, None)
+                # Only decrement if session was active
+                if session.active:
+                    self.connection_count = max(0, self.connection_count - 1)
+                
+                if session.websocket:
+                    try:
+                        await session.websocket.close(1000, "Connection closed normally")
+                    except Exception as e:
+                        app.logger.debug(f"Error closing websocket: {str(e)}")
+
+                # Update session to inactive state
+                self._sessions[session_id] = SessionStatus(
+                    user_id=session.user_id,
+                    session_id=session_id,
+                    message=session.message,
+                    last_updated=time.time(),
+                    expires_at=session.expires_at,
+                    websocket=None,
+                    active=False
+                )
+
                 self.locks.pop(session_id, None)
                 self.initial_messages_sent.discard(session_id)
-                self.connection_count = len(self.connections)
                 app.logger.debug(f"WebSocket connection removed for session ID: {session_id}. Active connections: {self.connection_count}")
 
-    def mark_session_active(self, session_id):
-        """Mark a session as active (during chat)"""
-        self.active_sessions.add(session_id)
+    def _cleanup_expired_sessions(self) -> None:
+        """Clean up expired sessions."""
+        current_time = time.time()
+        
+        if current_time - self._last_cleanup < self.CLEANUP_INTERVAL:
+            return
 
-    def mark_session_inactive(self, session_id):
-        """Mark a session as inactive (after chat completion)"""
-        self.active_sessions.discard(session_id)
+        expired_sessions = [
+            session_id for session_id, session in self._sessions.items()
+            if current_time > session.expires_at
+        ]
+        
+        for session_id in expired_sessions:
+            del self._sessions[session_id]
 
-# Initialize the status manager
+        self._last_cleanup = current_time
+
+# Initialize the status update manager
 status_manager = StatusUpdateManager()
 
-async def send_status_update(message: str):
-    """Send a status update to the current user."""
+async def update_status(message: str, session_id: str):
+    """Helper status update function."""
     try:
-        user_id = str(current_user.auth_id)
-        app.logger.debug(f"Attempting to send status update for user {user_id}: {message}")
-
-        if user_id not in status_manager.connections:
-            app.logger.debug(f"No active connection found for user {user_id}")
-            return False
-
-        success = await status_manager.send_update(user_id, message)
-        if success:
-            app.logger.debug("Status update sent successfully")
-        else:
-            app.logger.debug("Status update failed")
-        return success
+        await status_manager.send_status_update(
+            session_id=session_id,
+            message=message
+        )
     except Exception as e:
-        app.logger.error(f"Error in send_status_update: {str(e)}")
-        return False
+        app.logger.error(f"Error sending status update: {str(e)}")
 
 
 @app.route('/ws/diagnostic')
@@ -538,75 +628,68 @@ async def websocket_diagnostic():
 @login_required
 async def ws_chat_status():
     """WebSocket endpoint for status updates"""
-    connection_id = str(current_user.auth_id)
-    app.logger.info(f"WebSocket connection attempt from {connection_id}")
+    user_id = int(current_user.auth_id)
+    session_id = status_manager.create_session(user_id)
+    app.logger.info(f"WebSocket connection initiated for session {session_id}")
     
     try:
-        # Check authentication status
+        # Verify authentication
         if not current_user.is_authenticated:
-            app.logger.warning(f"Unauthorized WebSocket connection attempt from {connection_id}")
+            app.logger.warning(f"Unauthorized WebSocket connection attempt for session {session_id}")
             return
             
         # Get user and verify status
         user = await current_user.get_user()
         if not user or user.status != 'Active':
-            app.logger.warning(f"Inactive or invalid user attempted WebSocket connection: {connection_id}")
+            app.logger.warning(f"Inactive or invalid user attempted WebSocket connection: {session_id}")
             return
 
-        # Store the websocket context
-        app.logger.info(f"Registering connection for {connection_id}")
-        await status_manager.register_connection(connection_id, websocket)
+        # Register the websocket connection
+        app.logger.info(f"Registering WebSocket connection for session {session_id}")
+        success = await status_manager.register_connection(session_id, websocket._get_current_object())
         
-        # Set up ping task
-        ping_task = asyncio.create_task(periodic_ping(connection_id))
-        
-        try:
-            app.logger.info(f"Connection registered. Active sessions: {status_manager.active_sessions}")
-            status_manager.mark_session_active(connection_id)
-            app.logger.info(f"Session marked active. Active sessions now: {status_manager.active_sessions}")
-            
-            # Send initial message
-            app.logger.info("Attempting to send initial message")
-            await status_manager.send_initial_message(connection_id)
-            app.logger.info("Initial message sent successfully")
-            
-            while True:
-                try:
-                    message = await websocket.receive()
-                    app.logger.debug(f"Received message: {message}")
-                    
-                    if not message:
-                        continue
-                        
-                    try:
-                        data = json.loads(message)
-                        if data.get('type') == 'ping':
-                            await websocket.send(json.dumps({
-                                'type': 'pong',
-                                'timestamp': datetime.now().isoformat()
-                            }))
-                    except json.JSONDecodeError:
-                        continue
-                        
-                except asyncio.CancelledError:
-                    break
-                    
-        finally:
-            # Cancel ping task
-            ping_task.cancel()
+        if not success:
+            app.logger.error(f"Failed to register WebSocket connection for session {session_id}")
+            return
+
+        # Send initial connection message
+        app.logger.info(f"Sending initial connection message for session {session_id}")
+        await status_manager.send_status_update(
+            session_id=session_id,
+            message="WebSocket connection established"
+        )
+
+        # Main message loop
+        while True:
             try:
-                await ping_task
+                message = await websocket.receive()
+                app.logger.debug(f"Received WebSocket message for session {session_id}: {message}")
+                
+                if not message:
+                    continue
+                    
+                try:
+                    data = json.loads(message)
+                    if data.get('type') == 'ping':
+                        await websocket.send(json.dumps({
+                            'type': 'pong',
+                            'timestamp': datetime.now().isoformat(),
+                            'session_id': session_id
+                        }))
+                except json.JSONDecodeError:
+                    continue
+                    
             except asyncio.CancelledError:
-                pass
+                app.logger.info(f"WebSocket connection cancelled for session {session_id}")
+                break
                 
     except Exception as e:
         app.logger.error(f"Error in WebSocket connection: {str(e)}")
         app.logger.exception("Full traceback:")
     finally:
-        app.logger.info(f"Cleaning up connection for {connection_id}")
-        status_manager.mark_session_inactive(connection_id)
-        await status_manager.remove_connection(connection_id)
-        app.logger.info("Cleanup complete")
+        app.logger.info(f"Cleaning up WebSocket connection for session {session_id}")
+        await status_manager.remove_connection(session_id)
+        app.logger.info(f"WebSocket cleanup complete for session {session_id}")
 
 
 async def periodic_ping(connection_id):
@@ -630,13 +713,9 @@ async def chat_status_health():
     except:
         quart_version = "unknown"
 
-    connection_id = str(current_user.auth_id)
-    connection_exists = connection_id in status_manager.connections
-    
     response_data = {
         'status': 'healthy',
         'active_connections': status_manager.connection_count,
-        'connection_exists': connection_exists,
         'server_time': datetime.now().isoformat(),
         'server_info': {
             'worker_pid': os.getpid(),
@@ -743,8 +822,7 @@ async def debug_websocket_config():
     return jsonify({
         'websocket_enabled': True,
         'websocket_path': '/ws/chat/status',
-        'current_connections': len(status_manager.connections),
-        'active_sessions': len(status_manager.active_sessions),
+        'current_connections': status_manager.connection_count,
         'server_info': {
             'worker_class': 'uvicorn.workers.UvicornWorker',
             'websocket_timeout': 300
@@ -829,7 +907,7 @@ async def toggle_search(system_message_id):
             'details': str(e)
         }), 500
 
-async def understand_query(client, model: str, messages: List[Dict[str, str]], user_query: str, is_standard_search: bool = True) -> str:
+async def understand_query(client, model: str, messages: List[Dict[str, str]], user_query: str, is_standard_search: bool = True, session_id: str = None) -> str:
     app.logger.info(f"Starting query understanding for user query: '{user_query[:50]}'")
 
     system_message = """Analyze the conversation history and the latest user query. 
@@ -854,14 +932,21 @@ async def understand_query(client, model: str, messages: List[Dict[str, str]], u
     app.logger.info(f"Sending request to model {query_model} for query interpretation")
 
     try:
+        if session_id:
+            await update_status(f"Asking {query_model} for analysis to generate a query", session_id)
+            
         interpretation, _ = await get_response_from_model(client, query_model, messages_for_model, temperature=0.3)
         interpreted_query = interpretation.strip()
         app.logger.info(f"Query interpreted. Interpretation: '{interpreted_query[:100]}'")
-        await send_status_update(f"Asking {query_model} for analysis to generate a query")
+        
+        if session_id:
+            await update_status("Query analysis completed", session_id)
+            
         return interpreted_query
     except Exception as e:
         app.logger.error(f"Error in understand_query: {str(e)}")
-        await send_status_update("Error occurred during query interpretation")
+        if session_id:
+            await update_status("Error occurred during query interpretation", session_id)
         raise WebSearchError(f"Failed to interpret query: {str(e)}")
 
 class WebSearchError(Exception):
@@ -1041,38 +1126,47 @@ async def fetch_full_content(results: List[Dict[str, str]], app, user_id: int, s
 rate_limiter = AsyncLimiter(3, 1)
 
 # Utility function that serves both standard and intelligent web search
-async def perform_web_search_process(client, model: str, messages: List[Dict[str, str]], user_query: str, user_id: int, system_message_id: int, enable_intelligent_search: bool):
+async def perform_web_search_process(
+    client, 
+    model: str, 
+    messages: List[Dict[str, str]], 
+    user_query: str, 
+    user_id: int, 
+    system_message_id: int, 
+    enable_intelligent_search: bool,
+    session_id: str  # Session ID for websockets
+):
     app.logger.info(f"Starting web search process for query: '{user_query[:50]}'")
     app.logger.info(f"Search type: {'Intelligent' if enable_intelligent_search else 'Standard'}")
 
     try:
         app.logger.info('Step 1: Understanding user query')
-        await send_status_update("Analyzing user query for web search")
+        await update_status("Analyzing user query for web search", session_id)
         understood_query = await understand_query(client, model, messages, user_query, is_standard_search=not enable_intelligent_search)
         app.logger.info(f'Understood query: {understood_query}')
-        await send_status_update("User query analyzed successfully.")
+        await update_status("User query analyzed successfully.", session_id)
 
         if enable_intelligent_search:
             app.logger.info('Initiating intelligent web search')
-            await send_status_update("Starting intelligent web search")
+            await update_status("Starting intelligent web search", session_id)
             results = await intelligent_web_search_process(client, model, messages, understood_query, user_id, system_message_id)
-            await send_status_update("Intelligent web search completed.")
+            await update_status("Intelligent web search completed.", session_id)
             return results
         else:
             app.logger.info('Initiating standard web search')
-            await send_status_update("Starting standard web search")
+            await update_status("Starting standard web search", session_id)
             results = await standard_web_search_process(client, model, understood_query, user_id, system_message_id)
-            await send_status_update("Standard web search completed.")
+            await update_status("Standard web search completed.", session_id)
             return results
 
     except WebSearchError as e:
         app.logger.error(f'Web search process error: {str(e)}')
-        await send_status_update("Error occurred during web search process.")
+        await update_status("Error occurred during web search process.", session_id)
         return [], f"An error occurred during the web search process: {str(e)}"
     except Exception as e:
         app.logger.error(f'Unexpected error in web search process: {str(e)}')
         app.logger.exception("Full traceback:")
-        await send_status_update("Unexpected error during web search process.")
+        await update_status("Unexpected error during web search process.", session_id)
         return [], "An unexpected error occurred during the web search process."
     
 #### Functions for intelligent web search
@@ -1109,47 +1203,78 @@ async def generate_search_queries(client, model: str, interpretation: str) -> Li
         app.logger.error(f"Error in generate_search_queries: {str(e)}")
         raise WebSearchError(f"Failed to generate search queries: {str(e)}")
 
-async def intelligent_web_search_process(client, model: str, messages: List[Dict[str, str]], understood_query: str, user_id: int, system_message_id: int):
+async def intelligent_web_search_process(
+    client, 
+    model: str, 
+    messages: List[Dict[str, str]], 
+    understood_query: str, 
+    user_id: int, 
+    system_message_id: int,
+    session_id: str = None
+):
     app.logger.info(f"Starting intelligent web search for understood query: '{understood_query[:50]}'")
 
     try:
         # Step 1: Use the understood query to generate search queries
         app.logger.info("Step 1: Generating search queries based on understood query")
+        if session_id:
+            await update_status("Generating search queries", session_id)
+            
         generated_search_queries = await generate_search_queries(client, model, understood_query)
         app.logger.info(f"Generated {len(generated_search_queries)} search queries")
 
         if not generated_search_queries:
             app.logger.error("Failed to generate search queries")
+            if session_id:
+                await update_status("Failed to generate search queries", session_id)
             raise WebSearchError('Failed to generate search queries')
 
         # Step 2: Performing multiple web searches
         app.logger.info("Step 2: Performing multiple web searches")
+        if session_id:
+            await update_status("Performing web searches", session_id)
+            
         web_search_results = await perform_multiple_web_searches(generated_search_queries)
         app.logger.info(f"Received {len(web_search_results)} web search results")
 
         if web_search_results:
             # Step 3: Fetching full content for search results
             app.logger.info("Step 3: Fetching full content for search results")
+            if session_id:
+                await update_status("Fetching detailed content from search results", session_id)
+                
             full_content_results = await fetch_full_content(web_search_results, app, user_id, system_message_id)
             app.logger.info(f"Fetched full content for {len(full_content_results)} results")
 
             # Step 4: Summarizing search results
             app.logger.info("Step 4: Summarizing search results")
+            if session_id:
+                await update_status("Summarizing search results", session_id)
+                
             summarized_results = await summarize_search_results(client, model, full_content_results, understood_query)
             app.logger.info(f"Generated summary of length: {len(summarized_results)} characters")
 
+            if session_id:
+                await update_status("Web search completed successfully", session_id)
+                
             app.logger.info("Intelligent web search completed successfully")
             return generated_search_queries, summarized_results
         else:
             app.logger.warning("No relevant web search results were found")
+            if session_id:
+                await update_status("No relevant web search results found", session_id)
             return generated_search_queries, "No relevant web search results were found."
 
     except WebSearchError as e:
         app.logger.error(f"WebSearchError in intelligent web search: {str(e)}")
+        if session_id:
+            await update_status(f"Web search error: {str(e)}", session_id)
         raise
     except Exception as e:
         app.logger.error(f"Unexpected error in intelligent web search: {str(e)}")
         app.logger.exception("Full traceback:")
+        if session_id:
+            await update_status("Unexpected error during web search", session_id)
         raise WebSearchError(f"Unexpected error during intelligent web search: {str(e)}")
 
 # Create a rate limiter: 1 request per second
@@ -3275,15 +3400,30 @@ async def get_response_from_model_sync(client, model, messages, temperature):
 @app.route('/chat', methods=['POST'])
 @login_required
 async def chat():
+    """Handle chat requests with session management"""
     try:
-        # Mark the session as active at the start
-        status_manager.mark_session_active(str(current_user.auth_id))
-        
-        # Send initial connection message
-        await status_manager.send_initial_message(str(current_user.auth_id))
+        # Get session ID from headers or create new one
+        session_id = (
+            request.headers.get('X-Session-ID')
+        )
+
+        app.logger.debug('Using session ID: %s', session_id)
+
+        if not session_id:
+            app.logger.warning('No session ID in headers, creating new session')
+            session_id = status_manager.create_session(int(current_user.auth_id))
+
+        app.logger.debug(f'Using session ID from headers: {session_id}')
+
+        # Send initial status update using the helper function
+        await update_status(
+            message="Connected to status updates",
+            session_id=session_id,
+        )
 
         # Get JSON data with await
         request_data = await request.get_json()
+        app.logger.debug('Request data: %s', json.dumps(request_data))
         
         # Extract data from the request_data
         messages = request_data.get('messages')
@@ -3300,11 +3440,14 @@ async def chat():
 
         app.logger.info(f'Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}, enable_web_search: {enable_web_search}, enable_intelligent_search: {enable_intelligent_search}')
 
-        await send_status_update("Initializing conversation")
+        await update_status(
+            message="Initializing conversation",
+            session_id=session_id
+        )
 
         conversation = None
         if conversation_id:
-            async with get_session() as db_session:  # Renamed to db_session
+            async with get_session() as db_session:
                 result = await db_session.execute(
                     select(Conversation).filter_by(id=conversation_id)
                 )
@@ -3317,9 +3460,12 @@ async def chat():
                     conversation = None
 
         app.logger.info(f'Getting storage context for system_message_id: {system_message_id}')
-        await send_status_update("Checking document database")
+        await update_status(
+            message="Checking document database",
+            session_id=session_id
+        )
 
-         # Get storage context coroutine
+        # Get storage context coroutine
         storage_context_coroutine = embedding_store.get_storage_context(system_message_id)
 
         user_query = messages[-1]['content']
@@ -3328,24 +3474,35 @@ async def chat():
         relevant_info = None
         try:
             app.logger.info(f'Querying index with user query: {user_query[:50]}')
-            await send_status_update("Searching through documents")
-
+            await update_status(
+                message="Searching through documents",
+                session_id=session_id
+            )
 
             # Pass the storage context coroutine to query_index
             relevant_info = await file_processor.query_index(user_query, storage_context_coroutine)
             
             if relevant_info:
                 app.logger.info(f'Retrieved relevant info: {str(relevant_info)[:100]}')
-                await send_status_update("Found relevant information in documents")
+                await update_status(
+                    message="Found relevant information in documents",
+                    session_id=session_id
+                )
             else:
                 app.logger.warning('No relevant information found in the index.')
-                await send_status_update("No relevant documents found")
+                await update_status(
+                    message="No relevant documents found",
+                    session_id=session_id
+                )
                 relevant_info = None
 
         except Exception as e:
             app.logger.error(f'Error querying index: {str(e)}')
             app.logger.exception("Full traceback:")
-            await send_status_update("Error searching document database")
+            await update_status(
+                message="Error searching document database",
+                session_id=session_id
+            )
             relevant_info = None
 
         system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
@@ -3369,7 +3526,10 @@ async def chat():
         if enable_web_search:
             try:
                 app.logger.info('Web search enabled, starting search process')
-                await send_status_update("Starting web search process")
+                await update_status(
+                    message="Starting web search process",
+                    session_id=session_id
+                )
                 
                 generated_search_queries, summarized_results = await perform_web_search_process(
                     client, 
@@ -3378,10 +3538,14 @@ async def chat():
                     user_query, 
                     current_user.id, 
                     system_message_id, 
-                    enable_intelligent_search
+                    enable_intelligent_search,
+                    session_id
                 )
                 
-                await send_status_update("Web search completed, processing results")
+                await update_status(
+                    message="Web search completed, processing results",
+                    session_id=session_id
+                )
 
                 app.logger.info(f'Web search process completed. Generated queries: {generated_search_queries}')
                 app.logger.info(f'Summarized results: {summarized_results[:100] if summarized_results else None}')
@@ -3398,7 +3562,10 @@ async def chat():
             except Exception as e:
                 app.logger.error(f'Error in web search process: {str(e)}')
                 app.logger.exception("Full traceback:")
-                await send_status_update("Error during web search process")
+                await update_status(
+                    message="Error during web search process",
+                    session_id=session_id
+                )
                 generated_search_queries = None
                 summarized_results = None
         else:
@@ -3406,14 +3573,21 @@ async def chat():
 
         app.logger.info(f"Final system message: {system_message['content']}")
 
-        await send_status_update(f"Generating final analysis and response using model: {model}")
+        await update_status(
+            message=f"Generating final analysis and response using model: {model}",
+            session_id=session_id
+        )
         app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')
 
         # Get model response
         chat_output, model_name = await get_response_from_model(client, model, messages, temperature)
 
         if chat_output is None:
-            await send_status_update("Error getting response from AI model")
+            await update_status(
+                message="Error getting response from AI model",
+                session_id=session_id,
+                status="error"
+            )
             raise Exception("Failed to get response from model")
         
         app.logger.info(f"Final response from model after prompt injections: {chat_output}")
@@ -3471,7 +3645,10 @@ async def chat():
                 conversation.generated_search_queries = json.dumps(generated_search_queries) if generated_search_queries else None
                 conversation.web_search_results = json.dumps(summarized_results) if summarized_results else None
 
-                await send_status_update("Saving conversation")
+                await update_status(
+                    message="Saving conversation",
+                    session_id=session_id
+                )
                 
                 # Commit changes
                 await db_session.commit()
@@ -3510,19 +3687,23 @@ async def chat():
             except Exception as db_error:
                 app.logger.error(f'Database error: {str(db_error)}')
                 await db_session.rollback()
-                status_manager.mark_session_inactive(str(current_user.auth_id))
+                await status_manager.remove_connection(session_id)
                 raise
 
     except Exception as e:
         app.logger.error(f'Unexpected error in chat route: {str(e)}')
         app.logger.exception("Full traceback:")
-        await send_status_update("An error occurred during processing")
-        status_manager.mark_session_inactive(str(current_user.auth_id))
+        await update_status(
+            message="An error occurred during processing",
+            session_id=session_id,
+            status="error"
+        )
+        await status_manager.remove_connection(session_id)
         return jsonify({'error': 'An unexpected error occurred'}), 500
         
     finally:
         # Ensure the session is marked as inactive when the chat is complete
-        status_manager.mark_session_inactive(str(current_user.auth_id))
+        await status_manager.remove_connection(session_id)
         # Small delay to allow final status messages to be sent
         await asyncio.sleep(0.5)
 
