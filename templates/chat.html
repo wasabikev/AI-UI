@@ -496,12 +496,13 @@
     </script>
 
     <script type="text/javascript">
-        // @ts-ignore
         window.APP_DATA = {
+            sessionId: {% if user_session_id is defined %}{{ user_session_id | tojson | safe }}{% else %}null{% endif %},
             conversationId: {% if conversation_id is defined %}{{ conversation_id | tojson | safe }}{% else %}null{% endif %},
             isAdmin: {% if user and user.is_admin is defined %}{{ user.is_admin | tojson | safe }}{% else %}false{% endif %}
         };
     </script>
+
 
 </body>
 
