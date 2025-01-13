@@ -1,15 +1,26 @@
 # .do/app.yaml
 name: ai-ui
+
 services:
   - name: web
+    # If you're building from GitHub, include your repo and branch.
+    # Otherwise, remove the `github:` block if you upload via tarball.
     github:
+      repo: wasabikev/ai-ui
       branch: main
       deploy_on_push: true
-      repo: wasabikev/ai-ui
+
+    # App Platform will run on a Python environment
+    environment_slug: python
+
+    # Port to listen on. Gunicorn will bind to 0.0.0.0:8080 internally.
     http_port: 8080
+    
+    # Number of container instances and size:
     instance_count: 1
     instance_size_slug: basic-xxs
 
+    # Routes: one for normal HTTP and one for WebSocket
     routes:
       - path: /
         preserve_path_prefix: true
@@ -17,7 +28,7 @@ services:
         preserve_path_prefix: true
         type: websocket
 
-    # Environment variables must be a list of key-value pairs
+    # Environment variables (list of key-value pairs):
     envs:
       - key: PYTHONUNBUFFERED
         value: "1"
@@ -28,14 +39,15 @@ services:
       - key: WEBSOCKET_PATH
         value: "/ws/chat/status"
 
-    # Health check
+    # Optional: health check endpoint (Quart route or an existing endpoint)
     health_check:
       http_path: /health
 
     # WebSocket configuration
     websocket:
       enabled: true
-      timeout: 300
+      timeout: 300  # seconds
       routes:
         - path: /ws/chat/status
           preserve_path_prefix: true
+
