@@ -199,12 +199,12 @@ def setup_logging(app, debug_mode):
     # Configure root logger
     logging.basicConfig(
         level=logging.DEBUG if debug_mode else logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
+        format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',  #milliseconds included
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     
     # Custom Unicode formatter
-    unicode_formatter = UnicodeFormatter("%(asctime)s - %(levelname)s - %(message)s")
+    unicode_formatter = UnicodeFormatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s")
 
     # Set up file handler with rotation
     file_handler = RotatingFileHandler(
@@ -227,11 +227,11 @@ def setup_logging(app, debug_mode):
         reset = "\x1b[0m"
         
         FORMATS = {
-            logging.DEBUG: blue + "%(asctime)s - %(levelname)s - %(message)s" + reset,
-            logging.INFO: grey + "%(asctime)s - %(levelname)s - %(message)s" + reset,
-            logging.WARNING: yellow + "%(asctime)s - %(levelname)s - %(message)s" + reset,
-            logging.ERROR: red + "%(asctime)s - %(levelname)s - %(message)s" + reset,
-            logging.CRITICAL: bold_red + "%(asctime)s - %(levelname)s - %(message)s" + reset,
+            logging.DEBUG: blue + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
+            logging.INFO: grey + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
+            logging.WARNING: yellow + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
+            logging.ERROR: red + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
+            logging.CRITICAL: bold_red + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
         }
         
         def format(self, record):
