@@ -2236,6 +2236,13 @@ $('#chat-form').on('submit', async function (e) {
     const userInput = $('#user_input').val();
     if (!userInput.trim()) return; // Don't process empty messages
 
+    // Get reasoning effort if o3-mini model is selected
+    let reasoningEffort = null;
+    const activeModelItem = $('.model-dropdown .dropdown-item.active');
+    if (activeModelItem.length && activeModelItem.data('model') === 'o3-mini') {
+        reasoningEffort = activeModelItem.data('reasoning');
+    }
+
     // Set WebSocket connection maintenance flag
     maintainWebSocketConnection = true;
     statusWebSocket = initStatusWebSocket();
@@ -2285,11 +2292,9 @@ $('#chat-form').on('submit', async function (e) {
         };
 
         // Add reasoning_effort parameter for o3-mini model
-        if (model === 'o3-mini') {
-            const modelElement = $('.dropdown-item[data-model="o3-mini"].active');
-            if (modelElement.length) {
-                requestPayload.reasoning_effort = modelElement.data('reasoning');
-            }
+        if (model === 'o3-mini' && reasoningEffort) {
+            requestPayload.reasoning_effort = reasoningEffort;
+            console.log(`Adding reasoning effort to request: ${reasoningEffort}`);
         }
 
         if (activeConversationId !== null) {
@@ -2527,19 +2532,21 @@ $(document).ready(function() {  // Document Ready (initialization)
     // Handler for model dropdown items
     $('.model-dropdown .dropdown-item').on('click', function(event) {
         event.preventDefault(); // Prevent the # appearing in the URL
-    
+        
         // Remove active class from all items
         $('.model-dropdown .dropdown-item').removeClass('active');
         // Add active class to clicked item
         $(this).addClass('active');
-    
+        
         const modelName = $(this).attr('data-model');
         const reasoningEffort = $(this).attr('data-reasoning');
-    
+        
         $('#dropdownMenuButton').text($(this).text());
         model = modelName; // Update the model variable here
-        console.log("Dropdown item clicked. Model is now: " + model + 
-                    (reasoningEffort ? " with reasoning effort: " + reasoningEffort : ""));
+            
+        // Update the displayed model name in the system message section
+        const displayName = modelNameMapping(model, reasoningEffort);
+        console.log(`Model selected: ${model}, Reasoning: ${reasoningEffort}, Display: ${displayName}`);
 
         // Update the displayed model name in the system message section
         $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model, reasoningEffort));
