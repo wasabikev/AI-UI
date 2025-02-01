@@ -3400,6 +3400,17 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
             }]
             return await handle_gemini_request(model, contents, temperature)
 
+        elif model == "o3-mini":
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": 4096
+            }
+            if reasoning_effort:
+                payload["reasoning_effort"] = reasoning_effort
+            return await handle_openai_request(payload)
+
         else:
             raise ValueError(f"Unsupported model: {model}")
 
