@@ -45,3 +45,5 @@ __pycache__/
 test_db_direct.py
 test_db.py
 full_requirements.txt
+.aider*
+Guidance.md
