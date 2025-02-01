@@ -464,8 +464,15 @@ class StatusUpdateManager:
             app.logger.debug(f"WebSocket connection registered for session ID: {session_id}. Active connections: {self.connection_count}")
             return True
 
-    async def send_status_update(self, session_id: str, message: str) -> bool:
-        """Send a status update to a session."""
+    async def send_status_update(self, session_id: str, message: str, status: str = None) -> bool:
+        """
+        Send a status update to a session.
+        
+        Args:
+            session_id: The session ID
+            message: Status message to send
+            status: Optional status type (e.g. 'error')
+        """
         if session_id not in self._sessions or not self._sessions[session_id].active:
             return False
 
@@ -494,6 +501,8 @@ class StatusUpdateManager:
                         'timestamp': datetime.now().isoformat(),
                         'id': str(uuid.uuid4())
                     }
+                    if status:
+                        status_data['status'] = status
                     await session.websocket.send(json.dumps(status_data))
                     return True
                 except Exception as e:
@@ -572,12 +581,20 @@ class StatusUpdateManager:
 # Initialize the status update manager
 status_manager = StatusUpdateManager()
 
-async def update_status(message: str, session_id: str):
-    """Helper status update function."""
+async def update_status(message: str, session_id: str, status: str = None):
+    """
+    Helper status update function.
+    
+    Args:
+        message: Status message to send
+        session_id: WebSocket session ID
+        status: Optional status type (e.g. 'error')
+    """
     try:
         await status_manager.send_status_update(
             session_id=session_id,
-            message=message
+            message=message,
+            status=status
         )
     except Exception as e:
         app.logger.error(f"Error sending status update: {str(e)}")
@@ -3256,14 +3273,22 @@ def reset_conversation():
         del session['conversation_id']
     return jsonify({"message": "Conversation reset successful"})
 
-async def get_response_from_model(client, model, messages, temperature):
+async def get_response_from_model(client, model, messages, temperature, reasoning_effort=None):
     """
     Routes the request to the appropriate API based on the model selected.
     Supports both synchronous and asynchronous calls with retry logic and fallbacks.
+    
+    Args:
+        client: API client instance
+        model: Model name to use
+        messages: List of message dictionaries
+        temperature: Temperature setting for generation
+        reasoning_effort: Optional reasoning effort level for o3-mini model
     """
     app.logger.info(f"Getting response from model: {model}")
     app.logger.info(f"Temperature: {temperature}")
     app.logger.info(f"Number of messages: {len(messages)}")
+    app.logger.info(f"Reasoning effort: {reasoning_effort}")
 
     max_retries = 3
     retry_delay = 1  # Initial delay in seconds
@@ -3271,6 +3296,9 @@ async def get_response_from_model(client, model, messages, temperature):
     async def handle_openai_request(payload):
         for attempt in range(max_retries):
             try:
+                # Add reasoning_effort parameter for o3-mini model
+                if model == "o3-mini" and reasoning_effort:
+                    payload["reasoning_effort"] = reasoning_effort
                 response = client.chat.completions.create(**payload)
                 return response.choices[0].message.content.strip(), response.model
             except Exception as e:
@@ -3393,8 +3421,8 @@ async def get_response_from_model(client, model, messages, temperature):
         return None, None
 
 # Wrapper function for synchronous calls
-async def get_response_from_model_sync(client, model, messages, temperature):
-    return await get_response_from_model(client, model, messages, temperature)
+async def get_response_from_model_sync(client, model, messages, temperature, reasoning_effort=None):
+    return await get_response_from_model(client, model, messages, temperature, reasoning_effort)
 
 
 @app.route('/chat', methods=['POST'])
@@ -3580,7 +3608,14 @@ async def chat():
         app.logger.info(f'Sending messages to model: {json.dumps(messages, indent=2)}')
 
         # Get model response
-        chat_output, model_name = await get_response_from_model(client, model, messages, temperature)
+        reasoning_effort = request_data.get('reasoning_effort')
+        chat_output, model_name = await get_response_from_model(
+            client, 
+            model, 
+            messages, 
+            temperature,
+            reasoning_effort=reasoning_effort
+        )
 
         if chat_output is None:
             await update_status(
