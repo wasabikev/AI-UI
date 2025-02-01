@@ -1434,13 +1434,21 @@ const temperatureDescriptions = {
 
 
 // Helper function to map model names to their display values
-function modelNameMapping(modelName) {
-    console.log("Input model name:", modelName);
+function modelNameMapping(modelName, reasoningEffort) {
+    console.log("Input model name:", modelName, "Reasoning effort:", reasoningEffort);
     let mappedName;
     switch(modelName) {
         case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
         case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
         case "gpt-4o-2024-08-06": mappedName = "GPT-4o"; break;
+        case "o3-mini": 
+            switch(reasoningEffort) {
+                case "low": mappedName = "o3-mini (Fast)"; break;
+                case "medium": mappedName = "o3-mini (Balanced)"; break;
+                case "high": mappedName = "o3-mini (Deep)"; break;
+                default: mappedName = "o3-mini"; break;
+            }
+            break;
         case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
         case "claude-3-5-sonnet-20241022": mappedName = "Claude 3.5 (Sonnet)"; break;
         case "gemini-pro": mappedName = "Gemini Pro"; break;
@@ -2276,6 +2284,14 @@ $('#chat-form').on('submit', async function (e) {
             enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
         };
 
+        // Add reasoning_effort parameter for o3-mini model
+        if (model === 'o3-mini') {
+            const modelElement = $('.dropdown-item[data-model="o3-mini"].active');
+            if (modelElement.length) {
+                requestPayload.reasoning_effort = modelElement.data('reasoning');
+            }
+        }
+
         if (activeConversationId !== null) {
             requestPayload.conversation_id = activeConversationId;
         }
@@ -2511,12 +2527,22 @@ $(document).ready(function() {  // Document Ready (initialization)
     // Handler for model dropdown items
     $('.model-dropdown .dropdown-item').on('click', function(event) {
         event.preventDefault(); // Prevent the # appearing in the URL
+    
+        // Remove active class from all items
+        $('.model-dropdown .dropdown-item').removeClass('active');
+        // Add active class to clicked item
+        $(this).addClass('active');
+    
+        const modelName = $(this).attr('data-model');
+        const reasoningEffort = $(this).attr('data-reasoning');
+    
         $('#dropdownMenuButton').text($(this).text());
-        model = $(this).attr('data-model'); // Update the model variable here
-        console.log("Dropdown item clicked. Model is now: " + model);
+        model = modelName; // Update the model variable here
+        console.log("Dropdown item clicked. Model is now: " + model + 
+                    (reasoningEffort ? " with reasoning effort: " + reasoningEffort : ""));
 
         // Update the displayed model name in the system message section
-        $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
+        $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model, reasoningEffort));
     });
 
     // Handler for system settings dropdown items
