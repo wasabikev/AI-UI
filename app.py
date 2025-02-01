@@ -3296,9 +3296,12 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
     async def handle_openai_request(payload):
         for attempt in range(max_retries):
             try:
-                # Add reasoning_effort parameter for o3-mini model
-                if model == "o3-mini" and reasoning_effort:
-                    payload["reasoning_effort"] = reasoning_effort
+                # Handle o3-mini specific parameters
+                if model == "o3-mini":
+                    if "max_tokens" in payload:
+                        payload["max_completion_tokens"] = payload.pop("max_tokens")
+                    if reasoning_effort:
+                        payload["reasoning_effort"] = reasoning_effort
                 response = client.chat.completions.create(**payload)
                 return response.choices[0].message.content.strip(), response.model
             except Exception as e:
