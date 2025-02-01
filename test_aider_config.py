@@ -9,7 +9,9 @@ def find_and_read_aider_config():
         "aider.conf.yml",  # Current directory
     ]
     
+    print("Searching for aider.conf.yml in:")
     for path in possible_paths:
+        print(f"- {path}")
         if os.path.exists(path):
             print(f"Found aider config at: {path}")
             try:
