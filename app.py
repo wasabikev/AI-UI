@@ -3407,7 +3407,6 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
             payload = {
                 "model": model,
                 "messages": messages,
-                "temperature": temperature,
                 "max_tokens": 4096
             }
             if reasoning_effort:
