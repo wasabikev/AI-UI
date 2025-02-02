@@ -1470,22 +1470,40 @@ function populateModelDropdownInModal() {
     // Clear existing dropdown items
     modalModelDropdownMenu.innerHTML = '';
 
-    // Define the available models
-    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-08-06","claude-3-opus-20240229","claude-3-5-sonnet-20241022","gemini-pro"];
-    console.log("Available models:", models);
+    // Define the available models with their variants
+    const models = [
+        { api: "gpt-3.5-turbo", display: "GPT-3.5" },
+        { api: "gpt-4-turbo-2024-04-09", display: "GPT-4 (Turbo)" },
+        { api: "gpt-4o-2024-08-06", display: "GPT-4o" },
+        { api: "o3-mini", display: "o3-mini (Fast)", reasoning: "low" },
+        { api: "o3-mini", display: "o3-mini (Balanced)", reasoning: "medium" },
+        { api: "o3-mini", display: "o3-mini (Deep)", reasoning: "high" },
+        { api: "claude-3-opus-20240229", display: "Claude 3 (Opus)" },
+        { api: "claude-3-5-sonnet-20241022", display: "Claude 3.5 (Sonnet)" },
+        { api: "gemini-pro", display: "Gemini Pro" }
+    ];
 
     // Add each model to the dropdown
     models.forEach((modelItem) => {
         let dropdownItem = document.createElement('button');
         dropdownItem.className = 'dropdown-item';
-        dropdownItem.textContent = modelNameMapping(modelItem);
-        dropdownItem.dataset.apiName = modelItem;
+        dropdownItem.textContent = modelItem.display;
+        dropdownItem.dataset.apiName = modelItem.api;
+        if (modelItem.reasoning) {
+            dropdownItem.dataset.reasoning = modelItem.reasoning;
+        }
         dropdownItem.onclick = function() {
             // Update the dropdown button text and modal content
             let dropdownButton = document.getElementById('modalModelDropdownButton');
             dropdownButton.textContent = this.textContent;
             dropdownButton.dataset.apiName = this.dataset.apiName;
-            console.log('Model selected in modal:', this.dataset.apiName);
+            if (this.dataset.reasoning) {
+                dropdownButton.dataset.reasoning = this.dataset.reasoning;
+            }
+            console.log('Model selected in modal:', {
+                api: this.dataset.apiName,
+                reasoning: this.dataset.reasoning || 'none'
+            });
 
             // Update the global model variable
             model = this.dataset.apiName;
