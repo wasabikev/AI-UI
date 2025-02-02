@@ -223,6 +223,7 @@ class SystemMessage(Base):
     description = Column(Text)
     model_name = Column(String(120))
     temperature = Column(Float)
+    reasoning_effort = Column(String(20))  # For storing 'low', 'medium', 'high'
     created_by = Column(Integer, ForeignKey('user.id'))
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
@@ -244,6 +245,7 @@ class SystemMessage(Base):
             'description': self.description,
             'model_name': self.model_name,
             'temperature': self.temperature,
+            'reasoning_effort': self.reasoning_effort,
             'created_by': self.created_by,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
