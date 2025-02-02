@@ -46,4 +46,5 @@ test_db_direct.py
 test_db.py
 full_requirements.txt
 .aider*
+aider.conf.yml
 Guidance.md
