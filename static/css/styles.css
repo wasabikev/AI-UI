@@ -1282,3 +1282,70 @@ i.fas.fa-robot {
 .auto-height {
     height: auto;
   }
+
+/* Thinking block styles */
+.thinking-block {
+    margin-bottom: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+.thinking-header {
+    background-color: #eaeaea;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    color: #333;
+}
+
+.thinking-content {
+    padding: 10px;
+    background-color: #f8f9fa;
+    display: none; /* Hidden by default */
+    max-height: 400px;
+    overflow-y: auto;
+    border-top: 1px solid #e0e0e0;
+}
+
+.thinking-content pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: monospace;
+    font-size: 0.9em;
+    margin: 0;
+    padding: 10px;
+    background-color: #f1f1f1;
+    border-radius: 3px;
+}
+
+.thinking-blocks-container {
+    margin: 10px 0;
+    width: 100%;
+}
+
+/* Extended thinking toggle styles */
+#extended-thinking-toggle-container {
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#thinking-budget-container {
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+#thinking-budget-slider {
+    width: 100%;
+}

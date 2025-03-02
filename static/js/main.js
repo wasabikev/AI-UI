@@ -1,6 +1,6 @@
 let messages = []; // An array that stores the converstation messages
 
-
+window.systemMessages = [];  // Make it explicitly global
 let systemMessages = []; // An array that stores the system message
 
 
@@ -1434,13 +1434,19 @@ const temperatureDescriptions = {
 
 
 // Helper function to map model names to their display values
-function modelNameMapping(modelName, reasoningEffort) {
-    console.log("Input model name:", modelName, "Reasoning effort:", reasoningEffort);
+function modelNameMapping(modelName, reasoningEffort, extendedThinking) {
+    console.log("Input model name:", modelName, "Reasoning effort:", reasoningEffort, "Extended thinking:", extendedThinking);
     let mappedName;
     switch(modelName) {
-        case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
-        case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
-        case "gpt-4o-2024-08-06": mappedName = "GPT-4o"; break;
+        case "gpt-3.5-turbo": 
+            mappedName = "GPT-3.5"; 
+            break;
+        case "gpt-4-turbo-2024-04-09": 
+            mappedName = "GPT-4 (Turbo)"; 
+            break;
+        case "gpt-4o-2024-08-06": 
+            mappedName = "GPT-4o"; 
+            break;
         case "o3-mini": 
             switch(reasoningEffort) {
                 case "low": mappedName = "o3-mini (Fast)"; break;
@@ -1449,10 +1455,23 @@ function modelNameMapping(modelName, reasoningEffort) {
                 default: mappedName = "o3-mini"; break;
             }
             break;
-        case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
-        case "claude-3-5-sonnet-20241022": mappedName = "Claude 3.5 (Sonnet)"; break;
-        case "gemini-pro": mappedName = "Gemini Pro"; break;
-        default: mappedName = "Unknown Model"; break;
+        case "claude-3-opus-20240229": 
+            mappedName = "Claude 3 (Opus)"; 
+            break;
+        case "claude-3-5-sonnet-20241022": 
+            mappedName = "Claude 3.5 (Sonnet)"; 
+            break;
+        case "claude-3-7-sonnet-20250219":
+            mappedName = extendedThinking ? 
+                "Claude 3.7 Sonnet (Extended Thinking)" : 
+                "Claude 3.7 Sonnet";
+            break;
+        case "gemini-pro": 
+            mappedName = "Gemini Pro"; 
+            break;
+        default: 
+            mappedName = "Unknown Model"; 
+            break;
     }
     console.log("Mapped model name:", mappedName);
     return mappedName;
@@ -1480,6 +1499,13 @@ function populateModelDropdownInModal() {
         { api: "o3-mini", display: "o3-mini (Deep)", reasoning: "high" },
         { api: "claude-3-opus-20240229", display: "Claude 3 (Opus)" },
         { api: "claude-3-5-sonnet-20241022", display: "Claude 3.5 (Sonnet)" },
+        { api: "claude-3-7-sonnet-20250219", display: "Claude 3.7 Sonnet" },
+        { 
+            api: "claude-3-7-sonnet-20250219", 
+            display: "Claude 3.7 Sonnet (Extended Thinking)", 
+            extendedThinking: true,
+            thinkingBudget: 12000
+        },
         { api: "gemini-pro", display: "Gemini Pro" }
     ];
 
@@ -1489,20 +1515,65 @@ function populateModelDropdownInModal() {
         dropdownItem.className = 'dropdown-item';
         dropdownItem.textContent = modelItem.display;
         dropdownItem.dataset.apiName = modelItem.api;
+        
+        // Add reasoning data if present
         if (modelItem.reasoning) {
             dropdownItem.dataset.reasoning = modelItem.reasoning;
         }
+        
+        // Add extended thinking data if present
+        if (modelItem.extendedThinking !== undefined) {
+            dropdownItem.dataset.extendedThinking = modelItem.extendedThinking;
+            if (modelItem.thinkingBudget) {
+                dropdownItem.dataset.thinkingBudget = modelItem.thinkingBudget;
+            }
+        }
+
         dropdownItem.onclick = function() {
             // Update the dropdown button text and modal content
             let dropdownButton = document.getElementById('modalModelDropdownButton');
             dropdownButton.textContent = this.textContent;
             dropdownButton.dataset.apiName = this.dataset.apiName;
+            
+            // Handle reasoning effort
             if (this.dataset.reasoning) {
                 dropdownButton.dataset.reasoning = this.dataset.reasoning;
+            } else {
+                delete dropdownButton.dataset.reasoning;
             }
+
+            // Handle extended thinking
+            const isClaudeSonnet = this.dataset.apiName === 'claude-3-7-sonnet-20250219';
+            const extendedThinking = this.dataset.extendedThinking === 'true';
+            
+            // Toggle extended thinking controls visibility
+            const extendedThinkingContainer = document.getElementById('extended-thinking-toggle-container');
+            const thinkingBudgetContainer = document.getElementById('thinking-budget-container');
+            
+            if (isClaudeSonnet) {
+                extendedThinkingContainer.style.display = 'block';
+                document.getElementById('extended-thinking-toggle').checked = extendedThinking;
+                
+                if (extendedThinking) {
+                    thinkingBudgetContainer.style.display = 'block';
+                    const budgetSlider = document.getElementById('thinking-budget-slider');
+                    if (budgetSlider) {
+                        budgetSlider.value = this.dataset.thinkingBudget || 12000;
+                        document.getElementById('thinking-budget-value').textContent = budgetSlider.value;
+                    }
+                } else {
+                    thinkingBudgetContainer.style.display = 'none';
+                }
+            } else {
+                extendedThinkingContainer.style.display = 'none';
+                thinkingBudgetContainer.style.display = 'none';
+            }
+
             console.log('Model selected in modal:', {
                 api: this.dataset.apiName,
-                reasoning: this.dataset.reasoning || 'none'
+                reasoning: this.dataset.reasoning || 'none',
+                extendedThinking: extendedThinking,
+                thinkingBudget: this.dataset.thinkingBudget
             });
 
             // Update the global model variable
@@ -2315,6 +2386,14 @@ $('#chat-form').on('submit', async function (e) {
             console.log(`Adding reasoning effort to request: ${reasoningEffort}`);
         }
 
+        // Add extended thinking parameters for Claude 3.7 Sonnet when extended thinking version is selected
+        const activeModelItem = $('.model-dropdown .dropdown-item.active');
+        const isExtendedThinking = activeModelItem.attr('data-extended-thinking') === 'true';
+        if (model === 'claude-3-7-sonnet-20250219' && isExtendedThinking) {
+            requestPayload.extended_thinking = true;
+            requestPayload.thinking_budget = parseInt($('#thinking-budget-slider').val());
+        }
+
         if (activeConversationId !== null) {
             requestPayload.conversation_id = activeConversationId;
         }
@@ -2523,6 +2602,10 @@ $(document).ready(function() {  // Document Ready (initialization)
             const userFriendlyModelName = modelNameMapping(apiModelName);
             model = apiModelName; // Set the model variable correctly
             $('#dropdownMenuButton').text(userFriendlyModelName);
+            
+            // Show thinking budget only for extended thinking version
+            const isClaudeSonnetExtended = apiModelName === 'claude-3-7-sonnet-20250219' && extendedThinking;
+            $('#thinking-budget-container').toggle(isClaudeSonnetExtended);
         },
         error: function(error) {
             console.error('Error fetching current model:', error);
@@ -2558,6 +2641,7 @@ $(document).ready(function() {  // Document Ready (initialization)
         
         const modelName = $(this).attr('data-model');
         const reasoningEffort = $(this).attr('data-reasoning');
+        const extendedThinking = $(this).attr('data-extended-thinking') === 'true';
         
         $('#dropdownMenuButton').text($(this).text());
         model = modelName; // Update the model variable here
@@ -2567,7 +2651,35 @@ $(document).ready(function() {  // Document Ready (initialization)
         console.log(`Model selected: ${model}, Reasoning: ${reasoningEffort}, Display: ${displayName}`);
 
         // Update the displayed model name in the system message section
-        $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model, reasoningEffort));
+        $('.chat-entry.system.system-message .model-name').text(displayName);
+
+        // Handle Claude 3.7 Sonnet specific controls
+        const isClaudeSonnetExtended = modelName === 'claude-3-7-sonnet-20250219' && extendedThinking;
+        $('#thinking-budget-container').toggle(isClaudeSonnetExtended);
+        if (isClaudeSonnetExtended) {
+            const budgetValue = $(this).attr('data-thinking-budget') || 12000;
+            $('#thinking-budget-slider').val(budgetValue);
+            $('#thinking-budget-value').text(budgetValue);
+        }
+    });
+
+    // Handler for extended thinking toggle
+    $('#extended-thinking-toggle').on('change', function() {
+        const isEnabled = $(this).is(':checked');
+        $('#thinking-budget-container').toggle(isEnabled);
+        
+        // Update the model selection if needed
+        if (model === 'claude-3-7-sonnet-20250219') {
+            const newModelText = isEnabled ? 
+                'Claude 3.7 Sonnet (Extended Thinking)' : 
+                'Claude 3.7 Sonnet';
+            $('#dropdownMenuButton').text(newModelText);
+        }
+    });
+
+    // Handler for thinking budget slider
+    $('#thinking-budget-slider').on('input', function() {
+        $('#thinking-budget-value').text($(this).val());
     });
 
     // Handler for system settings dropdown items
@@ -2588,6 +2700,10 @@ $(document).ready(function() {  // Document Ready (initialization)
             $('#chat-form').submit(); // Submit form when Enter is pressed without Shift
         }
     });
+
+    // Initialize extended thinking controls in collapsed state
+    $('#extended-thinking-toggle-container').hide();
+    $('#thinking-budget-container').hide();
 });
     
     // ... other initialization code ...
