@@ -123,6 +123,10 @@ app.config.update(
     TEMPLATES_AUTO_RELOAD=True,
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16 MB max-body-size
     MAX_FORM_MEMORY_SIZE=16 * 1024 * 1024,  # 16 MB max-form-size
+    RESPONSE_TIMEOUT=300,  # 5 minutes in seconds
+    KEEP_ALIVE_TIMEOUT=300,  # 5 minutes in seconds
+    WEBSOCKET_PING_INTERVAL=20,  # Seconds between pings
+    WEBSOCKET_PING_TIMEOUT=120,  # Seconds to wait for pong response
 )
 
 

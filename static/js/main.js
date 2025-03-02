@@ -1,3 +1,5 @@
+// main.js
+
 let messages = []; // An array that stores the converstation messages
 
 window.systemMessages = [];  // Make it explicitly global
