@@ -112,8 +112,17 @@
                                     <li><a class="dropdown-item" href="#" data-model="o3-mini" data-reasoning="high" data-reasoning-display="Deep">o3-mini (Reasoning effort: Deep)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="claude-3-5-sonnet-20241022">Claude 3.5 (Sonnet)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-7-sonnet-20250219" data-extended-thinking="false">Claude 3.7 Sonnet</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-7-sonnet-20250219" data-extended-thinking="true" data-thinking-budget="12000">Claude 3.7 Sonnet (Extended Thinking)</a></li>
+                                    </a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gemini-pro">Gemini Pro</a></li>
                                 </ul>
+                            </div>
+
+                            <!-- Extended Thinking Controls -->
+                            <div id="thinking-budget-container" class="mt-2" style="display: none;">
+                                <label for="thinking-budget-slider">Thinking Budget: <span id="thinking-budget-value">12000</span> tokens</label>
+                                <input type="range" class="form-control-range" id="thinking-budget-slider" min="1024" max="32000" step="1024" value="12000">
                             </div>
 
                             <!-- System Settings -->
@@ -495,7 +504,12 @@
     </script>
 
     <script>
-        console.log('System messages:', systemMessages);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only try to log systemMessages after it's been initialized
+            setTimeout(() => {
+                console.log('System messages:', window.systemMessages || []);
+            }, 1000);
+        });
     </script>
 
     <script type="text/javascript">

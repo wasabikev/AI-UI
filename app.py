@@ -3273,25 +3273,18 @@ def reset_conversation():
         del session['conversation_id']
     return jsonify({"message": "Conversation reset successful"})
 
-async def get_response_from_model(client, model, messages, temperature, reasoning_effort=None):
+async def get_response_from_model(client, model, messages, temperature, reasoning_effort=None, extended_thinking=None, thinking_budget=None):
     """
     Routes the request to the appropriate API based on the model selected.
-    Supports both synchronous and asynchronous calls with retry logic and fallbacks.
-    
-    Args:
-        client: API client instance
-        model: Model name to use
-        messages: List of message dictionaries
-        temperature: Temperature setting for generation
-        reasoning_effort: Optional reasoning effort level for o3-mini model
     """
     app.logger.info(f"Getting response from model: {model}")
     app.logger.info(f"Temperature: {temperature}")
     app.logger.info(f"Number of messages: {len(messages)}")
-    app.logger.info(f"Reasoning effort: {reasoning_effort}")
+    app.logger.info(f"Extended thinking: {extended_thinking}")
+    app.logger.info(f"Thinking budget: {thinking_budget}")
 
     max_retries = 3
-    retry_delay = 1  # Initial delay in seconds
+    retry_delay = 1
 
     async def handle_openai_request(payload):
         for attempt in range(max_retries):
@@ -3303,33 +3296,11 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
                     if reasoning_effort:
                         payload["reasoning_effort"] = reasoning_effort
                 response = client.chat.completions.create(**payload)
-                return response.choices[0].message.content.strip(), response.model
+                return response.choices[0].message.content.strip(), response.model, None  # Add None for thinking_process
             except Exception as e:
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay * (2 ** attempt))
                     continue
-                raise
-
-    async def handle_anthropic_request(anthropic_client, model, anthropic_messages, max_tokens, temperature, extra_headers=None):
-        for attempt in range(max_retries):
-            try:
-                response = await asyncio.to_thread(
-                    anthropic_client.messages.create,
-                    model=model,
-                    messages=anthropic_messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    extra_headers=extra_headers
-                )
-                return response.content[0].text, model
-            except anthropic.InternalServerError as e:
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay * (2 ** attempt))
-                    continue
-                # On final attempt, try falling back to OpenAI if available
-                if attempt == max_retries - 1 and 'OPENAI_API_KEY' in os.environ:
-                    app.logger.warning(f"Anthropic API failed after {max_retries} attempts. Falling back to GPT-4")
-                    return await get_response_from_model(client, "gpt-4", messages, temperature)
                 raise
 
     async def handle_gemini_request(model_name, contents, temperature):
@@ -3341,7 +3312,7 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
                     contents,
                     generation_config={"temperature": temperature}
                 )
-                return response.text, model_name
+                return response.text, model_name, None  # Add None for thinking_process
             except Exception as e:
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay * (2 ** attempt))
@@ -3377,23 +3348,27 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
                 if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
                     anthropic_messages.insert(0, {"role": "user", "content": ""})
 
-                max_tokens = 8192 if model == "claude-3-5-sonnet-20240620" else 4096
-                extra_headers = {"anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"} if model == "claude-3-5-sonnet-20240620" else None
+                # Configure max tokens based on model
+                if model == "claude-3-7-sonnet-20250219":
+                    max_tokens = 64000  # Updated limit for Claude 3.7 Sonnet
+                else:
+                    max_tokens = 4096   # Default for other Claude models
 
-                return await handle_anthropic_request(
-                    anthropic_client,
-                    model,
-                    anthropic_messages,
-                    max_tokens,
-                    temperature,
-                    extra_headers
+                # Make the API call
+                response = await asyncio.to_thread(
+                    anthropic_client.messages.create,
+                    model=model,
+                    messages=anthropic_messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature
                 )
 
-            except KeyError as e:
-                app.logger.error("Anthropic API key not found in environment variables")
-                if 'OPENAI_API_KEY' in os.environ:
-                    app.logger.info("Falling back to GPT-4")
-                    return await get_response_from_model(client, "gpt-4", messages, temperature)
+                response_content = response.content[0].text
+                return response_content, model, None
+
+            except Exception as e:
+                app.logger.error(f"Error in Claude API call: {str(e)}")
+                app.logger.exception("Full traceback:")
                 raise
 
         elif model.startswith("gemini-"):
@@ -3431,11 +3406,39 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
         except Exception as fallback_error:
             app.logger.error(f"Fallback attempt failed: {str(fallback_error)}")
         
-        return None, None
+        return None, None, None
 
 # Wrapper function for synchronous calls
-async def get_response_from_model_sync(client, model, messages, temperature, reasoning_effort=None):
-    return await get_response_from_model(client, model, messages, temperature, reasoning_effort)
+async def get_response_from_model_sync(client, model, messages, temperature, reasoning_effort=None, extended_thinking=False, thinking_budget=None):
+    """
+    Synchronous wrapper for get_response_from_model
+    
+    Args:
+        client: The API client instance
+        model: The model name to use
+        messages: List of message dictionaries
+        temperature: Float value for response temperature
+        reasoning_effort: Optional reasoning effort parameter for specific models
+        extended_thinking: Boolean for extended thinking mode (Claude 3.7)
+        thinking_budget: Integer for thinking tokens budget (Claude 3.7)
+    
+    Returns:
+        tuple: (chat_output, model_name, thinking_process)
+    """
+    try:
+        chat_output, model_name, thinking_process = await get_response_from_model(
+            client,
+            model,
+            messages,
+            temperature,
+            reasoning_effort=reasoning_effort,
+            extended_thinking=extended_thinking,
+            thinking_budget=thinking_budget
+        )
+        return chat_output, model_name, thinking_process
+    except Exception as e:
+        app.logger.error(f"Error in get_response_from_model_sync: {str(e)}")
+        raise
 
 
 @app.route('/chat', methods=['POST'])
@@ -3474,6 +3477,14 @@ async def chat():
         enable_web_search = request_data.get('enable_web_search', False)
         enable_intelligent_search = request_data.get('enable_intelligent_search', False)
         conversation_id = request_data.get('conversation_id') or session.get('conversation_id')
+
+        # Add new parameters for Claude 3.7 Sonnet
+        extended_thinking = request_data.get('extended_thinking', False)
+        thinking_budget = request_data.get('thinking_budget', 12000)
+
+        # Log the Claude 3.7 Sonnet specific parameters if present
+        if model == 'claude-3-7-sonnet-20250219':
+            app.logger.info(f'Claude 3.7 Sonnet parameters - Extended thinking: {extended_thinking}, Budget: {thinking_budget}')
         
         if system_message_id is None:
             app.logger.error("No system_message_id provided in the chat request")
@@ -3622,12 +3633,14 @@ async def chat():
 
         # Get model response
         reasoning_effort = request_data.get('reasoning_effort')
-        chat_output, model_name = await get_response_from_model(
-            client, 
-            model, 
-            messages, 
-            temperature,
-            reasoning_effort=reasoning_effort
+        chat_output, model_name, thinking_process = await get_response_from_model(
+            client=client,
+            model=model,  
+            messages=messages,
+            temperature=temperature,
+            reasoning_effort=reasoning_effort,
+            extended_thinking=extended_thinking if model == 'claude-3-7-sonnet-20250219' else None,
+            thinking_budget=thinking_budget if model == 'claude-3-7-sonnet-20250219' and extended_thinking else None
         )
 
         if chat_output is None:
@@ -3723,13 +3736,19 @@ async def chat():
                     'generated_search_queries': generated_search_queries if generated_search_queries else [],
                     'web_search_results': summarized_results if summarized_results else "No web search performed",
                     'system_message_content': system_message['content'],
+                    'thinking_process': thinking_process if thinking_process else None,
                     'usage': {
                         'prompt_tokens': prompt_tokens,
                         'completion_tokens': completion_tokens,
                         'total_tokens': total_tokens
                     },
                     'enable_web_search': enable_web_search,
-                    'enable_intelligent_search': enable_intelligent_search
+                    'enable_intelligent_search': enable_intelligent_search,
+                    'model_info': {
+                        'name': model_name,
+                        'extended_thinking': extended_thinking if model == 'claude-3-7-sonnet-20250219' else None,
+                        'thinking_budget': thinking_budget if model == 'claude-3-7-sonnet-20250219' and extended_thinking else None
+                    }
                 })
 
             except Exception as db_error:
