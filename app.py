@@ -544,7 +544,13 @@ class StatusUpdateManager:
                 if session.active:
                     self.connection_count = max(0, self.connection_count - 1)
                 
-                if session.websocket:
+                # Only try to close the WebSocket if it's not being called from the WebSocket handler
+                # Check the call stack to determine if we're in the WebSocket handler
+                import inspect
+                caller_frame = inspect.currentframe().f_back
+                caller_function_name = caller_frame.f_code.co_name if caller_frame else ""
+                
+                if session.websocket and caller_function_name != "ws_chat_status":
                     try:
                         await session.websocket.close(1000, "Connection closed normally")
                     except Exception as e:
@@ -708,9 +714,33 @@ async def ws_chat_status():
         app.logger.error(f"Error in WebSocket connection: {str(e)}")
         app.logger.exception("Full traceback:")
     finally:
-        app.logger.info(f"Cleaning up WebSocket connection for session {session_id}")
-        await status_manager.remove_connection(session_id)
-        app.logger.info(f"WebSocket cleanup complete for session {session_id}")
+        try:
+            app.logger.info(f"Cleaning up WebSocket connection for session {session_id}")
+            # Update the connection state in status_manager without trying to close the WebSocket
+            if session_id in status_manager._sessions:
+                session = status_manager._sessions[session_id]
+                
+                # Only decrement if session was active
+                if session.active:
+                    status_manager.connection_count = max(0, status_manager.connection_count - 1)
+                
+                # Update session to inactive state without closing the WebSocket
+                status_manager._sessions[session_id] = SessionStatus(
+                    user_id=session.user_id,
+                    session_id=session_id,
+                    message=session.message,
+                    last_updated=time.time(),
+                    expires_at=session.expires_at,
+                    websocket=None,
+                    active=False
+                )
+
+                status_manager.locks.pop(session_id, None)
+                status_manager.initial_messages_sent.discard(session_id)
+                
+            app.logger.info(f"WebSocket cleanup complete for session {session_id}")
+        except Exception as cleanup_error:
+            app.logger.error(f"Error during WebSocket cleanup: {str(cleanup_error)}")
 
 
 async def periodic_ping(connection_id):
