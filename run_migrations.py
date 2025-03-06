@@ -1,10 +1,13 @@
 # run_migrations.py
 import os
 import sys
-import asyncio
 import logging
 from alembic.config import Config
 from alembic import command
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -22,6 +25,19 @@ def run_migrations():
         # Get the path to alembic.ini
         alembic_cfg = Config("alembic.ini")
         
+        # Override the SQLAlchemy URL with the environment variable if available
+        db_url = os.environ.get("DATABASE_URL")
+        if db_url:
+            logger.info(f"Using database URL from environment variable")
+            alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+        
+        #Detailed logging for the migration process
+        logger.info(f"Alembic config file: {alembic_cfg.config_file_name}")
+        logger.info(f"Database URL: {alembic_cfg.get_main_option('sqlalchemy.url').split('@')[0]}...") # Log partial URL for security
+        logger.info(f"Python version: {sys.version}")
+        logger.info(f"Current directory: {os.getcwd()}")
+        logger.info(f"Files in migrations directory: {os.listdir('migrations') if os.path.exists('migrations') else 'Directory not found'}")
+
         # Run the upgrade command
         command.upgrade(alembic_cfg, "head")
         
