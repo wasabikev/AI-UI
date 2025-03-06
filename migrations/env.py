@@ -64,9 +64,17 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """In this scenario we need to create an Engine
     and associate a connection with the context."""
-
+    
+    # Get the database URL from environment if available
+    db_url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    
+    # For asyncpg, we need to ensure the URL starts with postgresql+asyncpg://
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    
+    # Create the engine with the updated URL
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        {"sqlalchemy.url": db_url},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
