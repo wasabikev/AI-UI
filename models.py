@@ -229,6 +229,7 @@ class SystemMessage(Base):
                        onupdate=lambda: datetime.now(timezone.utc))
     source_config = Column(JSON)
     enable_web_search = Column(Boolean, default=False)
+    enable_time_sense = Column(Boolean, default=False) 
     uploaded_files = relationship('UploadedFile', back_populates='system_message',
                                 cascade='all, delete-orphan')
     creator = relationship('User', backref='created_system_messages')
@@ -249,6 +250,7 @@ class SystemMessage(Base):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'source_config': self.source_config,
             'enable_web_search': self.enable_web_search,
+            'enable_time_sense': self.enable_time_sense,
         }
 
 class Website(Base):

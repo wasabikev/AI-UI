@@ -8,6 +8,27 @@ import asyncio
 import logging
 import sqlalchemy
 
+import sys
+
+# Run database migrations using Alembic
+async def run_migrations():
+    """Run database migrations using external script"""
+    try:
+        logger.info("Running database migrations...")
+        
+        # Use subprocess to run the migration script
+        import subprocess
+        result = subprocess.run([sys.executable, "run_migrations.py"], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            logger.info("Database migrations completed successfully")
+        else:
+            logger.error(f"Migration failed: {result.stderr}")
+            raise Exception(f"Migration failed: {result.stderr}")
+    except Exception as e:
+        logger.error(f"Failed to run migrations: {str(e)}", exc_info=True)
+        raise
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -62,8 +83,10 @@ async def init_db():
             logger.info("Database connection established")
 
             if not tables:
+                # If no tables exist, create them and run migrations
                 await conn.run_sync(Base.metadata.create_all)
                 logger.info("Database tables created")
+                await run_migrations()
 
                 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
                 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
@@ -86,6 +109,9 @@ async def init_db():
                             logger.error("Failed to create admin user", exc_info=True)
                             await session.rollback()
             else:
+                # If tables exist, just run migrations to catch up
+                await run_migrations()
+
                 async with get_session() as session:
                     result = await session.execute(
                         select(SystemMessage).filter_by(name="Default System Message")

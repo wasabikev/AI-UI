@@ -1,1 +1,1 @@
-web: gunicorn app:app -c gunicorn.conf.py --bind 0.0.0.0:$PORT --access-logfile - --error-logfile - --forwarded-allow-ips="*"
+web: python run_migrations.py && hypercorn run:app --bind 0.0.0.0:$PORT --access-logfile - --error-logfile -
