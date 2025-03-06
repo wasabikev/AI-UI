@@ -7,6 +7,13 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
+import os
+import sys
+from pathlib import Path
+
+# Add the project root directory to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Import your models (adjust the import path as needed)
 from models import Base
 
