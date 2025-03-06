@@ -298,3 +298,368 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - `setupInfiniteScroll()`: Sets up infinite scrolling for conversations
 
 ## File Structure
+├── static/
+
+│   ├── css/
+
+│   │   └── styles.css
+
+│   ├── js/
+
+│   │   ├── main.js
+
+│   │   ├── marked.min.js
+
+│   │   └── prism.js
+
+│   └── images/
+
+│       ├── BraveIcon.png
+
+│       ├── PineconeIcon.png
+
+│       └── SearchIcon.png
+
+├── templates/
+
+│   ├── chat.html
+
+│   ├── admin.html
+
+│   ├── login.html
+
+│   └── error.html
+
+├── user_files/
+
+│   └── [user_id]/
+
+│       └── [system_message_id]/
+
+│           ├── uploads/
+
+│           ├── processed_texts/
+
+│           ├── llmwhisperer_output/
+
+│           └── web_search_results/
+
+├── webscraper/
+
+│   ├── spiders/
+
+│   │   └── flexible_spider.py
+
+│   ├── items.py
+
+│   └── pipelines.py
+
+├── app.py
+
+├── models.py
+
+├── auth.py
+
+├── file_processing.py
+
+├── file_utils.py
+
+├── embedding_store.py
+
+├── llm_whisper_processor.py
+
+├── run.py
+
+└── README.md
+
+## Modal-Based User Interface Guidelines
+
+The application uses a modal-based approach for user interfaces when requesting input or displaying information that requires user interaction. This ensures a consistent, accessible, and user-friendly experience across the application.
+
+### System Message Modal
+The system message modal serves as a central hub for orchestrating various layers of interaction:
+
+1. **Content Group**
+   - System message template editing
+   - Description and content configuration
+   - Model selection
+   - Temperature adjustment
+
+2. **Websites Group**
+   - Website URL management
+   - Indexing status monitoring
+   - Re-indexing triggers
+   - Website metadata viewing
+
+3. **Files Group**
+   - File upload interface
+   - File list management
+   - File viewing options
+   - File removal functionality
+
+4. **Temperature Group**
+   - Temperature selection with descriptions
+   - Use case explanations
+   - Visual feedback
+
+### Admin Dashboard Modal
+The admin dashboard provides interfaces for:
+1. **User Management**
+   - View all users
+   - Update user status
+   - Toggle admin privileges
+   - Reset passwords
+   - Delete users
+
+2. **Status Update Modal**
+   - Change user account status
+   - Set to Active, Pending, or N/A
+
+3. **Admin Update Modal**
+   - Toggle admin privileges
+   - Confirm privilege changes
+
+4. **Password Update Modal**
+   - Reset user passwords
+   - Secure password handling
+
+### Implementation Guidelines
+- Use Bootstrap modal components for consistent styling
+- Implement proper focus management for accessibility
+- Ensure keyboard navigation works correctly
+- Handle modal state in JavaScript
+- Implement proper validation before submission
+- Show loading indicators during asynchronous operations
+- Use consistent button placement and naming
+- Provide clear error messages within the modal
+- Implement confirmation for destructive actions
+
+### Modal Interaction Patterns
+- Open modals with clear triggers (buttons, links)
+- Close modals with both "X" button and cancel/close buttons
+- Save changes with primary action buttons
+- Provide visual feedback for successful operations
+- Return focus to triggering element when modal closes
+- Support Escape key for closing modals
+- Prevent background scrolling when modal is open
+- Use flash messages for important notifications
+
+## External Libraries and Scripts
+
+### Frontend Libraries
+- **jQuery**: DOM manipulation and AJAX requests
+- **Bootstrap**: UI components and responsive design
+- **Marked.js**: Markdown parsing and rendering
+- **Prism.js**: Code syntax highlighting
+- **MathJax**: LaTeX rendering for mathematical notation
+- **Autosize**: Textarea auto-resizing
+- **Font Awesome**: Icon library
+- **DOMPurify**: HTML sanitization
+
+### Backend Libraries
+- **Quart**: Asynchronous web framework (async Flask)
+- **Quart-Auth**: Authentication for Quart
+- **Quart-CORS**: Cross-Origin Resource Sharing for Quart
+- **Quart-Schema**: Schema validation for Quart
+- **SQLAlchemy**: ORM for database operations
+- **Alembic**: Database migration tool
+- **Pinecone**: Vector database client
+- **OpenAI**: API client for OpenAI models
+- **Anthropic**: API client for Claude models
+- **Google Generative AI**: API client for Gemini models
+- **LlamaIndex**: Framework for RAG applications
+- **BeautifulSoup**: HTML parsing for web scraping
+- **Scrapy**: Web crawling framework
+- **aiohttp**: Asynchronous HTTP client/server
+- **aiofiles**: Asynchronous file operations
+- **tiktoken**: Tokenizer for counting tokens
+- **Hypercorn**: ASGI server for Quart
+- **python-dotenv**: Environment variable management
+- **Werkzeug**: WSGI utilities
+- **tenacity**: Retry library for API calls
+
+## External Services and APIs
+
+### AI Model Providers
+- **OpenAI API**: GPT-3.5, GPT-4, GPT-4o, o3-mini models
+- **Anthropic API**: Claude 3 Opus, Claude 3.5 Sonnet, Claude 3.7 Sonnet models
+- **Google AI API**: Gemini Pro model
+
+### Vector Storage
+- **Pinecone**: Vector database for efficient storage and retrieval of embeddings
+
+### Web Search
+- **Brave Search API**: Web search functionality
+
+### Document Processing
+- **Unstract LLMWhisperer API**: Advanced PDF text extraction
+
+## Database Schema
+
+### User
+- `id`: Integer, primary key
+- `username`: String(80), unique, non-nullable
+- `email`: String(120), unique, non-nullable
+- `password_hash`: String(128)
+- `is_admin`: Boolean, default False
+- `status`: String(20), default "Pending"
+- `created_at`: DateTime
+- `updated_at`: DateTime
+- `last_login`: DateTime
+- Relationships: One-to-many with Conversation, UserUsage, SystemMessage
+
+### Conversation
+- `id`: Integer, primary key
+- `title`: String
+- `history`: JSON
+- `token_count`: Integer, default 0
+- `folder_id`: Integer, foreign key to Folder
+- `user_id`: Integer, foreign key to User
+- `created_at`: DateTime
+- `updated_at`: DateTime
+- `model_name`: String(120)
+- `sentiment`: String(120)
+- `tags`: String(120)
+- `language`: String(120)
+- `status`: String(120)
+- `rating`: Integer
+- `confidence`: Float
+- `intent`: String(120)
+- `entities`: JSON
+- `temperature`: Float
+- `prompt_template`: String(500)
+- `vector_search_results`: JSON
+- `generated_search_queries`: JSON
+- `web_search_results`: JSON
+- Relationships: Many-to-one with User and Folder
+
+### Folder
+- `id`: Integer, primary key
+- `title`: String(120), non-nullable
+- Relationships: One-to-many with Conversation
+
+### SystemMessage
+- `id`: Integer, primary key
+- `name`: String(120), non-nullable
+- `content`: Text, non-nullable
+- `description`: Text
+- `model_name`: String(120)
+- `temperature`: Float
+- `created_by`: Integer, foreign key to User
+- `created_at`: DateTime
+- `updated_at`: DateTime
+- `source_config`: JSON
+- `enable_web_search`: Boolean, default False
+- Relationships: Many-to-one with User, One-to-many with Website and UploadedFile
+
+### Website
+- `id`: Integer, primary key
+- `url`: String(2048), non-nullable
+- `site_metadata`: JSON
+- `system_message_id`: Integer, foreign key to SystemMessage
+- `indexed_at`: DateTime
+- `indexing_status`: String(50), default 'Pending'
+- `last_error`: Text
+- `indexing_frequency`: Integer
+- `created_at`: DateTime
+- `updated_at`: DateTime
+- Relationships: Many-to-one with SystemMessage
+
+### UploadedFile
+- `id`: String(36), primary key, UUID
+- `user_id`: Integer, foreign key to User, non-nullable
+- `original_filename`: String(255), non-nullable
+- `file_path`: String(255), non-nullable
+- `processed_text_path`: String(255)
+- `upload_timestamp`: DateTime
+- `file_size`: Integer
+- `mime_type`: String(100)
+- `system_message_id`: Integer, foreign key to SystemMessage, non-nullable
+- Relationships: Many-to-one with User and SystemMessage
+
+### UserUsage
+- `id`: Integer, primary key
+- `user_id`: Integer, foreign key to User
+- `api_used`: String(50)
+- `tokens_used`: Integer
+- `session_start`: DateTime
+- `session_end`: DateTime
+- `cost`: Float
+- Relationships: Many-to-one with User
+
+## API Keys and Environmental Variables
+
+### Required Environment Variables
+- `OPENAI_API_KEY`: OpenAI API key
+- `ANTHROPIC_API_KEY`: Anthropic API key
+- `GOOGLE_API_KEY`: Google AI API key
+- `PINECONE_API_KEY`: Pinecone API key
+- `PINECONE_CLOUD`: Pinecone cloud provider (aws, gcp, azure)
+- `PINECONE_REGION`: Pinecone region (us-east-1, etc.)
+- `BRAVE_SEARCH_API_KEY`: Brave Search API key
+- `DATABASE_URL`: PostgreSQL connection string
+- `SECRET_KEY`: Application secret key for session management
+- `LLMWHISPERER_API_KEY`: Unstract LLMWhisperer API key
+- `ADMIN_USERNAME`: Default admin username
+- `ADMIN_PASSWORD`: Default admin password
+- `PORT`: Application port (default: 8080)
+- `WEBSOCKET_PATH`: WebSocket endpoint path
+
+### Configuration Best Practices
+- Use `.env` files for local development
+- Use environment variables for production deployment
+- Never commit API keys to version control
+- Implement proper secret rotation
+- Use separate keys for development and production environments
+- Set appropriate rate limits and usage alerts
+- Monitor API usage and costs
+- Use a secrets manager for production environments
+
+## Development Environment Requirements
+- Python 3.11+
+- PostgreSQL 13+
+- Node.js 14+ (for frontend build tools)
+- Git
+- Virtual environment (venv or conda)
+- VS Code with Python and JavaScript extensions
+- Docker (optional, for containerized development)
+- Windows 11 with VS Code (primary development environment)
+
+## Deployment Considerations
+- Use async-compatible ASGI servers (Hypercorn)
+- Configure appropriate worker counts based on CPU cores
+- Implement proper database connection pooling
+- Set up monitoring and logging
+- Configure CORS policies
+- Set up SSL/TLS
+- Implement rate limiting
+- Configure proper caching headers
+- Set up regular database backups
+- Implement CI/CD pipeline
+- Use DigitalOcean App Platform for production
+
+## Error Handling and Logging
+- Structured logging with UnicodeFormatter
+- Proper exception handling with context
+- Graceful degradation for service failures
+- Meaningful user feedback
+- Error rate monitoring
+- Log rotation and management
+- Separate logs for different severity levels
+- Custom error templates
+- Flash messages for user notifications
+- WebSocket status updates
+
+## Performance Optimization
+- Optimize database queries with proper indexing
+- Implement connection pooling
+- Minimize blocking operations
+- Use async/await patterns for I/O operations
+- Optimize vector search operations
+- Implement proper caching strategies
+- Monitor memory usage
+- Use pagination for large datasets
+- Implement infinite scrolling for UI
+- Optimize asset loading
+- Use connection pooling for external APIs
+- Implement retry mechanisms with exponential backoff
