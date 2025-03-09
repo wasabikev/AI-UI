@@ -3567,6 +3567,8 @@ async def chat():
             enable_time_sense = db_system_message.enable_time_sense
             app.logger.info(f"Time sense enabled: {enable_time_sense}")
 
+        system_message = next((msg for msg in messages if msg['role'] == 'system'), None) # Fetch the system message content
+
         # Process time context only if enabled
         if enable_time_sense and messages:
             print("===== BEFORE TIME CONTEXT PROCESSING =====")
