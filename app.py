@@ -13,6 +13,7 @@ import threading
 import uuid 
 import time
 import math
+import re
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
@@ -90,6 +91,7 @@ from file_utils import (
 from file_processing import FileProcessor
 from embedding_store import EmbeddingStore
 from init_db import init_db
+from time_utils import clean_and_update_time_context, generate_time_context
 
 # Load environment variables
 load_dotenv()
@@ -2792,7 +2794,8 @@ async def create_system_message():
                 created_by=current_user.id,
                 created_at=current_time,  # Use naive datetime
                 updated_at=current_time,  # Use naive datetime
-                enable_web_search=data.get('enable_web_search', False)
+                enable_web_search=data.get('enable_web_search', False),
+                enable_time_sense=data.get('enable_time_sense', False)
             )
             
             session.add(new_system_message)
@@ -2829,7 +2832,8 @@ async def get_system_messages():
                 'description': message.description,
                 'model_name': message.model_name,
                 'temperature': message.temperature,
-                'enable_web_search': message.enable_web_search
+                'enable_web_search': message.enable_web_search,
+                'enable_time_sense': message.enable_time_sense
             } for message in system_messages]
             
             app.logger.info(f"Returning {len(messages_list)} system messages")
@@ -2868,6 +2872,7 @@ async def update_system_message(message_id):
             system_message.model_name = data.get('model_name', system_message.model_name)
             system_message.temperature = data.get('temperature', system_message.temperature)
             system_message.enable_web_search = data.get('enable_web_search', system_message.enable_web_search)
+            system_message.enable_time_sense = data.get('enable_time_sense', system_message.enable_time_sense)
             system_message.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
             try:
@@ -3479,6 +3484,7 @@ async def get_response_from_model_sync(client, model, messages, temperature, rea
 @login_required
 async def chat():
     """Handle chat requests with session management"""
+    
     try:
         # Get session ID from headers or create new one
         session_id = (
@@ -3511,6 +3517,7 @@ async def chat():
         enable_web_search = request_data.get('enable_web_search', False)
         enable_intelligent_search = request_data.get('enable_intelligent_search', False)
         conversation_id = request_data.get('conversation_id') or session.get('conversation_id')
+        user_timezone = request_data.get('timezone', 'UTC')
 
         # Add new parameters for Claude 3.7 Sonnet
         extended_thinking = request_data.get('extended_thinking', False)
@@ -3531,6 +3538,7 @@ async def chat():
             session_id=session_id
         )
 
+        # After fetching the converstation history, clean dynamic context if needed
         conversation = None
         if conversation_id:
             async with get_session() as db_session:
@@ -3545,6 +3553,54 @@ async def chat():
                     app.logger.info(f'No valid conversation found with id {conversation_id}, starting a new one.')
                     conversation = None
 
+        # Fetch the system message to check if time sense is enabled
+        async with get_session() as db_session:
+            result = await db_session.execute(
+                select(SystemMessage).filter_by(id=system_message_id)
+            )
+            db_system_message = result.scalar_one_or_none()
+            
+            if not db_system_message:
+                app.logger.error(f"System message with ID {system_message_id} not found")
+                return jsonify({'error': 'System message not found'}), 404
+                
+            enable_time_sense = db_system_message.enable_time_sense
+            app.logger.info(f"Time sense enabled: {enable_time_sense}")
+
+        # Process time context only if enabled
+        if enable_time_sense and messages:
+            print("===== BEFORE TIME CONTEXT PROCESSING =====")
+            print(f"Enable time sense: {enable_time_sense}")
+            from time_utils import clean_and_update_time_context
+            
+            # Create a user object with timezone for time context
+            time_context_user = {'timezone': user_timezone}
+
+            # Clean and update time context in messages
+            if enable_time_sense:
+                await update_status(
+                    message="Processing time context information",
+                    session_id=session_id
+                )
+                print("About to call clean_and_update_time_context")
+                # Call the consolidated function to handle time context
+                messages = await clean_and_update_time_context(
+                    messages,
+                    time_context_user,
+                    enable_time_sense,
+                    app.logger
+                )
+                print("After calling clean_and_update_time_context")
+                app.logger.info("Time context processing completed")
+            
+            # Update system_message reference after potential modification
+            system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
+            
+            if not system_message:
+                system_message = {"role": "system", "content": ""}
+                messages.insert(0, system_message)
+                app.logger.info("Created new system message after time context processing")
+
         app.logger.info(f'Getting storage context for system_message_id: {system_message_id}')
         await update_status(
             message="Checking document database",
@@ -3555,7 +3611,7 @@ async def chat():
         storage_context_coroutine = embedding_store.get_storage_context(system_message_id)
 
         user_query = messages[-1]['content']
-        app.logger.info(f'User query: {user_query}')
+        app.logger.info(f'User query: {user_query[:50]}')
 
         relevant_info = None
         try:
@@ -3591,8 +3647,7 @@ async def chat():
             )
             relevant_info = None
 
-        system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
-        
+        # Ensure system_message is available
         if system_message is None:
             system_message = {
                 "role": "system",
@@ -3602,8 +3657,6 @@ async def chat():
 
         if relevant_info:
             system_message['content'] += f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
-        
-        app.logger.info(f"Updated system message: {system_message['content']}")
 
         summarized_results = None
         generated_search_queries = None

@@ -148,6 +148,15 @@ h2 {
     flex: 1;
 }
 
+/* Styling for tooltips */
+
+
+
+/* Add a custom class to the info icon for specific styling if needed */
+.time-sense-info {
+    color: white;
+}
+
 /* Wraps the entire modal content including the sidebar */
 .modal-dialog.systemMessage-modal-lg {
     max-height: 650px;
@@ -567,6 +576,7 @@ h2 {
 #systemMessageModal .modal-body {
     flex-grow: 1;  /* Takes up all remaining space */
 }
+
 
 /******************** Code Block Styles ********************/
 

@@ -1,11 +1,13 @@
+// main.js
+
 let messages = []; // An array that stores the converstation messages
 
-
+window.systemMessages = [];  // Make it explicitly global
 let systemMessages = []; // An array that stores the system message
 
 
 let model; // This variable stores the selected model name
-let activeConversationId = null; // This keeps track of the currently selected conversation.
+let activeConversationId = window.APP_DATA?.conversationId ?? null // This keeps track of the currently selected conversation.
 let currentSystemMessage; // Stores the currently selected system message.
 let currentSystemMessageDescription; // Stores the description of the current system message.
 let initialTemperature; // Stores the initial temperature setting.
@@ -17,6 +19,27 @@ let activeWebsiteId = null;  // This will store the currently active website ID 
 let tempWebSearchState = false; // This will store the temporary web search state
 let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
 
+// Safely initialize APP_DATA related variables
+const APP_DATA = window.APP_DATA || {};
+const isAdmin = APP_DATA.isAdmin || false;
+let currentSessionId = APP_DATA?.sessionId ?? null;  // Session ID will be provided by server for speed optimization and to avoid duplicate status updates
+
+
+// Constants for WebSocket management
+const MAX_WS_RECONNECT_ATTEMPTS = 5;
+const INITIAL_RECONNECT_DELAY = 1000;
+const HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
+let wsReconnectAttempts = 0;
+let wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+let maintainWebSocketConnection = false;
+let statusWebSocket = null;
+let statusUpdateContainer = null;
+let healthCheckInterval = null;
+
+// variables to manage pagination of converstation list
+let isLoadingConversations = false;
+let currentPage = 1;
+let hasMoreConversations = true;
 
 document.addEventListener("DOMContentLoaded", function() {
     // Fetch and process system messages
@@ -60,49 +83,245 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             updateSearchSettings();
         });
+
+        
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
     });
 });
 
-let statusUpdateContainer = null;
 
 function createStatusUpdateContainer() {
     if (!statusUpdateContainer) {
-        statusUpdateContainer = $('<div class="status-update-container"></div>');
+        statusUpdateContainer = $('<div class="chat-entry status-message">')
+            .append('<i class="fas fa-robot"></i> ');
         $('#chat').append(statusUpdateContainer);
+        $('#chat').scrollTop($('#chat')[0].scrollHeight);
     }
     return statusUpdateContainer;
 }
 
 function addStatusUpdate(message) {
+    console.log('Adding status update:', message);
     const container = createStatusUpdateContainer();
     
-    const statusDiv = $('<div class="chat-entry status-update">')
-        .append('<img src="/static/images/processing-icon.gif" alt="Processing" class="status-icon">')
-        .append($('<span>').text(message));
+    let statusContentContainer = container.find('.status-content');
+    if (statusContentContainer.length === 0) {
+        statusContentContainer = $('<div class="status-content"></div>');
+        container.append(statusContentContainer);
+    }
     
-    container.append(statusDiv);
+    const baseMessage = message.replace(/\.+$/, '');
+    const messageSpan = $('<span>').text(baseMessage);
+    const dotsSpan = $('<span class="animated-dots">...</span>');
     
-    // Scroll to the bottom of the container
-    container.scrollTop(container[0].scrollHeight);
+    // Remove timestamp logic completely
     
-    // Return the status div for potential updates
-    return statusDiv;
+    statusContentContainer.fadeOut(200, function() {
+        statusContentContainer.empty()
+            .append(messageSpan)
+            .append(dotsSpan)
+            .fadeIn(200);
+    });
+    
+    $('#chat').scrollTop($('#chat')[0].scrollHeight);
+    
+    return container;
 }
 
 function clearStatusUpdates() {
+    console.log('Clearing status updates');
+    
     if (statusUpdateContainer) {
-        // Fade out all status updates
-        statusUpdateContainer.find('.status-update').addClass('fade-out');
-        
-        // Remove after animation
-        setTimeout(() => {
-            statusUpdateContainer.remove();
+        statusUpdateContainer.fadeOut(300, function() {
+            $(this).remove();
             statusUpdateContainer = null;
-        }, 500);
+        });
+    }
+
+    cleanupWebSocketSession();
+}
+
+// Simplified connection check - only run when needed
+function checkStatusConnection() {
+    if (maintainWebSocketConnection && (!statusWebSocket || statusWebSocket.readyState === WebSocket.CLOSED)) {
+        console.log('Status connection lost or not established, reconnecting...');
+        wsReconnectAttempts = 0;
+        wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+        //initStatusWebSocket();
     }
 }
+
+
+// Add reconnection attempt counter
+let reconnectAttempts = 0;
+
+
+function initStatusWebSocket() {
+    console.log('initStatusWebSocket called');
+    
+    if (!maintainWebSocketConnection) {
+        console.log('WebSocket connection not needed at this time');
+        return null;
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat/status`;
+    
+    console.log('Attempting new WebSocket connection to:', wsUrl);
+    
+    try {
+        const newWs = new WebSocket(wsUrl);
+        
+        newWs.onopen = function(event) {
+            console.log('WebSocket connection opened');
+            wsReconnectAttempts = 0;
+            wsReconnectDelay = INITIAL_RECONNECT_DELAY;
+        };
+
+        newWs.onmessage = handleWebSocketMessage;
+        
+        newWs.onerror = function(error) {
+            console.error('WebSocket error:', error);
+            if (error.message) {
+                console.error('Error message:', error.message);
+            }
+        };
+
+        newWs.onclose = function(event) {
+            console.log('WebSocket closed:', event.code, event.reason);
+            if (maintainWebSocketConnection) {
+                handleWebSocketReconnect();
+            }
+        };
+
+        return newWs;
+    } catch (error) {
+        console.error('Error creating WebSocket:', error);
+        console.log('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            wsUrl: wsUrl
+        });
+        return null;
+    }
+}
+
+function handleWebSocketMessage(event) {
+    try {
+        const data = JSON.parse(event.data);
+        console.log('WebSocket message received:', data);
+
+        if (data.type === 'status') {
+            if (data.session_id) {  // Initial connection message
+                console.log('WebSocket connection confirmed, session ID:', data.session_id);
+                currentSessionId = data.session_id;
+                return;
+            } else if (data.message !== "WebSocket connection established") {  // Skip the initial connection message
+                addStatusUpdate(data.message);
+            }
+        }
+    } catch (e) {
+        console.error('Error processing WebSocket message:', e);
+    }
+}
+
+
+
+function handleWebSocketError(error) {
+    console.error('WebSocket error:', error);
+    console.log('WebSocket readyState:', statusWebSocket?.readyState);
+}
+
+function handleWebSocketClose(event) {
+    console.log('WebSocket connection closed:', event);
+    if (maintainWebSocketConnection) {
+        handleWebSocketReconnect();
+    }
+}
+
+function handleWebSocketReconnect() {
+    if (!maintainWebSocketConnection) {
+        console.log('Reconnection cancelled - connection no longer needed');
+        return;
+    }
+
+    if (wsReconnectAttempts >= MAX_WS_RECONNECT_ATTEMPTS) {
+        console.error('Max reconnection attempts reached');
+        maintainWebSocketConnection = false;
+        statusWebSocket = null; // Ensure cleanup
+        return;
+    }
+
+    wsReconnectAttempts++;
+    console.log(`Attempting to reconnect (${wsReconnectAttempts}/${MAX_WS_RECONNECT_ATTEMPTS})...`);
+    
+    // Use setTimeout to ensure we're out of the event handler context
+    setTimeout(() => {
+        if (maintainWebSocketConnection) {
+            initStatusWebSocket();
+        }
+    }, wsReconnectDelay);
+    
+    // Exponential backoff with max delay of 10 seconds
+    wsReconnectDelay = Math.min(wsReconnectDelay * 2, 10000);
+}
+
+// Helper function to safely check WebSocket state
+function isWebSocketActive(ws) {
+    return ws && 
+           typeof ws.readyState !== 'undefined' && 
+           ws.readyState !== WebSocket.CLOSED && 
+           ws.readyState !== WebSocket.CLOSING;
+}
+
+function cleanupWebSocketSession() {
+    maintainWebSocketConnection = false;
+    currentSessionId = null;
+    
+    if (statusWebSocket && statusWebSocket.readyState !== WebSocket.CLOSED) {
+        console.log('Closing existing WebSocket connection');
+        try {
+            statusWebSocket.close(1000, "Session cleanup");
+        } catch (e) {
+            console.error('Error during WebSocket cleanup:', e);
+        }
+        statusWebSocket = null;
+    }
+    
+    if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+        healthCheckInterval = null;
+    }
+}
+
+function checkSessionHealth() {
+    if (!currentSessionId) return;
+
+    fetch('/ws/chat/status/health', {
+        headers: {
+            'X-Session-ID': currentSessionId
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.session_valid) {
+            console.log('Session invalid, reinitializing...');
+            cleanupWebSocketSession();
+            //initStatusWebSocket();
+        }
+    })
+    .catch(error => {
+        console.error('Session health check failed:', error);
+    });
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    clearStatusUpdates();
+});
+
+// End WebSocket section
 
 function updateSearchSettings() {
     // Only send an update if the temporary state differs from the current system message state
@@ -836,6 +1055,7 @@ function populateSystemMessageModal() {
             document.getElementById('systemMessageContent').value = message.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = message.id;
             document.getElementById('enableWebSearch').checked = message.enable_web_search;
+            document.getElementById('enableTimeSense').checked = message.enable_time_sense;
 
             currentSystemMessageDescription = message.description;
             initialTemperature = message.temperature;
@@ -861,6 +1081,7 @@ function populateSystemMessageModal() {
         document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
         document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
         document.getElementById('enableWebSearch').checked = defaultSystemMessage.enable_web_search;
+        document.getElementById('enableTimeSense').checked = defaultSystemMessage.enable_time_sense;
         initialTemperature = defaultSystemMessage.temperature;
         updateTemperatureSelectionInModal(initialTemperature);
         updateModelDropdownInModal(defaultSystemMessage.model_name);
@@ -970,6 +1191,7 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
     const modelName = document.getElementById('modalModelDropdownButton').dataset.apiName;
     const temperature = selectedTemperature;
     const enableWebSearch = document.getElementById('enableWebSearch').checked; // Get the actual state of the checkbox
+    const enableTimeSense = document.getElementById('enableTimeSense').checked;
 
     const messageId = document.getElementById('systemMessageModal').dataset.messageId;
 
@@ -988,7 +1210,8 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         content: messageContent,
         model_name: modelName,
         temperature: temperature,
-        enable_web_search: enableWebSearch
+        enable_web_search: enableWebSearch,
+        enable_time_sense: enableTimeSense
     };
 
     const url = messageId ? `/system-messages/${messageId}` : '/system-messages';
@@ -1217,17 +1440,44 @@ const temperatureDescriptions = {
 
 
 // Helper function to map model names to their display values
-function modelNameMapping(modelName) {
-    console.log("Input model name:", modelName);
+function modelNameMapping(modelName, reasoningEffort, extendedThinking) {
+    console.log("Input model name:", modelName, "Reasoning effort:", reasoningEffort, "Extended thinking:", extendedThinking);
     let mappedName;
     switch(modelName) {
-        case "gpt-3.5-turbo": mappedName = "GPT-3.5"; break;
-        case "gpt-4-turbo-2024-04-09": mappedName = "GPT-4 (Turbo)"; break;
-        case "gpt-4o-2024-08-06": mappedName = "GPT-4o"; break;
-        case "claude-3-opus-20240229": mappedName = "Claude 3 (Opus)"; break;
-        case "claude-3-5-sonnet-20241022": mappedName = "Claude 3.5 (Sonnet)"; break;
-        case "gemini-pro": mappedName = "Gemini Pro"; break;
-        default: mappedName = "Unknown Model"; break;
+        case "gpt-3.5-turbo": 
+            mappedName = "GPT-3.5"; 
+            break;
+        case "gpt-4-turbo-2024-04-09": 
+            mappedName = "GPT-4 (Turbo)"; 
+            break;
+        case "gpt-4o-2024-08-06": 
+            mappedName = "GPT-4o"; 
+            break;
+        case "o3-mini": 
+            switch(reasoningEffort) {
+                case "low": mappedName = "o3-mini (Fast)"; break;
+                case "medium": mappedName = "o3-mini (Balanced)"; break;
+                case "high": mappedName = "o3-mini (Deep)"; break;
+                default: mappedName = "o3-mini"; break;
+            }
+            break;
+        case "claude-3-opus-20240229": 
+            mappedName = "Claude 3 (Opus)"; 
+            break;
+        case "claude-3-5-sonnet-20241022": 
+            mappedName = "Claude 3.5 (Sonnet)"; 
+            break;
+        case "claude-3-7-sonnet-20250219":
+            mappedName = extendedThinking ? 
+                "Claude 3.7 Sonnet (Extended Thinking)" : 
+                "Claude 3.7 Sonnet";
+            break;
+        case "gemini-pro": 
+            mappedName = "Gemini Pro"; 
+            break;
+        default: 
+            mappedName = "Unknown Model"; 
+            break;
     }
     console.log("Mapped model name:", mappedName);
     return mappedName;
@@ -1245,22 +1495,92 @@ function populateModelDropdownInModal() {
     // Clear existing dropdown items
     modalModelDropdownMenu.innerHTML = '';
 
-    // Define the available models
-    const models = ["gpt-3.5-turbo","gpt-4-turbo-2024-04-09","gpt-4o-2024-08-06","claude-3-opus-20240229","claude-3-5-sonnet-20241022","gemini-pro"];
-    console.log("Available models:", models);
+    // Define the available models with their variants
+    const models = [
+        { api: "gpt-3.5-turbo", display: "GPT-3.5" },
+        { api: "gpt-4-turbo-2024-04-09", display: "GPT-4 (Turbo)" },
+        { api: "gpt-4o-2024-08-06", display: "GPT-4o" },
+        { api: "o3-mini", display: "o3-mini (Fast)", reasoning: "low" },
+        { api: "o3-mini", display: "o3-mini (Balanced)", reasoning: "medium" },
+        { api: "o3-mini", display: "o3-mini (Deep)", reasoning: "high" },
+        { api: "claude-3-opus-20240229", display: "Claude 3 (Opus)" },
+        { api: "claude-3-5-sonnet-20241022", display: "Claude 3.5 (Sonnet)" },
+        { api: "claude-3-7-sonnet-20250219", display: "Claude 3.7 Sonnet" },
+        { 
+            api: "claude-3-7-sonnet-20250219", 
+            display: "Claude 3.7 Sonnet (Extended Thinking)", 
+            extendedThinking: true,
+            thinkingBudget: 12000
+        },
+        { api: "gemini-pro", display: "Gemini Pro" }
+    ];
 
     // Add each model to the dropdown
     models.forEach((modelItem) => {
         let dropdownItem = document.createElement('button');
         dropdownItem.className = 'dropdown-item';
-        dropdownItem.textContent = modelNameMapping(modelItem);
-        dropdownItem.dataset.apiName = modelItem;
+        dropdownItem.textContent = modelItem.display;
+        dropdownItem.dataset.apiName = modelItem.api;
+        
+        // Add reasoning data if present
+        if (modelItem.reasoning) {
+            dropdownItem.dataset.reasoning = modelItem.reasoning;
+        }
+        
+        // Add extended thinking data if present
+        if (modelItem.extendedThinking !== undefined) {
+            dropdownItem.dataset.extendedThinking = modelItem.extendedThinking;
+            if (modelItem.thinkingBudget) {
+                dropdownItem.dataset.thinkingBudget = modelItem.thinkingBudget;
+            }
+        }
+
         dropdownItem.onclick = function() {
             // Update the dropdown button text and modal content
             let dropdownButton = document.getElementById('modalModelDropdownButton');
             dropdownButton.textContent = this.textContent;
             dropdownButton.dataset.apiName = this.dataset.apiName;
-            console.log('Model selected in modal:', this.dataset.apiName);
+            
+            // Handle reasoning effort
+            if (this.dataset.reasoning) {
+                dropdownButton.dataset.reasoning = this.dataset.reasoning;
+            } else {
+                delete dropdownButton.dataset.reasoning;
+            }
+
+            // Handle extended thinking
+            const isClaudeSonnet = this.dataset.apiName === 'claude-3-7-sonnet-20250219';
+            const extendedThinking = this.dataset.extendedThinking === 'true';
+            
+            // Toggle extended thinking controls visibility
+            const extendedThinkingContainer = document.getElementById('extended-thinking-toggle-container');
+            const thinkingBudgetContainer = document.getElementById('thinking-budget-container');
+            
+            if (isClaudeSonnet) {
+                extendedThinkingContainer.style.display = 'block';
+                document.getElementById('extended-thinking-toggle').checked = extendedThinking;
+                
+                if (extendedThinking) {
+                    thinkingBudgetContainer.style.display = 'block';
+                    const budgetSlider = document.getElementById('thinking-budget-slider');
+                    if (budgetSlider) {
+                        budgetSlider.value = this.dataset.thinkingBudget || 12000;
+                        document.getElementById('thinking-budget-value').textContent = budgetSlider.value;
+                    }
+                } else {
+                    thinkingBudgetContainer.style.display = 'none';
+                }
+            } else {
+                extendedThinkingContainer.style.display = 'none';
+                thinkingBudgetContainer.style.display = 'none';
+            }
+
+            console.log('Model selected in modal:', {
+                api: this.dataset.apiName,
+                reasoning: this.dataset.reasoning || 'none',
+                extendedThinking: extendedThinking,
+                thinkingBudget: this.dataset.thinkingBudget
+            });
 
             // Update the global model variable
             model = this.dataset.apiName;
@@ -1657,9 +1977,18 @@ function handleLists(content) {
 
 
 
-function updateConversationList() {
-    console.log('Starting to update conversation list...');
-    fetch('/api/conversations')
+function updateConversationList(page = 1, append = false) {
+    if (isLoadingConversations) return;
+    
+    console.log(`Updating conversation list - Page: ${page}, Append: ${append}`);
+    isLoadingConversations = true;
+
+    // Show loading indicator
+    if (!append) {
+        $('#conversation-list').append('<div id="conversation-loading" class="text-center p-2">Loading conversations...</div>');
+    }
+
+    fetch(`/api/conversations?page=${page}&per_page=20`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -1667,44 +1996,85 @@ function updateConversationList() {
             return response.json();
         })
         .then(data => {
-            console.log(`Received ${data.length} conversations from server.`);
+            console.log(`Received ${data.conversations.length} conversations from server.`);
+            
+            // Remove loading indicator
+            $('#conversation-loading').remove();
 
-            // Prepare new HTML content for conversation list
-            let newConversationListContent = '';
-            // Add each conversation to the new content.
-            data.forEach((conversation, index) => {
-                const temperatureInfo = (typeof conversation.temperature !== 'undefined' && conversation.temperature !== null) ? `${conversation.temperature}°` : 'N/A°';
-                newConversationListContent += `
+            // Update pagination state
+            hasMoreConversations = page < data.total_pages;
+            currentPage = page;
+
+            // Prepare new HTML content
+            let newContent = '';
+            data.conversations.forEach(conversation => {
+                const temperatureInfo = (typeof conversation.temperature !== 'undefined' && conversation.temperature !== null) 
+                    ? `${conversation.temperature}°` 
+                    : 'N/A°';
+                
+                newContent += `
                     <div class="conversation-item" data-id="${conversation.id}">
                         <div class="conversation-title">${conversation.title}</div>
                         <div class="conversation-meta">
-                            <span class="model-name" title="AI Model used for this conversation">${conversation.model_name}</span>
-                            <span class="temperature-info" title="Temperature setting">${temperatureInfo}</span>
+                            <span class="model-name" title="AI Model used for this conversation">
+                                ${conversation.model_name}
+                            </span>
+                            <span class="temperature-info" title="Temperature setting">
+                                ${temperatureInfo}
+                            </span>
                         </div>
                     </div>
                 `;
             });
-            
-            // Replace conversation list content with new content
-            $('#conversation-list').html(newConversationListContent);
-            console.log('Conversation list updated.');
 
-            // Add click event handlers to the conversation elements.
-            $('.conversation-item').click(function() {
+            // Update the conversation list
+            if (append) {
+                $('#conversation-list').append(newContent);
+            } else {
+                $('#conversation-list').html(newContent);
+            }
+
+            // Add click handlers to new conversation items
+            $('.conversation-item').off('click').on('click', function() {
                 const conversationId = $(this).data('id');
                 console.log(`Loading conversation with id: ${conversationId}`);
-                
-                // Update the URL to reflect the conversation being loaded
                 window.history.pushState({}, '', `/c/${conversationId}`);
-
-                // Load the conversation data
                 loadConversation(conversationId);
             });
+
+            // Setup infinite scroll if there are more conversations
+            if (hasMoreConversations) {
+                setupInfiniteScroll();
+            }
+
         })
         .catch(error => {
             console.error(`Error updating conversation list: ${error}`);
+            $('#conversation-loading').html('Error loading conversations. <a href="#" onclick="updateConversationList(1, false)">Retry</a>');
+        })
+        .finally(() => {
+            isLoadingConversations = false;
         });
 }
+
+// Add infinite scroll functionality
+function setupInfiniteScroll() {
+    const conversationList = document.getElementById('conversation-list');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && hasMoreConversations && !isLoadingConversations) {
+                updateConversationList(currentPage + 1, true);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    // Observe the last conversation item
+    const lastConversation = conversationList.lastElementChild;
+    if (lastConversation) {
+        observer.observe(lastConversation);
+    }
+}
+
 
 
 
@@ -1954,69 +2324,119 @@ function renderOpenAIWithFootnotes(content, enableWebSearch) {
     return renderedContent + sourcesSection[0].outerHTML;
 }
 
-$('#chat-form').on('submit', function (e) {
+$('#chat-form').on('submit', async function (e) {
     console.log('Chat form submitted with user input:', $('#user_input').val());
     e.preventDefault();
-    var userInput = $('#user_input').val();
+    
+    const userInput = $('#user_input').val();
+    if (!userInput.trim()) return; // Don't process empty messages
+
+    // Get reasoning effort if o3-mini model is selected
+    let reasoningEffort = null;
+    const activeModelItem = $('.model-dropdown .dropdown-item.active');
+    if (activeModelItem.length && activeModelItem.data('model') === 'o3-mini') {
+        reasoningEffort = activeModelItem.data('reasoning');
+    }
+
+    // Set WebSocket connection maintenance flag
+    maintainWebSocketConnection = true;
+    statusWebSocket = initStatusWebSocket();
+
+    // Wait briefly for session ID to be set by the server
+    const startTime = Date.now();
+    while (!currentSessionId && Date.now() - startTime < 2000) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    if (!currentSessionId) {
+        console.error('Failed to get session ID');
+        return;
+    }
 
     if (!messages) {
         messages = [];
     }
 
-    var userInputDiv = $('<div class="chat-entry user user-message">')
-        .append('<i class="far fa-user"></i> ')
-        .append($('<span>').text(userInput));
-
-    $('#chat').append(userInputDiv);
-    $('#chat').scrollTop($('#chat')[0].scrollHeight);
-
-    messages.push({ "role": "user", "content": userInput });
-
-    var userInputTextarea = $('#user_input');
+    // Immediately clear the input and reset its height
+    const userInputTextarea = $('#user_input');
     userInputTextarea.val('');
     userInputTextarea.css('height', defaultHeight);
 
+    // Immediately show the user's message
+    const userInputDiv = $('<div class="chat-entry user user-message">')
+        .append('<i class="far fa-user"></i> ')
+        .append($('<span>').text(userInput));
+    $('#chat').append(userInputDiv);
+    $('#chat').scrollTop($('#chat')[0].scrollHeight);
+
+    // Add to messages array immediately
+    messages.push({ "role": "user", "content": userInput });
+
+    // Show loading indicator
     document.getElementById('loading').style.display = 'block';
 
-    let requestPayload = {
-        messages: messages,
-        model: model,
-        temperature: selectedTemperature,
-        system_message_id: activeSystemMessageId,
-        enable_web_search: $('#enableWebSearch').is(':checked'),
-        enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
-    };
+    try {
+        // Prepare and send the request
+        let requestPayload = {
+            messages: messages,
+            model: model,
+            temperature: selectedTemperature,
+            system_message_id: activeSystemMessageId,
+            enable_web_search: $('#enableWebSearch').is(':checked'),
+            enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
+        };
 
-    if (activeConversationId !== null) {
-        requestPayload.conversation_id = activeConversationId;
-    }
-    console.log('Sending request payload:', JSON.stringify(requestPayload));
+        // Add reasoning_effort parameter for o3-mini model
+        if (model === 'o3-mini' && reasoningEffort) {
+            requestPayload.reasoning_effort = reasoningEffort;
+            console.log(`Adding reasoning effort to request: ${reasoningEffort}`);
+        }
 
-    fetch('/chat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestPayload)
-    })
-    .then(response => {
+        // Add extended thinking parameters for Claude 3.7 Sonnet when extended thinking version is selected
+        const activeModelItem = $('.model-dropdown .dropdown-item.active');
+        const isExtendedThinking = activeModelItem.attr('data-extended-thinking') === 'true';
+        if (model === 'claude-3-7-sonnet-20250219' && isExtendedThinking) {
+            requestPayload.extended_thinking = true;
+            requestPayload.thinking_budget = parseInt($('#thinking-budget-slider').val());
+        }
+
+        if (activeConversationId !== null) {
+            requestPayload.conversation_id = activeConversationId;
+        }
+
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Debug': '1',
+                'X-Session-ID': currentSessionId
+            },
+            body: JSON.stringify(requestPayload)
+        });
+
         console.log('Received response from /chat endpoint:', response);
-
         document.getElementById('loading').style.display = 'none';
 
         if (!response.ok) {
-            return response.text().then(text => {
-                throw new Error(text);
+            const errorText = await response.text();
+            console.error('Error response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries()),
+                body: errorText
             });
+            
+            try {
+                const errorJson = JSON.parse(errorText);
+                throw new Error(JSON.stringify(errorJson, null, 2));
+            } catch (e) {
+                throw new Error(errorText);
+            }
         }
 
-        return response.json();
-    })
-    .then(data => {
+        const data = await response.json();
         console.log("Complete server response:", JSON.stringify(data, null, 2));
         
-        console.log("Generated search queries:", data.generated_search_queries);
-
         // Display vector search results
         if (data.vector_search_results && data.vector_search_results !== "No results found") {
             const vectorSearchDiv = $('<div class="chat-entry vector-search">')
@@ -2041,16 +2461,12 @@ $('#chat-form').on('submit', function (e) {
             generatedQueryDiv.append('<strong>Generated Search Queries:</strong> ');
             
             const queryList = $('<ul class="query-list">');
-            
             data.generated_search_queries.forEach((query) => {
                 queryList.append($('<li>').text(query));
             });
             
             generatedQueryDiv.append(queryList);
             $('#chat').append(generatedQueryDiv);
-            console.log("Generated query div appended");
-        } else {
-            console.log("No generated search queries received, not an array, or empty array");
         }
 
         // Display web search results
@@ -2074,12 +2490,11 @@ $('#chat-form').on('submit', function (e) {
             .append('<i class="fas fa-robot"></i> ')
             .append(renderedBotOutput);
         $('#chat').append(botMessageDiv);
-        $('#chat').scrollTop($('#chat')[0].scrollHeight);
         
-        // Update messages array with the new assistant message
+        // Update messages array
         messages.push({ "role": "assistant", "content": data.chat_output });
 
-        // Update the system message in the messages array only if there's new content
+        // Update system message if new content exists
         if (data.system_message_content) {
             const systemMessageIndex = messages.findIndex(msg => msg.role === 'system');
             if (systemMessageIndex !== -1) {
@@ -2089,35 +2504,52 @@ $('#chat-form').on('submit', function (e) {
             }
         }
 
-        // Call MathJax to typeset the new message
-        MathJax.typesetPromise().then(() => {
-            console.log('MathJax has finished typesetting the new message.');
-        }).catch((err) => console.log('Error typesetting math content: ', err));
+        // Render content and scroll
+        await Promise.all([
+            MathJax.typesetPromise().catch(err => console.log('Error typesetting math content: ', err)),
+            new Promise(resolve => {
+                Prism.highlightAll();
+                resolve();
+            })
+        ]);
 
-        Prism.highlightAll();
+        // Scroll to new content
+        setTimeout(() => {
+            const chatContainer = $('#chat');
+            const botMessageDiv = chatContainer.find('.bot-message').last();
+            const botMessageTop = botMessageDiv.position().top;
+            const containerScrollTop = chatContainer.scrollTop();
+            const adjustedScroll = botMessageTop + containerScrollTop - 50;
+
+            chatContainer.animate({
+                scrollTop: adjustedScroll
+            }, 500);
+        }, 100);
+
         updateConversationList();
 
-        // Update the URL with the received conversation_id
+        // Update URL and conversation controls
         window.history.pushState({}, '', `/c/${data.conversation_id}`);
 
         if (data.conversation_title) {
             console.log("Received conversation_title from server:", data.conversation_title);
-            // Log the token usage data
-            console.log("Token usage data:", data.usage);
-            // Update token data in the UI
             const tokens = data.usage;
             showConversationControls(data.conversation_title, tokens);
         } else {
-            console.log("No conversation_title from server. Showing default.");
             showConversationControls();
         }
-        console.log('End of chat-form submit function');
-    })
-    .catch(error => {
-        console.error('Error processing chat form submission:', error);
+
+        // Clean up status updates after successful completion
+        clearStatusUpdates();
+
+    } catch (error) {
+        console.error('Error in chat form processing:', error);
         document.getElementById('loading').style.display = 'none';
-    });
+        clearStatusUpdates();
+    }
 });
+
+
 
 // This function checks if there's an active conversation in the session.
 function checkActiveConversation() {
@@ -2157,6 +2589,9 @@ $(document).ready(function() {  // Document Ready (initialization)
     // Set default title
     $("#conversation-title").html("AI &infin; UI");
 
+    // initialize the conversation list with pagination
+    updateConversationList(1, false);
+
     // Function to update the temperature modal
     function updateTemperatureModal() {
         document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
@@ -2173,6 +2608,10 @@ $(document).ready(function() {  // Document Ready (initialization)
             const userFriendlyModelName = modelNameMapping(apiModelName);
             model = apiModelName; // Set the model variable correctly
             $('#dropdownMenuButton').text(userFriendlyModelName);
+            
+            // Show thinking budget only for extended thinking version
+            const isClaudeSonnetExtended = apiModelName === 'claude-3-7-sonnet-20250219' && extendedThinking;
+            $('#thinking-budget-container').toggle(isClaudeSonnetExtended);
         },
         error: function(error) {
             console.error('Error fetching current model:', error);
@@ -2200,12 +2639,53 @@ $(document).ready(function() {  // Document Ready (initialization)
     // Handler for model dropdown items
     $('.model-dropdown .dropdown-item').on('click', function(event) {
         event.preventDefault(); // Prevent the # appearing in the URL
+        
+        // Remove active class from all items
+        $('.model-dropdown .dropdown-item').removeClass('active');
+        // Add active class to clicked item
+        $(this).addClass('active');
+        
+        const modelName = $(this).attr('data-model');
+        const reasoningEffort = $(this).attr('data-reasoning');
+        const extendedThinking = $(this).attr('data-extended-thinking') === 'true';
+        
         $('#dropdownMenuButton').text($(this).text());
-        model = $(this).attr('data-model'); // Update the model variable here
-        console.log("Dropdown item clicked. Model is now: " + model);
+        model = modelName; // Update the model variable here
+            
+        // Update the displayed model name in the system message section
+        const displayName = modelNameMapping(model, reasoningEffort);
+        console.log(`Model selected: ${model}, Reasoning: ${reasoningEffort}, Display: ${displayName}`);
 
         // Update the displayed model name in the system message section
-        $('.chat-entry.system.system-message .model-name').text(modelNameMapping(model));
+        $('.chat-entry.system.system-message .model-name').text(displayName);
+
+        // Handle Claude 3.7 Sonnet specific controls
+        const isClaudeSonnetExtended = modelName === 'claude-3-7-sonnet-20250219' && extendedThinking;
+        $('#thinking-budget-container').toggle(isClaudeSonnetExtended);
+        if (isClaudeSonnetExtended) {
+            const budgetValue = $(this).attr('data-thinking-budget') || 12000;
+            $('#thinking-budget-slider').val(budgetValue);
+            $('#thinking-budget-value').text(budgetValue);
+        }
+    });
+
+    // Handler for extended thinking toggle
+    $('#extended-thinking-toggle').on('change', function() {
+        const isEnabled = $(this).is(':checked');
+        $('#thinking-budget-container').toggle(isEnabled);
+        
+        // Update the model selection if needed
+        if (model === 'claude-3-7-sonnet-20250219') {
+            const newModelText = isEnabled ? 
+                'Claude 3.7 Sonnet (Extended Thinking)' : 
+                'Claude 3.7 Sonnet';
+            $('#dropdownMenuButton').text(newModelText);
+        }
+    });
+
+    // Handler for thinking budget slider
+    $('#thinking-budget-slider').on('input', function() {
+        $('#thinking-budget-value').text($(this).val());
     });
 
     // Handler for system settings dropdown items
@@ -2226,6 +2706,10 @@ $(document).ready(function() {  // Document Ready (initialization)
             $('#chat-form').submit(); // Submit form when Enter is pressed without Shift
         }
     });
+
+    // Initialize extended thinking controls in collapsed state
+    $('#extended-thinking-toggle-container').hide();
+    $('#thinking-budget-container').hide();
 });
     
     // ... other initialization code ...

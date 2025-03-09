@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 
     <link href="/static/css/prism.css" rel="stylesheet" />
 
@@ -18,13 +19,6 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
     
-    <script>
-        var conversation_id = {{ conversation_id | default('null', true) }};
-    </script>
-
-    <script type="text/javascript">
-        var isAdmin = {{ current_user.is_admin | tojson }};
-    </script>
 
     <style>
         .full-height {
@@ -54,7 +48,15 @@
                     <i class="fa-solid fa-users text-white"></i>
                 </button>
 
-                <div id="conversation-list"></div>
+                <div id="conversations-container">
+                    <div id="conversation-list"></div>
+                    <div id="conversations-loading" class="loading-indicator" style="display: none;">
+                        <div class="spinner-border spinner-border-sm text-info" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <span class="loading-text">Loading conversations...</span>
+                    </div>
+                </div>
             </aside>
             
             
@@ -104,11 +106,23 @@
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                     <li><a class="dropdown-item" href="#" data-model="gpt-3.5-turbo">GPT-3.5</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gpt-4-turbo-2024-04-09">GPT-4 (Turbo)</a></li>
-                                    <li><a class="dropdown-item" href="#" data-model="gpt-4o-2024-05-13">GPT-4o</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="gpt-4o-2024-08-06">GPT-4o</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="o3-mini" data-reasoning="low" data-reasoning-display="Fast">o3-mini (Reasoning effort: Fast)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="o3-mini" data-reasoning="medium" data-reasoning-display="Balanced">o3-mini (Reasoning effort: Balanced)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="o3-mini" data-reasoning="high" data-reasoning-display="Deep">o3-mini (Reasoning effort: Deep)</a></li>
                                     <li><a class="dropdown-item" href="#" data-model="claude-3-opus-20240229">Claude 3 (Opus)</a></li>
-                                    <li><a class="dropdown-item" href="#" data-model="claude-3-5-sonnet-20240620">Claude 3.5 (Sonnet)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-5-sonnet-20241022">Claude 3.5 (Sonnet)</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-7-sonnet-20250219" data-extended-thinking="false">Claude 3.7 Sonnet</a></li>
+                                    <li><a class="dropdown-item" href="#" data-model="claude-3-7-sonnet-20250219" data-extended-thinking="true" data-thinking-budget="12000">Claude 3.7 Sonnet (Extended Thinking)</a></li>
+                                    </a></li>
                                     <li><a class="dropdown-item" href="#" data-model="gemini-pro">Gemini Pro</a></li>
                                 </ul>
+                            </div>
+
+                            <!-- Extended Thinking Controls -->
+                            <div id="thinking-budget-container" class="mt-2" style="display: none;">
+                                <label for="thinking-budget-slider">Thinking Budget: <span id="thinking-budget-value">12000</span> tokens</label>
+                                <input type="range" class="form-control-range" id="thinking-budget-slider" min="1024" max="32000" step="1024" value="12000">
                             </div>
 
                             <!-- System Settings -->
@@ -167,14 +181,14 @@
                     <div class="modal-sidebar">
 
                         <div id="rag-controls">
-                            <h6>RAG Controls</h6>
+                            <h6>Knowledge Base Resources</h6>
                             <!-- Placeholder for dynamic RAG controls -->
                             <div id="RAG-Buttons">
                                 <!--- Website Identifier (real-time data, news summarization, and fact-checking) -->
-                                <button id="addWebsiteButton" type="button" class="btn btn-secondary" onclick="handleAddWebsiteButtonClick()">+ Website</button>
+                                <button id="addWebsiteButton" type="button" class="btn btn-secondary" onclick="handleAddWebsiteButtonClick()">+ Websites</button>
 
                                 <!--- File Uploader (document analysis, customized reponses, and sensitive data) -->
-                                <button id="addFilesButton" type="button" class="btn btn-secondary" onclick="handleAddFileButtonClick()">+ File</button>
+                                <button id="addFilesButton" type="button" class="btn btn-secondary" onclick="handleAddFileButtonClick()">+ Files</button>
                             </div>
                             <div class="modal-sidebar" id="modal-sidebar">
                                 <!-- Dynamic content will be loaded here -->
@@ -239,7 +253,6 @@
                         </div> <!-- End of modal header -->
 
                         <div class="modal-body">
-                                
                             <div class="row">
                                 <!-- Column for system name within modal body-->
                                 <div class="col-md-6">
@@ -252,16 +265,29 @@
                                 <!-- Column for temperature display within modal body -->
                                 <div class="col-md-6">
                                     <div class="form-group text-right">
-                                        <p id="temperatureDisplay" style="color: white;"></p>
+                                        <div class="d-flex justify-content-end align-items-center">
+                                            <!-- Time Sense Toggle -->
+                                            <div class="d-flex align-items-center mr-3">
+                                                <label for="enableTimeSense" class="mb-0 mr-2" style="color: white;">Time Sense</label>
+                                                <div class="toggle-switch">
+                                                    <input type="checkbox" id="enableTimeSense" class="toggle-switch-checkbox" name="enableTimeSense">
+                                                    <label class="toggle-switch-label" for="enableTimeSense">
+                                                        <span class="toggle-switch-inner"></span>
+                                                        <span class="toggle-switch-switch"></span>
+                                                    </label>
+                                                </div>
+                                                <i class="fas fa-info-circle ml-2" data-toggle="tooltip" title="When enabled, the AI will be aware of the current date and time when responding."></i>
+                                            </div>
+                                            <!-- Temperature Display -->
+                                            <p id="temperatureDisplay" class="mb-0" style="color: white;"></p>
+                                        </div>
                                     </div>
                                 </div>
-                                
-
+                        
                                 <div id="modal-flash-message-container" class="modal-flash-message-container">
                                     <!-- This container will hold the flash messages for the modal -->
                                 </div>
-                                
-
+                        
                                 <!-- System Message Content Group -->
                                 <div class="col-md-12">
                                     <div id="systemMessageContentGroup" class="modal-content-group hidden">
@@ -328,9 +354,10 @@
                                 <!-- Websites Group -->
                                 <div class="col-md-12">
                                     <div id="websitesGroup" class="modal-content-group hidden">
-                                        <!-- Web Browsing Activation -->
-                                        <hr>
-                                        <div class="form-group">
+                                    <!-- Web Browsing Activation -->
+                                    <hr>
+                                    <div class="form-group d-flex align-items-center">
+                                        <div class="mr-4">
                                             <label for="enableWebSearch" class="mb-0">Enable Web Search</label>
                                             <div class="toggle-switch">
                                                 <input type="checkbox" id="enableWebSearch" class="toggle-switch-checkbox" name="enableWebSearch">
@@ -340,30 +367,41 @@
                                                 </label>
                                             </div>
                                         </div>
-                                        <hr>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group" style="margin-top: -7px;">
-                                                    <label for="websiteURL">Scrape Website</label>
-                                                    <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <button id="submitWebsiteButton" type="button" class="btn btn-info website-control-btn">Add Website</button>
-                                                <button id="removeWebsiteButton" type="button" class="btn btn-info website-control-btn" style="display: none;">Remove Website</button>
+                                        <div class="ml-5">
+                                            <label for="enableIntelligentSearch" class="mb-0">Enable Intelligent Search</label>
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="enableIntelligentSearch" class="toggle-switch-checkbox" name="enableIntelligentSearch">
+                                                <label class="toggle-switch-label" for="enableIntelligentSearch">
+                                                    <span class="toggle-switch-inner"></span>
+                                                    <span class="toggle-switch-switch"></span>
+                                                </label>
                                             </div>
                                         </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group" style="margin-top: -7px;">
+                                                <label for="websiteURL">Scrape Website</label>
+                                                <input type="url" class="form-control" id="websiteURL" name="websiteURL" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button id="submitWebsiteButton" type="button" class="btn btn-info website-control-btn">Add Website</button>
+                                            <button id="removeWebsiteButton" type="button" class="btn btn-info website-control-btn" style="display: none;">Remove Website</button>
+                                        </div>
+                                    </div>
                                         
-                                        <div id="websiteDetails">
-                                            <h5>Indexing Details</h5>
-                                            <div class="detail-item" style="position: relative;">
-                                                <strong>Indexing Status:</strong> <span id="indexingStatus">N/A</span>
-                                                <button id="indexWebsiteButton" type="button" class="btn btn-info website-control-btn index-website-btn">Index Website</button>
-                                            </div>
-                                            <div class="detail-item">
-                                                <strong>Indexing Frequency:</strong> <span id="indexingFrequency">N/A</span>
-                                            </div>
+                                    <div id="websiteDetails">
+                                        <h5>Indexing Details</h5>
+                                        <div class="detail-item" style="position: relative;">
+                                            <strong>Indexing Status:</strong> <span id="indexingStatus">N/A</span>
+                                            <button id="indexWebsiteButton" type="button" class="btn btn-info website-control-btn index-website-btn">Index Website</button>
                                         </div>
+                                        <div class="detail-item">
+                                            <strong>Indexing Frequency:</strong> <span id="indexingFrequency">N/A</span>
+                                        </div>
+                                    </div>
                                         
                                     </div> <!-- End of websites group -->
                                 </div> <!-- End of Bootstrap column -->
@@ -373,7 +411,9 @@
                                 <div class="col-md-12">
                                     <div id="filesGroup" class="modal-content-group hidden">
                                         <div class="form-group files-group-label">
-                                            <label for="fileInput" class="modal-label">Summary of Files Associated with this System Message:</label>
+                                            <br>
+                                            <label for="fileInput" class="modal-label">Add files for knowledge enhancement. These files will be used to improve the 
+                                                accuracy and depth of the AI's responses on this topic. </label>
                                         </div>
                                         <hr class="files-group-hr">
                                         <div class="d-flex align-items-center files-group-button-container">
@@ -428,9 +468,15 @@
     <script src="/static/js/prism.js"></script>
 
 
-    <!-- Include MathJax -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Include MathJax with built-in polyfills -->
+    <script>
+        MathJax = {
+            options: {
+                enableMenu: false    // Disable the right-click menu
+            }
+        };
+        </script>
+        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
     <!-- Include Chart.js for rendering graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -470,8 +516,22 @@
     </script>
 
     <script>
-        console.log('System messages:', systemMessages);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only try to log systemMessages after it's been initialized
+            setTimeout(() => {
+                console.log('System messages:', window.systemMessages || []);
+            }, 1000);
+        });
     </script>
+
+    <script type="text/javascript">
+    window.APP_DATA = {
+        sessionId: {% if user_session_id is defined %}{{ user_session_id | tojson | safe }}{% else %}null{% endif %},
+        conversationId: {% if conversation_id is defined %}{{ conversation_id | tojson | safe }}{% else %}null{% endif %},
+        isAdmin: {% if user and user.is_admin is defined %}{{ user.is_admin | tojson | safe }}{% else %}false{% endif %}
+    };
+    </script>
+
 
 
 </body>
