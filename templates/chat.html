@@ -253,12 +253,11 @@
                         </div> <!-- End of modal header -->
 
                         <div class="modal-body">
-                                
                             <div class="row">
                                 <!-- Column for system name within modal body-->
                                 <div class="col-md-6">
                                     <div class="form-group" style="margin-top: -7px;">
-                                        <label for="systemMessageName" style="color: white;">Name</label>
+                                        <label for="systemMessageName" style="color: white; margin-top: 5px; display: inline-block;">Name</label>
                                         <input type="text" class="form-control" id="systemMessageName" style="color: black;">
                                     </div>
                                 </div>
@@ -269,13 +268,28 @@
                                         <p id="temperatureDisplay" style="color: white;"></p>
                                     </div>
                                 </div>
-                                
-
+                        
+                                <!-- Time Sense Toggle with absolute positioning -->
+                                <div style="position: absolute; top: 15px; left: 500px;" id="timeSenseContainer">
+                                    <div class="d-flex flex-column align-items-start">
+                                        <label for="enableTimeSense" style="color: white; margin-bottom: 4px;">Time Sense</label>
+                                        <div class="d-flex align-items-center" style="margin-top: 5px;">
+                                            <div class="toggle-switch">
+                                                <input type="checkbox" id="enableTimeSense" class="toggle-switch-checkbox" name="enableTimeSense">
+                                                <label class="toggle-switch-label" for="enableTimeSense">
+                                                    <span class="toggle-switch-inner"></span>
+                                                    <span class="toggle-switch-switch"></span>
+                                                </label>
+                                            </div>
+                                            <i class="fas fa-info-circle ml-2 time-sense-info" data-toggle="tooltip" title="When enabled, the AI will be aware of the current date and time when responding."></i>
+                                        </div>
+                                    </div>
+                                </div>
+                        
                                 <div id="modal-flash-message-container" class="modal-flash-message-container">
                                     <!-- This container will hold the flash messages for the modal -->
                                 </div>
-                                
-
+                        
                                 <!-- System Message Content Group -->
                                 <div class="col-md-12">
                                     <div id="systemMessageContentGroup" class="modal-content-group hidden">

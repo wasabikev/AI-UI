@@ -939,6 +939,8 @@ function updateSystemMessageDropdown() {
             document.getElementById('systemMessageDescription').value = message.description || '';
             document.getElementById('systemMessageContent').value = message.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = message.id;
+            document.getElementById('enableWebSearch').checked = message.enable_web_search;
+            document.getElementById('enableTimeSense').checked = message.enable_time_sense;
             // Update the current system message description
             currentSystemMessageDescription = message.description;
             // Update the temperature display
@@ -1055,6 +1057,7 @@ function populateSystemMessageModal() {
             document.getElementById('systemMessageContent').value = message.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = message.id;
             document.getElementById('enableWebSearch').checked = message.enable_web_search;
+            document.getElementById('enableTimeSense').checked = message.enable_time_sense;
 
             currentSystemMessageDescription = message.description;
             initialTemperature = message.temperature;
@@ -1080,6 +1083,7 @@ function populateSystemMessageModal() {
         document.getElementById('systemMessageContent').value = defaultSystemMessage.content || '';
         document.getElementById('systemMessageModal').dataset.messageId = defaultSystemMessage.id;
         document.getElementById('enableWebSearch').checked = defaultSystemMessage.enable_web_search;
+        document.getElementById('enableTimeSense').checked = defaultSystemMessage.enable_time_sense;
         initialTemperature = defaultSystemMessage.temperature;
         updateTemperatureSelectionInModal(initialTemperature);
         updateModelDropdownInModal(defaultSystemMessage.model_name);
@@ -1189,6 +1193,7 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
     const modelName = document.getElementById('modalModelDropdownButton').dataset.apiName;
     const temperature = selectedTemperature;
     const enableWebSearch = document.getElementById('enableWebSearch').checked; // Get the actual state of the checkbox
+    const enableTimeSense = document.getElementById('enableTimeSense').checked;
 
     const messageId = document.getElementById('systemMessageModal').dataset.messageId;
 
@@ -1207,7 +1212,8 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         content: messageContent,
         model_name: modelName,
         temperature: temperature,
-        enable_web_search: enableWebSearch
+        enable_web_search: enableWebSearch,
+        enable_time_sense: enableTimeSense
     };
 
     const url = messageId ? `/system-messages/${messageId}` : '/system-messages';
@@ -1280,10 +1286,24 @@ function displaySystemMessage(systemMessage) {
     const modelDisplayName = modelNameMapping(model);
     const temperatureDisplay = systemMessage.temperature;
     const descriptionContent = `<span class="no-margin">${renderOpenAI(systemMessage.description)}</span>`;
+    
+    // Create feature indicators
+    const featureIndicators = [];
+    if (systemMessage.enable_web_search) {
+        featureIndicators.push('<span class="feature-indicator" title="Web Search Enabled"><i class="fas fa-search"></i></span>');
+    }
+    if (systemMessage.enable_time_sense) {
+        featureIndicators.push('<span class="feature-indicator" title="Time Sense Enabled"><i class="fas fa-clock"></i></span>');
+    }
+    
+    const featuresDisplay = featureIndicators.length > 0 ? 
+        `<span class="feature-indicators ml-4" style="margin-left: 15px;">${featureIndicators.join('&nbsp;&nbsp;')}</span>` : '';
+    
     const renderedContent = `
     <div class="chat-entry system system-message" data-system-message-id="${systemMessage.id}">
         <strong>System:</strong>${systemMessageButton}${descriptionContent}<br>
-        <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> <strong>Temperature:</strong> ${temperatureDisplay}°
+        <strong>Model:</strong> <span class="model-name">${modelDisplayName}</span> 
+        <strong>Temperature:</strong> ${temperatureDisplay}°${featuresDisplay}
     </div>`;
 
     // Update the UI
@@ -1669,14 +1689,6 @@ $('#systemMessageModal').on('shown.bs.modal', function () {
     }
 });
 
-$('#systemMessageModal').on('hidden.bs.modal', function () {
-    // Hide all content groups
-    $('.modal-content-group').addClass('hidden');
-
-    // Reset any specific flags or settings
-    $(this).removeData('targetGroup');
-});
-
 
 // Event listener for the system message button in the chat interface
 document.addEventListener('click', function(event) {
@@ -1713,6 +1725,7 @@ $('#systemMessageModal').on('hidden.bs.modal', function () {
             document.getElementById('systemMessageDescription').value = activeMessage.description;
             document.getElementById('systemMessageContent').value = activeMessage.content;
             document.getElementById('enableWebSearch').checked = activeMessage.enable_web_search;
+            document.getElementById('enableTimeSense').checked = activeMessage.enable_time_sense;
             updateModelDropdownInModal(activeMessage.model_name);
             updateTemperatureSelectionInModal(activeMessage.temperature);
         }
@@ -1722,6 +1735,7 @@ $('#systemMessageModal').on('hidden.bs.modal', function () {
         document.getElementById('systemMessageDescription').value = '';
         document.getElementById('systemMessageContent').value = '';
         document.getElementById('enableWebSearch').checked = false;
+        document.getElementById('enableTimeSense').checked = false;
         updateModelDropdownInModal('gpt-3.5-turbo'); // Set to default model
         updateTemperatureSelectionInModal(0.7); // Set to default temperature
     }
@@ -2372,6 +2386,10 @@ $('#chat-form').on('submit', async function (e) {
     document.getElementById('loading').style.display = 'block';
 
     try {
+        // Get user's timezone from browser
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log('User timezone detected:', userTimezone);
+
         // Prepare and send the request
         let requestPayload = {
             messages: messages,
@@ -2379,7 +2397,8 @@ $('#chat-form').on('submit', async function (e) {
             temperature: selectedTemperature,
             system_message_id: activeSystemMessageId,
             enable_web_search: $('#enableWebSearch').is(':checked'),
-            enable_intelligent_search: $('#enableIntelligentSearch').is(':checked')
+            enable_intelligent_search: $('#enableIntelligentSearch').is(':checked'),
+            timezone: userTimezone  // timezone for time sense and time-based responses
         };
 
         // Add reasoning_effort parameter for o3-mini model
