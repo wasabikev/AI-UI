@@ -69,8 +69,9 @@ async def generate_time_context(user=None):
             season = "summer"
         else:
             season = "autumn"
-            
-        time_context += f"\n\nIt is currently {season} in the northern hemisphere."
+
+        #removed for now to avoid too much noise.    
+        # time_context += f"\n\nIt is currently {season} in the northern hemisphere."
         
         # Check for major holidays (simplified example)
         holidays = []

@@ -18,6 +18,7 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - **Authentication System**: User registration, login, and admin management
 - **Rich Text Rendering**: Markdown, code highlighting, and LaTeX support
 - **Responsive Design**: Mobile-friendly interface with Bootstrap
+- **Time Sense**: Context-aware responses with current date, time, and timezone information
 
 ## Global Variables
 
@@ -252,6 +253,11 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - `unauthorized_handler()`: Handles unauthorized access attempts
 - `not_found_error()`: Handles 404 errors
 - `internal_error()`: Handles 500 errors
+- `create_system_message()`: Creates a new system message template
+- `update_system_message()`: Updates an existing system message template
+- `delete_system_message()`: Deletes a system message template
+- `get_system_messages()`: Retrieves all system message templates
+- `toggle_search()`: Toggles web search settings for a system message
 
 ### File Processing Functions (file_processing.py)
 - `process_file()`: Handles file processing based on file type
@@ -268,6 +274,10 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - `parse()`: Extracts content from web pages
 - `clean_html()`: Cleans HTML content
 - `extract_metadata()`: Extracts metadata from web pages
+
+### Time Utility Functions (time_utils.py)
+- `clean_and_update_time_context()`: Processes and updates time context in messages
+- `generate_time_context()`: Generates current time information for the AI
 
 ### Frontend Functions (main.js)
 - `initStatusWebSocket()`: Initializes WebSocket connection for status updates
@@ -363,6 +373,8 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 ├── file_processing.py
 
 ├── file_utils.py
+
+├── time_utils.py
 
 ├── embedding_store.py
 
@@ -550,6 +562,7 @@ The admin dashboard provides interfaces for:
 - `updated_at`: DateTime
 - `source_config`: JSON
 - `enable_web_search`: Boolean, default False
+- `enable_time_sense`: Boolean, default False
 - Relationships: Many-to-one with User, One-to-many with Website and UploadedFile
 
 ### Website
