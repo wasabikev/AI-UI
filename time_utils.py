@@ -3,7 +3,6 @@
 import re
 import datetime
 import pytz
-import uuid
 import platform
 from quart import current_app as app
 
@@ -48,10 +47,13 @@ async def generate_time_context(user=None):
         else:
             formatted_time = now.strftime('%-I:%M %p')  # Unix format
         
-        # Create the time context message
+        # Create the time context message with enhanced instructions
         time_context = (
-            f"Current date and time: {formatted_date}, {formatted_time} {tz.zone}. "
-            f"Please use this information when responding to time-sensitive queries, "
+            f"Current date and time: {formatted_date}, {formatted_time} {tz.zone}.\n\n"
+            f"IMPORTANT: This timestamp represents the EXACT MOMENT of this interaction. "
+            f"If you see other time references in the conversation history, those were accurate "
+            f"at the time they were generated but may no longer be current. Always use this "
+            f"timestamp when responding to time-sensitive queries, "
             f"while acknowledging that your training data has a cutoff date."
         )
         
@@ -68,7 +70,7 @@ async def generate_time_context(user=None):
         else:
             season = "autumn"
             
-        time_context += f" It is currently {season} in the northern hemisphere."
+        time_context += f"\n\nIt is currently {season} in the northern hemisphere."
         
         # Check for major holidays (simplified example)
         holidays = []
@@ -92,8 +94,6 @@ async def generate_time_context(user=None):
         return f"Current date: {datetime.datetime.now(pytz.UTC).strftime('%Y-%m-%d')} UTC."
 
 async def clean_and_update_time_context(messages, user, enable_time_sense, logger=None):
-    print("===== ENTERING clean_and_update_time_context =====")
-    print(f"Enable time sense: {enable_time_sense}")
     """
     Cleans any existing time context and adds a fresh one if enabled.
     
@@ -106,6 +106,13 @@ async def clean_and_update_time_context(messages, user, enable_time_sense, logge
     Returns:
         List of updated messages
     """
+    if logger:
+        logger.debug("===== ENTERING clean_and_update_time_context =====")
+        logger.debug(f"Enable time sense: {enable_time_sense}")
+    else:
+        print("===== ENTERING clean_and_update_time_context =====")
+        print(f"Enable time sense: {enable_time_sense}")
+    
     # Make a copy of messages to avoid modifying the original
     updated_messages = messages.copy()
     
@@ -152,7 +159,7 @@ async def clean_and_update_time_context(messages, user, enable_time_sense, logge
         # Generate new time context
         time_context = await generate_time_context(user)
         
-        # Add the new time context to the cleaned system message
+        # Add the new time context to the cleaned system message with clear visual separation
         updated_messages[system_idx]['content'] = (
             f"{updated_messages[system_idx]['content'].strip()}\n\n"
             f"<Time Context>\n{time_context}\n</Time Context>"
@@ -160,6 +167,10 @@ async def clean_and_update_time_context(messages, user, enable_time_sense, logge
         
         if logger:
             logger.debug(f"Updated system message with time context: {updated_messages[system_idx]['content'][:100]}...")
-
-    print("===== EXITING clean_and_update_time_context =====")
+    
+    if logger:
+        logger.debug("===== EXITING clean_and_update_time_context =====")
+    else:
+        print("===== EXITING clean_and_update_time_context =====")
+    
     return updated_messages
