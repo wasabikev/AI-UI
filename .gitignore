@@ -30,6 +30,7 @@ app.backup.py
 auth.py.backup.py
 models.backup.py
 backup.js
+README_v1.md
 
 #Related to Docker
 docker-compose.yml
