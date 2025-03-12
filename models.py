@@ -1,8 +1,8 @@
-# models.py 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Text, Index, text, event
 from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy_utils import LtreeType
 from quart_auth import AuthUser
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -43,9 +43,6 @@ load_dotenv(override=True)
 db_url = os.getenv("DATABASE_URL")
 if not db_url:
     raise ValueError("DATABASE_URL environment variable is not set")
-
-
-
 
 # Create async engine with logging disabled
 engine = create_async_engine(
@@ -91,6 +88,10 @@ async def get_session():
 async def test_db_connection():
     try:
         async with engine.connect() as conn:
+            # First, ensure ltree extension is installed
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS ltree"))
+            
+            # Test connection
             result = await conn.execute(text("SELECT version()"))
             version = result.fetchone()[0]
             print(f"Database connection successful! PostgreSQL version: {version}")
@@ -106,8 +107,36 @@ class Folder(Base):
     __tablename__ = 'folder'
     
     id = Column(Integer, primary_key=True)
-    title = Column(String(120), nullable=False)
-    conversations = relationship('Conversation', backref='folder', lazy='selectin')
+    name = Column(String(120), nullable=False)
+    path = Column(LtreeType, nullable=False)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), 
+                       onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = relationship("User", back_populates="folders")
+    conversations = relationship("Conversation", back_populates="folder", lazy="selectin")
+    
+    __table_args__ = (
+        # GiST index for efficient hierarchical queries
+        Index('ix_folder_path_gist', path, postgresql_using='gist'),
+        # Index for user's folders
+        Index('ix_folder_user_id', user_id),
+    )
+    
+    def __repr__(self):
+        return f"<Folder(id={self.id}, name='{self.name}', path='{self.path}')>"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'path': str(self.path),
+            'user_id': self.user_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
 
 class Conversation(Base):
     __tablename__ = 'conversation'
@@ -135,6 +164,10 @@ class Conversation(Base):
     vector_search_results = Column(JSON)
     generated_search_queries = Column(JSON)
     web_search_results = Column(JSON)
+
+    # Update relationship to use back_populates instead of backref
+    user = relationship("User", back_populates="conversations")
+    folder = relationship("Folder", back_populates="conversations")
 
     def __repr__(self):
         return f'<Conversation {self.title}>'
@@ -178,7 +211,13 @@ class User(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, onupdate=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime)
-    conversations = relationship('Conversation', backref='user', lazy='selectin')
+    
+    # Update relationships to use back_populates
+    conversations = relationship('Conversation', back_populates='user', lazy='selectin')
+    folders = relationship('Folder', back_populates='user', cascade='all, delete-orphan')
+    usage = relationship('UserUsage', back_populates='user')
+    created_system_messages = relationship('SystemMessage', back_populates='creator')
+    uploaded_files = relationship('UploadedFile', back_populates='user')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -212,7 +251,8 @@ class UserUsage(Base):
     session_end = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     cost = Column(Float)
 
-    user = relationship('User', backref='usage')
+    # Update to use back_populates
+    user = relationship('User', back_populates='usage')
 
 class SystemMessage(Base):
     __tablename__ = 'system_message'
@@ -230,9 +270,12 @@ class SystemMessage(Base):
     source_config = Column(JSON)
     enable_web_search = Column(Boolean, default=False)
     enable_time_sense = Column(Boolean, default=False) 
+    
+    # Update relationships to use back_populates
     uploaded_files = relationship('UploadedFile', back_populates='system_message',
                                 cascade='all, delete-orphan')
-    creator = relationship('User', backref='created_system_messages')
+    creator = relationship('User', back_populates='created_system_messages')
+    websites = relationship('Website', back_populates='system_message', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<SystemMessage {self.name}>'
@@ -269,7 +312,8 @@ class Website(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                        onupdate=lambda: datetime.now(timezone.utc))
 
-    system_message = relationship('SystemMessage', backref='websites')
+    # Update to use back_populates
+    system_message = relationship('SystemMessage', back_populates='websites')
     
     # Add index for URL field
     __table_args__ = (Index('idx_website_url', url),)
@@ -303,7 +347,8 @@ class UploadedFile(Base):
     mime_type = Column(String(100))
     system_message_id = Column(Integer, ForeignKey('system_message.id'), nullable=False)
 
-    user = relationship('User', backref='uploaded_files')
+    # Update to use back_populates
+    user = relationship('User', back_populates='uploaded_files')
     system_message = relationship('SystemMessage', back_populates='uploaded_files')
 
     def __repr__(self):
