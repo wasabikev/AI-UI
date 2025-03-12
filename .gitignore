@@ -31,6 +31,7 @@ auth.py.backup.py
 models.backup.py
 backup.js
 README_v1.md
+static/js/backup.js
 
 #Related to Docker
 docker-compose.yml
