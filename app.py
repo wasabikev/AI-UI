@@ -108,6 +108,7 @@ pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 db_url = os.getenv('DATABASE_URL')
 BRAVE_SEARCH_API_KEY = os.getenv('BRAVE_SEARCH_API_KEY')
 
+
 # Debug configuration
 debug_mode = True
 
@@ -304,6 +305,19 @@ def setup_logging(app, debug_mode):
         app.logger.debug("Debug mode enabled")
         app.logger.debug("Console logging enabled with colors")
 
+# Initialize Cerebras
+from cerebras.cloud.sdk import Client as CerebrasClient
+cerebras_client = None
+cerebras_api_key = os.getenv("CEREBRAS_API_KEY")
+if cerebras_api_key:
+    try:
+        cerebras_client = CerebrasClient(api_key=cerebras_api_key)
+        app.logger.info("Cerebras client initialized successfully")
+    except Exception as e:
+        app.logger.error(f"Failed to initialize Cerebras client: {str(e)}")
+        app.logger.exception("Full traceback:")
+else:
+    app.logger.warning("CEREBRAS_API_KEY environment variable not set")
 
 # Usage in app.py
 setup_logging(app, debug_mode)
@@ -3357,6 +3371,51 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
                     await asyncio.sleep(retry_delay * (2 ** attempt))
                     continue
                 raise
+                
+    async def handle_cerebras_request(model_name, messages, temperature):
+        for attempt in range(max_retries):
+            try:
+                # Format messages for Cerebras API
+                formatted_messages = [
+                    {"role": msg["role"], "content": msg["content"]} 
+                    for msg in messages
+                ]
+                
+                app.logger.info(f"Sending request to Cerebras API with model: {model_name}")
+                app.logger.debug(f"Formatted messages: {formatted_messages}")
+                
+                # Verify the Cerebras client is initialized
+                if cerebras_client is None:
+                    app.logger.error("Cerebras client is None. API key may be missing or invalid.")
+                    raise ValueError("Cerebras client is not initialized")
+            
+                # Log the API key (first 4 and last 4 characters only for security)
+                api_key = os.getenv("CEREBRAS_API_KEY")
+                if api_key:
+                    masked_key = f"{api_key[:4]}...{api_key[-4:]}"
+                    app.logger.info(f"Using Cerebras API key: {masked_key}")
+                else:
+                    app.logger.error("CEREBRAS_API_KEY environment variable is not set")
+                    raise ValueError("CEREBRAS_API_KEY environment variable is not set")
+
+                # Call the Cerebras API
+                response = cerebras_client.chat.completions.create(
+                    messages=formatted_messages,
+                    model=model_name,
+                    temperature=temperature
+                )
+
+
+                
+                app.logger.info(f"Received response from Cerebras API: {response}")
+                return response.choices[0].message.content, model_name, None
+            except Exception as e:
+                app.logger.error(f"Error in Cerebras API call (attempt {attempt+1}): {str(e)}")
+                app.logger.exception("Full traceback:")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay * (2 ** attempt))
+                    continue
+                raise
 
     try:
         if model.startswith("gpt-"):
@@ -3426,8 +3485,18 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
             if reasoning_effort:
                 payload["reasoning_effort"] = reasoning_effort
             return await handle_openai_request(payload)
+            
+        elif model.startswith("llama3") or model == "llama-3.3-70b" or model == "deepSeek-r1-distill-llama-70B":
+            # Check if Cerebras client is initialized
+            if cerebras_client is None:
+                app.logger.error("Cerebras client not initialized. Please set CEREBRAS_API_KEY environment variable.")
+                raise ValueError("Cerebras client not initialized. Please set CEREBRAS_API_KEY environment variable.")
+            
+            app.logger.info(f"Routing request to Cerebras API for model: {model}")
+            return await handle_cerebras_request(model, messages, temperature)
 
         else:
+            app.logger.error(f"Unsupported model: {model}")
             raise ValueError(f"Unsupported model: {model}")
 
     except Exception as e:
@@ -3947,6 +4016,31 @@ def count_tokens(model_name, messages):
             # Fallback to a more sophisticated approximation
             return approximate_gemini_tokens(messages)
 
+    elif model_name.startswith("llama3.1") or model_name == "llama-3.3-70b" or model_name == "deepSeek-r1-distill-llama-70B":
+        # Use cl100k_base encoding for LLaMA models (approximate)
+        encoding = tiktoken.get_encoding("cl100k_base")
+        num_tokens = 0
+        
+        for message in messages:
+            if isinstance(message, dict):
+                content = message.get('content', '')
+                role = message.get('role', '')
+            elif isinstance(message, str):
+                content = message
+                role = ''
+            else:
+                continue
+
+            num_tokens += len(encoding.encode(content))
+            
+            if role:
+                num_tokens += len(encoding.encode(role))
+            
+            # Add tokens for message formatting
+            num_tokens += 4  # Approximate overhead per message
+        
+        return num_tokens
+    
     else:
         # Fallback to a generic tokenization method
         num_tokens = 0
