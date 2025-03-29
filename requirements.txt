@@ -32,6 +32,12 @@ openai==1.58.1
 anthropic==0.42.0
 google-generativeai==0.8.3
 tiktoken==0.8.0
+cerebras-cloud-sdk
+
+# Cerebras Additions
+# streamlit
+# httpx # (for asynchronous clients)
+# pydantic # (for response modeling and validation)
 
 # External Utilities
 tenacity==8.5.0

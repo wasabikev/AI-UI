@@ -1491,6 +1491,16 @@ function modelNameMapping(modelName, reasoningEffort, extendedThinking) {
         case "gemini-pro": 
             mappedName = "Gemini Pro"; 
             break;
+        // Add Cerebras LLaMA models
+        case "llama3.1-8b":
+            mappedName = "Llama 3.1 (8B)";
+            break;
+        case "llama-3.3-70b":
+            mappedName = "Llama 3.3 (70B)";
+            break;
+        case "deepSeek-r1-distill-llama-70B":
+            mappedName = "DeepSeek R1 Distill (70B)";
+            break;
         default: 
             mappedName = "Unknown Model"; 
             break;
@@ -1528,7 +1538,11 @@ function populateModelDropdownInModal() {
             extendedThinking: true,
             thinkingBudget: 12000
         },
-        { api: "gemini-pro", display: "Gemini Pro" }
+        { api: "gemini-pro", display: "Gemini Pro" },
+        // Add Cerebras LLaMA models
+        { api: "llama3.1-8b", display: "Llama 3.1 (8B)" },
+        { api: "llama-3.3-70b", display: "Llama 3.3 (70B)" },
+        { api: "deepSeek-r1-distill-llama-70B", display: "DeepSeek R1 Distill (70B)" }
     ];
 
     // Add each model to the dropdown
@@ -2418,6 +2432,9 @@ $('#chat-form').on('submit', async function (e) {
         if (activeConversationId !== null) {
             requestPayload.conversation_id = activeConversationId;
         }
+
+        // Log the model being used for debugging
+        console.log('Sending request with model:', model);
 
         const response = await fetch('/chat', {
             method: 'POST',
