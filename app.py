@@ -3987,7 +3987,7 @@ def count_tokens(model_name, messages):
         
         return num_tokens
 
-    elif model_name == "gemini-pro":
+    elif model_name.startswith("gemini-"):
         try:
             # Get API key from environment
             api_key = os.getenv('GOOGLE_API_KEY')
@@ -3995,7 +3995,7 @@ def count_tokens(model_name, messages):
                 raise ValueError("GOOGLE_API_KEY environment variable is not set")
 
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-2.0-pro-exp-02-05')
             
             num_tokens = 0
             for message in messages:
