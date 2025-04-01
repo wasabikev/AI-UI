@@ -1,1 +1,1 @@
-web: python run_migrations.py && hypercorn run:app --bind 0.0.0.0:$PORT --access-logfile - --error-logfile -
+web: python run_migrations.py && hypercorn run:app --bind 0.0.0.0:$PORT --timeout 300 --access-logfile - --error-logfile -
