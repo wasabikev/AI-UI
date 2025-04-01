@@ -1488,8 +1488,11 @@ function modelNameMapping(modelName, reasoningEffort, extendedThinking) {
                 "Claude 3.7 Sonnet (Extended Thinking)" : 
                 "Claude 3.7 Sonnet";
             break;
-        case "gemini-pro": 
-            mappedName = "Gemini Pro"; 
+        case "gemini-2.0-pro-exp-02-05": 
+            mappedName = "Gemini 2.5"; 
+            break;
+        case "gemini-2.0-flash": 
+            mappedName = "Gemini 2.0 Flash"; 
             break;
         // Add Cerebras LLaMA models
         case "llama3.1-8b":
@@ -1538,7 +1541,8 @@ function populateModelDropdownInModal() {
             extendedThinking: true,
             thinkingBudget: 12000
         },
-        { api: "gemini-pro", display: "Gemini Pro" },
+        { api: "gemini-2.0-pro-exp-02-05", display: "Gemini 2.5" },
+        { api: "gemini-2.0-flash", display: "Gemini 2.0 Flash" },
         // Add Cerebras LLaMA models
         { api: "llama3.1-8b", display: "Llama 3.1 (8B)" },
         { api: "llama-3.3-70b", display: "Llama 3.3 (70B)" },
