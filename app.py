@@ -3767,7 +3767,6 @@ async def chat():
 
         # Estimate token count for the *embedding* model
         try:
-            # Use cl100k_base for text-embedding-ada-002 and newer OpenAI embeddings
             embedding_encoding = tiktoken.get_encoding("cl100k_base")
             user_query_embedding_tokens = len(embedding_encoding.encode(user_query))
             app.logger.info(f"[{session_id}] Estimated token count for embedding query: {user_query_embedding_tokens}")
@@ -3778,81 +3777,69 @@ async def chat():
                     message="Query is too long for semantic search, generating concise version...",
                     session_id=session_id
                 )
-                # Generate a concise query if the original is too long
                 semantic_search_query = await generate_concise_query_for_embedding(client, user_query)
-                # Re-check token count of the concise query
                 concise_query_tokens = len(embedding_encoding.encode(semantic_search_query))
                 app.logger.info(f"[{session_id}] Concise query generated (length {len(semantic_search_query)} chars, {concise_query_tokens} tokens).")
                 if concise_query_tokens > EMBEDDING_MODEL_TOKEN_LIMIT:
                      app.logger.warning(f"[{session_id}] Concise query still too long ({concise_query_tokens} tokens). Truncating further.")
-                     # Force truncation if summary is still too long
-                     # Estimate max chars based on token limit (approx 3 chars/token as a safe bet)
                      max_chars = EMBEDDING_MODEL_TOKEN_LIMIT * 3
                      semantic_search_query = semantic_search_query[:max_chars]
                      app.logger.info(f"[{session_id}] Truncated concise query to {len(semantic_search_query)} chars.")
 
         except tiktoken.EncodingError as enc_error:
              app.logger.error(f"[{session_id}] Tiktoken encoding error: {enc_error}. Cannot estimate tokens accurately.")
-             # Handle case where token estimation fails - maybe skip search or use rough estimate
-             user_query_embedding_tokens = len(user_query) // 3 # Very rough fallback
+             user_query_embedding_tokens = len(user_query) // 3
              app.logger.warning(f"[{session_id}] Using rough token estimate: {user_query_embedding_tokens}")
         except Exception as token_error:
              app.logger.error(f"[{session_id}] Error estimating token count for embedding query: {token_error}. Proceeding with original query, may fail.")
-             user_query_embedding_tokens = len(user_query.split()) # Fallback rough estimate
+             user_query_embedding_tokens = len(user_query.split())
 
-        # Proceed with semantic search only if the query isn't excessively long after potential summarization/truncation
-        # Check against the potentially updated user_query_embedding_tokens if estimation failed
-        if user_query_embedding_tokens <= EMBEDDING_MODEL_TOKEN_LIMIT * 1.5: # Allow some buffer, main check was above
+        # Proceed with semantic search only if the query isn't excessively long
+        if user_query_embedding_tokens <= EMBEDDING_MODEL_TOKEN_LIMIT * 1.5:
             try:
                 app.logger.info(f'[{session_id}] Querying index with semantic search query (length {len(semantic_search_query)} chars): {semantic_search_query[:100]}...')
                 await update_status(
                     message="Searching through documents",
                     session_id=session_id
                 )
-
-                # Ensure file_processor is initialized
+                # Only get the storage context if we are actually going to query
+                if embedding_store is None:
+                     app.logger.error(f"[{session_id}] Embedding store is not initialized!")
+                     raise RuntimeError("Embedding store not ready") # Raise error to prevent proceeding
                 if file_processor is None:
                      app.logger.error(f"[{session_id}] File processor is not initialized!")
-                     return jsonify({'error': 'Internal server error: File processor not ready'}), 500
+                     raise RuntimeError("File processor not ready") # Raise error
 
-                # *** Use semantic_search_query here ***
+                app.logger.debug(f"[{session_id}] Getting storage context coroutine...")
+                storage_context_coroutine = embedding_store.get_storage_context(system_message_id)
+                app.logger.debug(f"[{session_id}] Got storage context coroutine, passing to query_index.")
+
                 # Pass the coroutine directly as query_index awaits it internally
-                relevant_info = await file_processor.query_index(semantic_search_query, storage_context_coroutine)
+                relevant_info = await file_processor.query_index(semantic_search_query, storage_context_coroutine) # Await happens inside query_index
 
                 if relevant_info:
                     app.logger.info(f'[{session_id}] Retrieved relevant info (first 100 chars): {str(relevant_info)[:100]}')
-                    await update_status(
-                        message="Found relevant information in documents",
-                        session_id=session_id
-                    )
+                    await update_status( message="Found relevant information in documents", session_id=session_id )
                 else:
-                    app.logger.info(f'[{session_id}] No relevant information found in the index.') # Changed from warning to info
-                    await update_status(
-                        message="No relevant documents found",
-                        session_id=session_id
-                    )
-                    relevant_info = None # Ensure it's None if nothing found
+                    app.logger.info(f'[{session_id}] No relevant information found in the index.')
+                    await update_status( message="No relevant documents found", session_id=session_id )
+                    relevant_info = None
 
+            except RuntimeError as init_error: # Catch initialization errors
+                 await update_status( message=f"Error during setup: {init_error}", session_id=session_id, status="error" )
+                 relevant_info = None
             except Exception as e:
                 app.logger.error(f'[{session_id}] Error querying index: {str(e)}')
-                # Don't log the full traceback here if it's the known token limit error,
-                # as we tried to prevent it. Log other errors.
                 if not isinstance(e, openai.BadRequestError) or "maximum context length" not in str(e):
                      app.logger.exception(f"[{session_id}] Full traceback for unexpected index query error:")
-
-                await update_status(
-                    message="Error searching document database",
-                    session_id=session_id,
-                    status="error" # Indicate error status
-                )
-                relevant_info = None # Ensure relevant_info is None on error
+                await update_status( message="Error searching document database", session_id=session_id, status="error" )
+                relevant_info = None
         else:
+             # Semantic search is skipped, NO coroutine was created.
              app.logger.warning(f"[{session_id}] Skipping semantic search because query is too long ({user_query_embedding_tokens} tokens) even after potential summarization.")
-             await update_status(
-                 message="Skipping document search as the query is too long.",
-                 session_id=session_id
-             )
-             relevant_info = None # Ensure relevant_info is None if skipped
+             await update_status( message="Skipping document search as the query is too long.", session_id=session_id )
+             relevant_info = None # Ensure relevant_info is None
+
         semantic_search_end_time = time.time()
         # --- End of Semantic Search Section ---
 
