@@ -3326,6 +3326,66 @@ def reset_conversation():
         del session['conversation_id']
     return jsonify({"message": "Conversation reset successful"})
 
+# Define the approximate token limit for your embedding model
+# text-embedding-ada-002 and text-embedding-3-small have 8191/8192 limits
+EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Use a slightly lower buffer
+
+async def generate_concise_query_for_embedding(client, long_query_text: str, target_model: str = "gpt-4o-mini") -> str:
+    """
+    Generates a concise summary of a long text, suitable for use as an embedding query.
+    """
+    app.logger.warning(f"Original query length ({len(long_query_text)} chars) exceeds limit. Generating concise query.")
+
+    # Estimate original token count roughly for logging if needed (optional)
+    # Note: Use the *chat* model's tokenizer here, as we're calling the chat API
+    # original_tokens = count_tokens(target_model, [{"role": "user", "content": long_query_text}])
+    # app.logger.warning(f"Estimated original tokens: {original_tokens}")
+
+    # Truncate the input to the summarization model if it's excessively long even for that
+    # GPT-4o-mini has a large context, but let's be reasonable. ~16k tokens is safe.
+    max_summary_input_chars = 16000 * 4 # Rough estimate: 4 chars/token
+    if len(long_query_text) > max_summary_input_chars:
+        app.logger.warning(f"Truncating input for summarization model from {len(long_query_text)} to {max_summary_input_chars} chars.")
+        long_query_text = long_query_text[:max_summary_input_chars] + "..."
+
+    system_message = """You are an expert at summarizing long texts into concise search queries.
+Analyze the following text and extract the core question, topic, or instruction.
+Your output should be a short phrase or sentence (ideally under 100 words, definitely under 500 tokens)
+that captures the essence of the text and is suitable for a semantic database search.
+Focus on the key entities, concepts, and the user's likely goal.
+Respond ONLY with the concise search query, no preamble or explanation."""
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": long_query_text}
+    ]
+
+    try:
+        # Use get_response_from_model to handle API calls, retries, etc.
+        # Use a low temperature for factual summary
+        concise_query, _, _ = await get_response_from_model(
+            client=client,
+            model=target_model,
+            messages=messages,
+            temperature=0.1 # Low temp for focused summary
+        )
+
+        if concise_query:
+            app.logger.info(f"Generated concise query: {concise_query}")
+            return concise_query.strip()
+        else:
+            app.logger.error("Failed to generate concise query (model returned empty). Falling back to truncation.")
+            # Fallback: Truncate the original query (less ideal)
+            # Estimate max chars based on token limit
+            max_chars = EMBEDDING_MODEL_TOKEN_LIMIT * 3 # Very rough estimate
+            return long_query_text[:max_chars]
+
+    except Exception as e:
+        app.logger.error(f"Error generating concise query: {str(e)}. Falling back to truncation.")
+        # Fallback: Truncate the original query
+        max_chars = EMBEDDING_MODEL_TOKEN_LIMIT * 3
+        return long_query_text[:max_chars]
+
 async def get_response_from_model(client, model, messages, temperature, reasoning_effort=None, extended_thinking=None, thinking_budget=None):
     """
     Routes the request to the appropriate API based on the model selected.
@@ -3678,56 +3738,106 @@ async def chat():
             session_id=session_id
         )
 
-        # Get storage context coroutine
+        # Get storage context coroutine. Will be used to query the index, even if there are no documents
         storage_context_coroutine = embedding_store.get_storage_context(system_message_id)
 
         user_query = messages[-1]['content']
         app.logger.info(f'User query: {user_query[:50]}')
 
+        # --- Semantic Search Section ---
         relevant_info = None
+        semantic_search_query = user_query # Start with the full user query
+
+        # Estimate token count for the *embedding* model
+        # Use tiktoken directly for embedding model 'text-embedding-ada-002' or similar
         try:
-            app.logger.info(f'Querying index with user query: {user_query[:50]}')
-            await update_status(
-                message="Searching through documents",
-                session_id=session_id
-            )
+            # Use cl100k_base for text-embedding-ada-002 and newer OpenAI embeddings
+            embedding_encoding = tiktoken.get_encoding("cl100k_base")
+            user_query_embedding_tokens = len(embedding_encoding.encode(user_query))
+            app.logger.info(f"Estimated token count for embedding query: {user_query_embedding_tokens}")
 
-            # Pass the storage context coroutine to query_index
-            relevant_info = await file_processor.query_index(user_query, storage_context_coroutine)
-            
-            if relevant_info:
-                app.logger.info(f'Retrieved relevant info: {str(relevant_info)[:100]}')
+            if user_query_embedding_tokens > EMBEDDING_MODEL_TOKEN_LIMIT:
                 await update_status(
-                    message="Found relevant information in documents",
+                    message="Query is too long for semantic search, generating concise version...",
                     session_id=session_id
                 )
-            else:
-                app.logger.warning('No relevant information found in the index.')
+                # Generate a concise query if the original is too long
+                semantic_search_query = await generate_concise_query_for_embedding(client, user_query)
+                # Re-check token count of the concise query (optional but good practice)
+                concise_query_tokens = len(embedding_encoding.encode(semantic_search_query))
+                if concise_query_tokens > EMBEDDING_MODEL_TOKEN_LIMIT:
+                     app.logger.warning(f"Concise query still too long ({concise_query_tokens} tokens). Truncating further.")
+                     # Force truncation if summary is still too long
+                     max_chars = EMBEDDING_MODEL_TOKEN_LIMIT * 3
+                     semantic_search_query = semantic_search_query[:max_chars]
+
+        except Exception as token_error:
+             app.logger.error(f"Error estimating token count for embedding query: {token_error}. Proceeding with original query, may fail.")
+             user_query_embedding_tokens = len(user_query.split()) # Fallback rough estimate
+
+        # Proceed with semantic search only if the query isn't excessively long after potential summarization/truncation
+        if user_query_embedding_tokens <= EMBEDDING_MODEL_TOKEN_LIMIT * 1.5: # Allow some buffer, main check was above
+            try:
+                app.logger.info(f'Querying index with semantic search query (length {len(semantic_search_query)} chars): {semantic_search_query[:100]}...')
                 await update_status(
-                    message="No relevant documents found",
+                    message="Searching through documents",
                     session_id=session_id
                 )
-                relevant_info = None
 
-        except Exception as e:
-            app.logger.error(f'Error querying index: {str(e)}')
-            app.logger.exception("Full traceback:")
-            await update_status(
-                message="Error searching document database",
-                session_id=session_id
-            )
-            relevant_info = None
+                # Get storage context coroutine (ensure this is defined earlier)
+                storage_context_coroutine = embedding_store.get_storage_context(system_message_id)
 
-        # Ensure system_message is available
+                # *** Use semantic_search_query here ***
+                relevant_info = await file_processor.query_index(semantic_search_query, storage_context_coroutine)
+
+                if relevant_info:
+                    app.logger.info(f'Retrieved relevant info: {str(relevant_info)[:100]}')
+                    await update_status(
+                        message="Found relevant information in documents",
+                        session_id=session_id
+                    )
+                else:
+                    app.logger.info('No relevant information found in the index.') # Changed from warning to info
+                    await update_status(
+                        message="No relevant documents found",
+                        session_id=session_id
+                    )
+                    relevant_info = None # Ensure it's None if nothing found
+
+            except Exception as e:
+                app.logger.error(f'Error querying index: {str(e)}')
+                # Don't log the full traceback here if it's the known token limit error,
+                # as we tried to prevent it. Log other errors.
+                if not isinstance(e, openai.BadRequestError) or "maximum context length" not in str(e):
+                     app.logger.exception("Full traceback for unexpected index query error:")
+
+                await update_status(
+                    message="Error searching document database",
+                    session_id=session_id,
+                    status="error" # Indicate error status
+                )
+                relevant_info = None # Ensure relevant_info is None on error
+        else:
+             app.logger.warning(f"Skipping semantic search because query is too long ({user_query_embedding_tokens} tokens) even after potential summarization.")
+             await update_status(
+                 message="Skipping document search as the query is too long.",
+                 session_id=session_id
+             )
+             relevant_info = None # Ensure relevant_info is None if skipped
+
+        # --- End of Semantic Search Section ---
+
+        # Ensure system_message is available (should be defined earlier)
         if system_message is None:
-            system_message = {
-                "role": "system",
-                "content": ""
-            }
-            messages.insert(0, system_message)
+             system_message = {"role": "system", "content": ""}
+             messages.insert(0, system_message) # Ensure it exists if somehow lost
 
+        # Inject relevant_info into system message *only if it was found*
         if relevant_info:
+            app.logger.info("Injecting relevant document info into system message.")
             system_message['content'] += f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
+        else:
+            app.logger.info("No relevant document info to inject.")
 
         summarized_results = None
         generated_search_queries = None
