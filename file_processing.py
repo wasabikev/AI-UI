@@ -251,13 +251,11 @@ class FileProcessor:
     async def query_index(
         self, 
         query_text: str, 
-        storage_context_coroutine
+        storage_context
     ) -> Optional[str]:
         try:
-            storage_context = await storage_context_coroutine
-            
             if not storage_context or not storage_context.vector_store:
-                self.app.logger.warning("No valid storage context or vector store available")
+                self.app.logger.warning("No valid storage context or vector store available for query")
                 return None
 
             return await perform_semantic_search(
