@@ -1123,6 +1123,146 @@ i.fas.fa-robot {
 }
 
 
+/* File Attachment Styles */
+.attached-files-preview {
+    background-color: rgba(63, 72, 75, 0.05); /* Using sidebar color with transparency */
+    border-radius: 5px;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    margin-left: 15px; /* Match existing form margins */
+}
+
+.attached-files-preview .badge {
+    background-color: #517693; /* Using system message color */
+    color: white;
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+.attached-files-preview .badge .btn-close {
+    width: 0.5em;
+    height: 0.5em;
+    margin-left: 0.5rem;
+    filter: invert(1);
+    opacity: 0.75;
+    cursor: pointer;
+}
+
+.attached-files-preview .badge .btn-close:hover {
+    opacity: 1;
+}
+
+/* Adjust bottom form for file attachments */
+.bottom-form {
+    left: 18%;
+    bottom: 10%;
+    gap: 5px; /* Space between textarea and button */
+}
+
+.bottom-form .input-group {
+    background-color: transparent;
+    align-items: stretch;
+    gap: 3px;
+}
+
+#attachFileBtn {
+    background-color: white;
+    border-color: #ced4da;
+    color: #5863F8; /* Using user message color */
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    padding: 0.375rem 0.75rem;
+    height: 38px; /* Match textarea height */
+    border-radius: 4px !important; /* Override Bootstrap's radius removal */
+    min-width: 40px; /* Ensure consistent width */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#attachFileBtn:hover {
+    background-color: #E4EFF2; /* Using body background color */
+}
+
+#user_input {
+    border-radius: 4px !important; /* Override Bootstrap's radius removal */
+    border: 1px solid #ced4da; /* Restore full border */
+}
+
+.btn-send {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: 0 !important;
+    border-radius: 4px !important; /* Override Bootstrap's radius removal */
+    min-width: 40px; /* Ensure consistent width */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Attachment Menu Styles */
+.attachment-menu-container {
+    position: relative;
+}
+
+.attachment-menu {
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 0;
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-width: 180px;
+    z-index: 1050;
+    display: none;
+}
+
+.attachment-menu.show {
+    display: block;
+}
+
+.attachment-menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #517693;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.attachment-menu-item:hover {
+    background-color: #E4EFF2;
+}
+
+.attachment-menu-item i {
+    color: #517693;
+}
+
+/* Adjust existing styles */
+#attachFileBtn {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+    color: #517693;
+    background-color: white;
+    transition: background-color 0.2s;
+}
+
+#attachFileBtn:hover {
+    background-color: #E4EFF2;
+}
+
+/* Ensure the input group properly contains the textarea */
+.input-group {
+    align-items: stretch;
+}
+
 /****************** Sidebar / Conversation List Styles **********************/
 
 .sidebar {

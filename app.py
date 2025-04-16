@@ -24,6 +24,16 @@ from queue import Queue, Empty, Full
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 
+def safe_json_loads(json_string, default=None):
+    """Safely load JSON string, return default on error or if input is None."""
+    if json_string is None:
+        return default
+    try:
+        return json.loads(json_string)
+    except (json.JSONDecodeError, TypeError) as e:
+        app.logger.warning(f"Failed to load JSON: {e}. Input: '{str(json_string)[:50]}...'. Returning default: {default}")
+        return default
+
 
 # Third-party imports - Core Web Framework
 from quart import (
@@ -74,6 +84,10 @@ import dns.resolver
 from bs4 import BeautifulSoup
 from werkzeug.utils import secure_filename
 
+# Import LLMWhisperer client and exception if needed for type hinting or specific checks
+from unstract.llmwhisperer.client import LLMWhispererClient, LLMWhispererClientException
+import sqlalchemy as sa
+
 # Local imports - Auth and Models
 from auth import auth_bp, UserWrapper, login_required
 from models import (
@@ -88,6 +102,7 @@ from file_utils import (
     get_processed_texts_folder, get_llmwhisperer_output_folder, 
     ensure_folder_exists, get_file_path, FileUtils
 )
+from file_handlers import TemporaryFileHandler
 from file_processing import FileProcessor
 from embedding_store import EmbeddingStore
 from init_db import init_db
@@ -95,6 +110,26 @@ from time_utils import clean_and_update_time_context, generate_time_context
 
 # Load environment variables
 load_dotenv()
+
+# Initialize application
+app = Quart(__name__)
+app = cors(app, allow_origin="*")
+QuartSchema(app)
+
+# Initialize LLMWhisperer client
+from unstract.llmwhisperer.client import LLMWhispererClient
+
+llm_whisper_client = None
+llmwhisperer_api_key = os.getenv("LLMWHISPERER_API_KEY")
+if llmwhisperer_api_key:
+    try:
+        llm_whisper_client = LLMWhispererClient(api_key=llmwhisperer_api_key)
+        app.logger.info("LLMWhisperer client initialized successfully")
+    except Exception as e:
+        app.logger.error(f"Failed to initialize LLMWhisperer client: {str(e)}")
+        app.logger.exception("Full traceback:")
+else:
+    app.logger.warning("LLMWHISPERER_API_KEY environment variable not set")
 
 # Initialize OpenAI
 from openai import OpenAI
@@ -108,14 +143,13 @@ pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 db_url = os.getenv('DATABASE_URL')
 BRAVE_SEARCH_API_KEY = os.getenv('BRAVE_SEARCH_API_KEY')
 
+# Initiatlize LLMWhisperer client
+llmwhisperer_client: LLMWhispererClient | None = None
 
 # Debug configuration
 debug_mode = True
 
-# Initialize application
-app = Quart(__name__)
-app = cors(app, allow_origin="*")
-QuartSchema(app)
+
 
 # Application configuration
 app.config.update(
@@ -325,7 +359,17 @@ setup_logging(app, debug_mode)
 # File upload configuration
 BASE_UPLOAD_FOLDER = Path(os.path.abspath(os.path.join(os.path.dirname(__file__), 'user_files'))).resolve()
 app.config['BASE_UPLOAD_FOLDER'] = str(BASE_UPLOAD_FOLDER)
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx'}
+
+
+
+ALLOWED_EXTENSIONS = {
+    'docx', 'doc', 'odt',  # Word Processing Formats
+    'pptx', 'ppt', 'odp',  # Presentation Formats
+    'xlsx', 'xls', 'ods',  # Spreadsheet Formats
+    'pdf',                 # Document Format
+    'txt',                 # Plain Text Format
+    'bmp', 'gif', 'jpeg', 'jpg', 'png', 'tif', 'tiff', 'webp'  # Image Formats
+}
 
 # Create the upload folder if it doesn't exist
 try:
@@ -336,13 +380,155 @@ try:
 except Exception as e:
     app.logger.error(f"Error during upload folder configuration: {str(e)}")
 
+# Needed for file uploads associated with conversations to review total token counts (not semantic search)
+TEMP_UPLOAD_FOLDER = os.path.join(app.root_path, 'temp_uploads')
+app.config['TEMP_UPLOAD_FOLDER'] = TEMP_UPLOAD_FOLDER
+# Ensure the temporary folder exists
+os.makedirs(TEMP_UPLOAD_FOLDER, exist_ok=True)
+
+# Temporary file handler class
+class TemporaryFileHandler:
+    def __init__(self, app, file_processor):
+        self.app = app
+        self.temp_folder = app.config['TEMP_UPLOAD_FOLDER']
+        self.file_processor = file_processor
+        
+    async def save_temp_file(self, file):
+        """Save uploaded file to temporary storage"""
+        try:
+            # Generate unique ID and safe filename
+            file_id = str(uuid.uuid4())
+            filename = secure_filename(file.filename)
+            
+            # Create unique subfolder for this upload
+            temp_subfolder = os.path.join(self.temp_folder, file_id)
+            os.makedirs(temp_subfolder, exist_ok=True)
+            
+            # Save file
+            file_path = os.path.join(temp_subfolder, filename)
+            await file.save(file_path)
+            
+            # Calculate token count for UI feedback
+            token_count = None
+            try:
+                encoding = tiktoken.get_encoding("cl100k_base")
+                async with aiofiles.open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    sample_text = await f.read(8192)  # Read first 8KB for token estimate
+                    token_count = len(encoding.encode(sample_text))
+            except Exception as token_error:
+                self.app.logger.warning(f"Could not estimate tokens for file: {str(token_error)}")
+
+            return {
+                'success': True,
+                'fileId': file_id,
+                'filename': filename,
+                'file_path': file_path,
+                'size': os.path.getsize(file_path),
+                'mime_type': file.content_type,
+                'tokenCount': token_count
+            }
+            
+        except Exception as e:
+            self.app.logger.error(f"Error saving temporary file: {str(e)}")
+            raise
+
+    async def get_temp_file_content(self, file_id: str, user_id: int, system_message_id: int, session_id: Optional[str] = None) -> Optional[str]:
+        """Retrieve the extracted text content of a temporary file using LLMWhisperer via FileProcessor."""
+        log_prefix = f"[{session_id}] " if session_id else ""
+        try:
+            temp_subfolder = os.path.join(self.temp_folder, file_id)
+            if not os.path.exists(temp_subfolder):
+                self.app.logger.warning(f"{log_prefix}Temporary folder not found for file ID: {file_id}")
+                return None
+
+            # --- Find the file path asynchronously ---
+            file_path_local = None
+            found_filename = None
+            loop = asyncio.get_event_loop()
+
+            def find_file_sync():
+                """Synchronous function to find the first file in the directory."""
+                try:
+                    for entry in os.scandir(temp_subfolder):
+                        if entry.is_file():
+                            return entry.path, entry.name
+                    return None, None  # No file found
+                except Exception as sync_find_err:
+                    self.app.logger.error(f"Sync error scanning {temp_subfolder}: {sync_find_err}")
+                    return None, None
+
+            # Run the synchronous file finding in an executor thread
+            file_path_local, found_filename = await loop.run_in_executor(None, find_file_sync)
+            if file_path_local is None:
+                self.app.logger.error(f"{log_prefix}No file found in temporary folder {temp_subfolder} for file ID: {file_id}")
+                if session_id:
+                    await update_status(f"Could not locate file for ID {file_id[:8]}.", session_id, status="error")
+                return None
+
+            if not file_path_local:
+                self.app.logger.warning(f"{log_prefix}No file found in temporary folder {temp_subfolder} for file ID: {file_id}")
+                if session_id:
+                    await update_status(f"Could not locate file for ID {file_id[:8]}.", session_id, status="error")
+                return None
+
+            try:
+                self.app.logger.info(f"{log_prefix}Extracting document via FileProcessor: {file_path_local}")
+                start_time = time.time()
+                extracted_text, _ = await self.file_processor.llm_whisper.process_file(
+                    file_path=file_path_local,
+                    user_id=user_id,
+                    system_message_id=system_message_id,
+                    file_id=file_id
+                )
+                end_time = time.time()
+                self.app.logger.info(f"{log_prefix}FileProcessor extraction took {end_time - start_time:.2f} seconds.")
+                if extracted_text:
+                    self.app.logger.info(f"{log_prefix}FileProcessor extracted text successfully for file ID: {file_id}")
+                    if session_id:
+                        await update_status(f"Text extracted from {found_filename or file_id[:8]}.", session_id)
+                    return extracted_text
+                else:
+                    self.app.logger.warning(f"{log_prefix}FileProcessor extraction for {file_id} completed but no text found.")
+                    if session_id:
+                        await update_status(f"Extraction complete but no text found for {found_filename or file_id[:8]}.", session_id, status="warning")
+                    return None
+            except LLMWhispererClientException as llm_error:
+                self.app.logger.error(f"{log_prefix}LLMWhisperer extraction failed for {file_id}: {llm_error}")
+                if session_id:
+                    await update_status(f"Error processing file {file_id[:8]}...", session_id, status="error")
+                return None
+        except Exception as e:
+            self.app.logger.error(f"{log_prefix}Error retrieving temporary file content for {file_id}: {str(e)}")
+            if session_id:
+                await update_status(f"Error processing file ID {file_id[:8]}...", session_id, status="error")
+            return None
+            
+    async def remove_temp_file(self, file_id):
+        """Remove temporary file and its folder"""
+        try:
+            temp_subfolder = os.path.join(self.temp_folder, file_id)
+            if await aio_os.path.exists(temp_subfolder):
+                # Remove all files in subfolder
+                async for file in aio_os.scandir(temp_subfolder):
+                    await aio_os.remove(file.path)
+                # Remove the subfolder itself    
+                await aio_os.rmdir(temp_subfolder)
+                return True
+            return False
+        except Exception as e:
+            self.app.logger.error(f"Error removing temporary file: {str(e)}")
+            raise
+
+# Initialize temporary file handler
+temp_file_handler = None  # Initialize later in startup
+
 # Initialize file processing
 embedding_store = None
 file_processor = None
 
 @app.before_serving
 async def startup():
-    global embedding_store, file_processor
+    global embedding_store, file_processor, temp_file_handler
     
     try:
         app.logger.info("Initializing application components")
@@ -356,6 +542,8 @@ async def startup():
         
         # Initialize FileProcessor
         file_processor = FileProcessor(embedding_store, app)
+        # Initialize TemporaryFileHandler *after* file_processor is ready
+        temp_file_handler = TemporaryFileHandler(app, file_processor)
         
         # Initialize FileUtils and verify upload folder
         app.file_utils = FileUtils(app)
@@ -1871,7 +2059,6 @@ async def standard_summarize_search_results(client, model: str, results: List[Di
 # End of web search
 
 
-# Routes to handle files and file uploads
 
 @app.route('/query_documents', methods=['POST'])
 @login_required
@@ -2143,6 +2330,58 @@ async def check_directories():
     }
     
     return jsonify(directories)
+
+@app.route('/upload-temp-file', methods=['POST'])
+@login_required
+async def upload_temp_file():
+    """Handle temporary file uploads for chat context"""
+    try:
+        if 'file' not in (await request.files):
+            return jsonify({
+                'success': False,
+                'error': 'No file provided'
+            }), 400
+            
+        file = (await request.files)['file']
+        if not file.filename:
+            return jsonify({
+                'success': False,
+                'error': 'No filename provided'
+            }), 400
+            
+        if not allowed_file(file.filename):
+            return jsonify({
+                'success': False,
+                'error': 'File type not allowed'
+            }), 400
+            
+        # Save and process the file
+        result = await temp_file_handler.save_temp_file(file)
+        return jsonify(result)
+        
+    except Exception as e:
+        app.logger.error(f"Error handling temporary file upload: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/remove-temp-file/<file_id>', methods=['DELETE'])
+@login_required
+async def remove_temp_file(file_id):
+    """Remove a temporary file"""
+    try:
+        success = await temp_file_handler.remove_temp_file(file_id)
+        return jsonify({
+            'success': success,
+            'message': 'File removed' if success else 'File not found'
+        })
+    except Exception as e:
+        app.logger.error(f"Error removing temporary file: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/upload_file', methods=['POST'])
 @login_required
@@ -3148,13 +3387,13 @@ async def get_conversation(conversation_id):
         conversation_dict = {
             "id": conversation.id,
             "title": conversation.title,
-            "history": json.loads(conversation.history),
+            "history": safe_json_loads(conversation.history, default=[]),
             "token_count": conversation.token_count,
             "model_name": conversation.model_name,
             "temperature": conversation.temperature,
-            "vector_search_results": json.loads(conversation.vector_search_results) if conversation.vector_search_results else None,
-            "generated_search_queries": json.loads(conversation.generated_search_queries) if conversation.generated_search_queries else None,
-            "web_search_results": json.loads(conversation.web_search_results) if conversation.web_search_results else None,
+            "vector_search_results": safe_json_loads(conversation.vector_search_results),
+            "generated_search_queries": safe_json_loads(conversation.generated_search_queries),
+            "web_search_results": safe_json_loads(conversation.web_search_results),
             "created_at": conversation.created_at.isoformat() if conversation.created_at else None,
             "updated_at": conversation.updated_at.isoformat() if conversation.updated_at else None,
             "sentiment": conversation.sentiment,
@@ -3164,7 +3403,7 @@ async def get_conversation(conversation_id):
             "rating": conversation.rating,
             "confidence": conversation.confidence,
             "intent": conversation.intent,
-            "entities": json.loads(conversation.entities) if conversation.entities else None,
+            "entities": safe_json_loads(conversation.entities),
             "prompt_template": conversation.prompt_template
         }
         return jsonify(conversation_dict)
@@ -3652,10 +3891,9 @@ async def chat():
         enable_intelligent_search = request_data.get('enable_intelligent_search', False)
         conversation_id = request_data.get('conversation_id') or session.get('conversation_id')
         user_timezone = request_data.get('timezone', 'UTC')
-
-        # Add new parameters for Claude 3.7 Sonnet
         extended_thinking = request_data.get('extended_thinking', False)
         thinking_budget = request_data.get('thinking_budget', 12000)
+        file_ids = request_data.get('file_ids', [])  # Get the list of temporary file IDs
 
         # Log the Claude 3.7 Sonnet specific parameters if present
         if model == 'claude-3-7-sonnet-20250219':
@@ -3704,7 +3942,69 @@ async def chat():
             app.logger.info(f"[{session_id}] Time sense enabled: {enable_time_sense}")
         sys_msg_fetch_time = time.time()
 
-        system_message = next((msg for msg in messages if msg['role'] == 'system'), None) # Fetch the system message content
+        system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
+
+        # --- Context File Injection (Before Time Context) ---
+        original_user_query_text = messages[-1]['content']  # Get the raw user message content
+        user_query_for_semantic_search = original_user_query_text  # Default to original
+        injected_file_content = ""
+        context_block_regex = r"\n*--- Attached Files Context ---[\s\S]*?--- End Attached Files Context ---\n*"
+
+        if file_ids:
+            app.logger.info(f"[{session_id}] Found {len(file_ids)} temporary context file IDs. Processing content.")
+            await update_status(
+                message="Processing attached files...",
+                session_id=session_id
+            )
+            retrieved_contents = []
+            filenames_processed = []  # Keep track of filenames for logging/context markers
+
+            for file_id in file_ids:
+                app.logger.debug(f"[{session_id}] Attempting to get content for file ID: {file_id}")
+                content = await temp_file_handler.get_temp_file_content(
+                    file_id=file_id,
+                    user_id=current_user.id, # Pass user ID
+                    system_message_id=system_message_id, # Pass system message ID
+                    session_id=session_id
+                )
+                if content:
+                    filename_placeholder = f"File ID {file_id[:8]}"  # Default placeholder
+                    try:
+                        temp_subfolder = os.path.join(temp_file_handler.temp_folder, file_id)
+                        async for entry in aio_os.scandir(temp_subfolder):
+                            if entry.is_file():
+                                filename_placeholder = entry.name
+                                break
+                    except Exception:
+                        pass  # Ignore errors finding filename, use placeholder
+
+                    filenames_processed.append(filename_placeholder)
+                    retrieved_contents.append(f"\n--- Content from {filename_placeholder} ---\n{content}\n--- End Content from {filename_placeholder} ---")
+                    app.logger.info(f"[{session_id}] Successfully retrieved content for file: {filename_placeholder} (ID: {file_id})")
+                else:
+                    app.logger.warning(f"[{session_id}] Could not retrieve content for temporary file ID: {file_id}")
+
+            if retrieved_contents:
+                injected_file_content = "\n".join(retrieved_contents)
+                # Remove the placeholder block added by the frontend
+                user_text_without_block = re.sub(context_block_regex, "", original_user_query_text).strip()
+                app.logger.debug(f"[{session_id}] User text after removing placeholder block: '{user_text_without_block[:100]}...'")
+
+                # Construct the new user message content for the AI
+                messages[-1]['content'] = (user_text_without_block + "\n\n" + injected_file_content).strip()
+                app.logger.info(f"[{session_id}] Injected content from {len(retrieved_contents)} files into user message for AI.")
+                app.logger.debug(f"[{session_id}] Updated user message content for AI (truncated): {messages[-1]['content'][:200]}...")
+
+                # Set the query for semantic search to be *only* the user's text part
+                user_query_for_semantic_search = user_text_without_block
+            else:
+                app.logger.warning(f"[{session_id}] No content retrieved for provided file IDs. User message unchanged.")
+                # If no content was injected, still clean the original query for semantic search
+                user_query_for_semantic_search = re.sub(context_block_regex, "", original_user_query_text).strip()
+        else:
+            # No file_ids provided, clean the query for semantic search if the block exists
+            user_query_for_semantic_search = re.sub(context_block_regex, "", original_user_query_text).strip()
+        # --- End Context File Injection ---
 
         # Process time context only if enabled
         time_context_start_time = time.time()
@@ -3748,15 +4048,9 @@ async def chat():
             session_id=session_id
         )
 
-        # Get storage context coroutine. Will be used to query the index, even if there are no documents
-        # Ensure embedding_store is initialized (should happen in startup)
-        if embedding_store is None:
-             app.logger.error(f"[{session_id}] Embedding store is not initialized!")
-             return jsonify({'error': 'Internal server error: Embedding store not ready'}), 500
-        storage_context_coroutine = embedding_store.get_storage_context(system_message_id)
-
-        user_query = messages[-1]['content']
-        app.logger.info(f'[{session_id}] User query (first 50 chars): {user_query[:50]}')
+        # Use the cleaned query for semantic search
+        user_query = user_query_for_semantic_search
+        app.logger.info(f'[{session_id}] User query for semantic search (first 50 chars): {user_query[:50]}')
         query_extracted_time = time.time()
 
         # --- Semantic Search Section ---
@@ -3810,12 +4104,12 @@ async def chat():
                      app.logger.error(f"[{session_id}] File processor is not initialized!")
                      raise RuntimeError("File processor not ready") # Raise error
 
-                app.logger.debug(f"[{session_id}] Getting storage context coroutine...")
-                storage_context_coroutine = embedding_store.get_storage_context(system_message_id)
-                app.logger.debug(f"[{session_id}] Got storage context coroutine, passing to query_index.")
+                app.logger.debug(f"[{session_id}] Getting and awaiting storage context...")
+                storage_context = await embedding_store.get_storage_context(system_message_id)
+                app.logger.debug(f"[{session_id}] Got storage context. Type: {type(storage_context)}")
 
-                # Pass the coroutine directly as query_index awaits it internally
-                relevant_info = await file_processor.query_index(semantic_search_query, storage_context_coroutine) # Await happens inside query_index
+                # Pass the awaited storage_context directly
+                relevant_info = await file_processor.query_index(semantic_search_query, storage_context)
 
                 if relevant_info:
                     app.logger.info(f'[{session_id}] Retrieved relevant info (first 100 chars): {str(relevant_info)[:100]}')
@@ -4053,7 +4347,7 @@ async def chat():
 
 
                 return jsonify({
-                    'chat_output': chat_output,
+                    'response': chat_output,
                     'conversation_id': final_conversation_id,
                     'conversation_title': conversation.title,
                     'vector_search_results': relevant_info if relevant_info else "No results found",
