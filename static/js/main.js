@@ -44,6 +44,214 @@ let hasMoreConversations = true;
 // Variable to manage the direct file attachment feature (Context Files)
 let attachedContextFiles = new Map(); // Store temporary file attachments: Map<fileId, {name, size, type, tokenCount, content}>
 
+const AVAILABLE_MODELS = [
+    { api: "gpt-3.5-turbo", display: "GPT-3.5" },
+    { api: "gpt-4-turbo-2024-04-09", display: "GPT-4 Turbo" },
+    { api: "gpt-4o-2024-08-06", display: "GPT-4o" },
+    { api: "gpt-4.1", display: "GPT-4.1" },
+    { api: "gpt-4.1-mini", display: "GPT-4.1 Mini" },
+    { api: "gpt-4.1-nano", display: "GPT-4.1 Nano" },
+    { api: "o3-mini", display: "o3-mini (Fast)", reasoning: "low" },
+    { api: "o3-mini", display: "o3-mini (Balanced)", reasoning: "medium" },
+    { api: "o3-mini", display: "o3-mini (Deep)", reasoning: "high" },
+    { api: "claude-3-opus-20240229", display: "Claude 3 Opus" },
+    { api: "claude-3-5-sonnet-20241022", display: "Claude 3.5 Sonnet" },
+    { api: "claude-3-7-sonnet-20250219", display: "Claude 3.7 Sonnet", supportsExtendedThinking: true },
+    {
+        api: "claude-3-7-sonnet-20250219",
+        display: "Claude 3.7 Sonnet (Ext)",
+        extendedThinking: true,
+        thinkingBudget: 12000
+    },
+    { api: "gemini-2.0-pro-exp-02-05", display: "Gemini 2.5 Pro" },
+    { api: "gemini-2.0-flash", display: "Gemini 2.0 Flash" },
+    { api: "llama3.1-8b", display: "Llama 3.1 (8B)" },
+    { api: "llama-3.3-70b", display: "Llama 3.3 (70B)" },
+    { api: "deepSeek-r1-distill-llama-70B", display: "DeepSeek R1 (70B)" }
+];
+
+// Helper function to create dropdown items
+function createModelDropdownItem(modelItem, onClick) {
+    const item = $('<button>')
+        .addClass('dropdown-item')
+        .text(modelItem.display)
+        .attr('data-api-name', modelItem.api);
+
+    // Add any additional model-specific attributes
+    if (modelItem.reasoning) {
+        item.attr('data-reasoning', modelItem.reasoning);
+    }
+    if (modelItem.extendedThinking) {
+        item.attr('data-extended-thinking', true);
+        item.attr('data-thinking-budget', modelItem.thinkingBudget);
+    }
+
+    // Attach click handler if provided
+    if (onClick) {
+        item.on('click', onClick);
+    }
+
+    return item;
+}
+
+// Function to initialize the main model dropdown
+function initializeModelDropdown() {
+    const mainDropdownButton = $('#dropdownMenuButton');
+    const dropdownMenu = mainDropdownButton.next('.dropdown-menu');
+
+    if (!dropdownMenu.length) {
+        console.error("Model dropdown menu not found");
+        return;
+    }
+
+    // Clear existing items
+    dropdownMenu.empty();
+
+    // Add model options to dropdown
+    AVAILABLE_MODELS.forEach(modelItem => {
+        const onClick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Update button text and data
+            mainDropdownButton.text(modelItem.display);
+            model = modelItem.api;
+
+            // Update any model-specific attributes
+            if (modelItem.reasoning) {
+                mainDropdownButton.attr('data-reasoning', modelItem.reasoning);
+            } else {
+                mainDropdownButton.removeAttr('data-reasoning');
+            }
+
+            // Hide dropdown manually
+            dropdownMenu.removeClass('show');
+            mainDropdownButton.attr('aria-expanded', 'false');
+
+            // Update the current model button if it exists
+            $('.current-model-btn').text(modelItem.display);
+
+            // Update the model display in the chat interface
+            const systemMessageElement = $('.chat-entry.system.system-message');
+            if (systemMessageElement.length) {
+                systemMessageElement.find('.model-name').text(modelItem.display);
+            }
+
+            console.log('Model changed to:', model);
+        };
+
+        dropdownMenu.append(createModelDropdownItem(modelItem, onClick));
+    });
+
+    // Dropdown toggle functionality
+    mainDropdownButton.on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropdownMenu.toggleClass('show');
+        $(this).attr('aria-expanded', dropdownMenu.hasClass('show'));
+    });
+
+    // Close dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.dropdown').length) {
+            dropdownMenu.removeClass('show');
+            mainDropdownButton.attr('aria-expanded', 'false');
+        }
+    });
+}
+
+// Add this function to handle extended thinking related listeners
+function setupExtendedThinkingListeners() {
+    const extendedThinkingToggle = document.getElementById('extended-thinking-toggle');
+    const budgetSlider = document.getElementById('thinking-budget-slider');
+
+    if (extendedThinkingToggle) {
+        // Remove existing listeners to prevent duplicates
+        extendedThinkingToggle.removeEventListener('change', handleExtendedThinkingToggleChange);
+        extendedThinkingToggle.addEventListener('change', handleExtendedThinkingToggleChange);
+    }
+
+    if (budgetSlider) {
+        // Remove existing listeners to prevent duplicates
+        budgetSlider.removeEventListener('input', handleBudgetSliderChange);
+        budgetSlider.addEventListener('input', handleBudgetSliderChange);
+    }
+}
+
+// Make sure these handler functions are also defined
+function handleExtendedThinkingToggleChange() {
+    const isEnabled = this.checked;
+    const thinkingBudgetContainer = document.getElementById('thinking-budget-container');
+    const modalModelDropdownButton = document.getElementById('modalModelDropdownButton');
+    const budgetSlider = document.getElementById('thinking-budget-slider');
+    const budgetValueDisplay = document.getElementById('thinking-budget-value');
+
+    thinkingBudgetContainer.style.display = isEnabled ? 'block' : 'none';
+
+    if (isEnabled) {
+        const budget = budgetSlider.value || 12000; // Use current or default
+        modalModelDropdownButton.dataset.extendedThinking = 'true';
+        modalModelDropdownButton.dataset.thinkingBudget = budget;
+        budgetValueDisplay.textContent = budget;
+    } else {
+        delete modalModelDropdownButton.dataset.extendedThinking;
+        delete modalModelDropdownButton.dataset.thinkingBudget;
+    }
+    
+    isSaved = false;
+    console.log("Extended thinking toggled:", isEnabled, "Budget:", modalModelDropdownButton.dataset.thinkingBudget);
+}
+
+function handleBudgetSliderChange() {
+    const budget = this.value;
+    document.getElementById('thinking-budget-value').textContent = budget;
+    document.getElementById('modalModelDropdownButton').dataset.thinkingBudget = budget;
+    isSaved = false;
+    console.log("Thinking budget changed:", budget);
+}
+
+// Update the populateModelDropdownInModal function to properly handle the setup
+function populateModelDropdownInModal() {
+    const modalModelDropdownMenu = document.querySelector('#systemMessageModal .model-dropdown-container .dropdown-menu');
+    const modalModelDropdownButton = document.getElementById('modalModelDropdownButton');
+
+    if (!modalModelDropdownMenu || !modalModelDropdownButton) {
+        console.error("Required elements for modal model dropdown not found.");
+        return;
+    }
+
+    // Clear existing dropdown items
+    modalModelDropdownMenu.innerHTML = '';
+
+    // Use the shared AVAILABLE_MODELS list
+    AVAILABLE_MODELS.forEach(modelItem => {
+        const dropdownItem = createModelDropdownItem(modelItem, function() {
+            modalModelDropdownButton.textContent = this.textContent;
+            modalModelDropdownButton.dataset.apiName = this.dataset.apiName;
+
+            if (this.dataset.reasoning) {
+                modalModelDropdownButton.dataset.reasoning = this.dataset.reasoning;
+            } else {
+                delete modalModelDropdownButton.dataset.reasoning;
+            }
+
+            // Handle extended thinking UI updates
+            const isClaudeSonnet = this.dataset.apiName === 'claude-3-7-sonnet-20250219';
+            const extendedThinkingSelected = this.dataset.extendedThinking === 'true';
+            updateExtendedThinkingUI(isClaudeSonnet, extendedThinkingSelected, this.dataset.thinkingBudget);
+
+            isSaved = false;
+        })[0]; // Convert jQuery object to DOM element
+
+        modalModelDropdownMenu.appendChild(dropdownItem);
+    });
+
+    // Setup the extended thinking listeners after populating the dropdown
+    setupExtendedThinkingListeners();
+}
+
+
+
 document.addEventListener("DOMContentLoaded", function() {
     // Fetch and process system messages
     fetchAndProcessSystemMessages().then(() => {
@@ -2041,15 +2249,34 @@ function displaySystemMessage(systemMessage) {
         });
     }
 
-    // Update the main page model dropdown button text
-    $('#dropdownMenuButton').text(modelDisplayName);
+    // Update both model dropdown buttons and ensure visibility
+    const mainDropdownButton = $('#dropdownMenuButton');
+    const currentModelBtn = $('.current-model-btn');
+    
+    // Update text for both buttons
+    mainDropdownButton.text(modelDisplayName);
+    currentModelBtn.text(modelDisplayName);
+    
+    // Ensure the current-model-btn is visible
+    currentModelBtn.css('display', 'inline-block');
+    
+    // Update data attributes if needed
+    currentModelBtn.attr('data-model', model);
+    
+    // Make sure the dropdown is properly initialized
+    if (typeof bootstrap !== 'undefined') {
+        const dropdownElement = document.querySelector('.model-dropdown');
+        if (dropdownElement && !dropdownElement.dataset.bootstrapDropdown) {
+            new bootstrap.Dropdown(dropdownElement);
+        }
+    }
 
     // Initialize search toggles based on this system message
     initializeSearchToggles(systemMessage);
 
-
     console.log('Displayed System Message:', systemMessage.name, 'ID:', activeSystemMessageId);
 }
+
 
 
 
@@ -2245,71 +2472,24 @@ const temperatureDescriptions = {
 
 // Helper function to map model names to their display values
 function modelNameMapping(modelName, reasoningEffort, extendedThinking) {
-    // console.log("Input model name:", modelName, "Reasoning effort:", reasoningEffort, "Extended thinking:", extendedThinking);
-    let mappedName;
-    switch(modelName) {
-        case "gpt-3.5-turbo":
-            mappedName = "GPT-3.5";
-            break;
-        case "gpt-4-turbo-2024-04-09":
-            mappedName = "GPT-4 Turbo"; // Simplified name
-            break;
-        case "gpt-4o-2024-08-06":
-            mappedName = "GPT-4o";
-            break;
-        case "o3-mini":
-            // Reasoning effort might not be directly available here, map based on model name only first
-            mappedName = "o3-mini";
-            // If reasoningEffort is provided, refine the name
-            if (reasoningEffort) {
-                 switch(reasoningEffort) {
-                    case "low": mappedName = "o3-mini (Fast)"; break;
-                    case "medium": mappedName = "o3-mini (Balanced)"; break;
-                    case "high": mappedName = "o3-mini (Deep)"; break;
-                    default: mappedName = "o3-mini"; break; // Fallback
-                }
-            }
-            break;
-        case "claude-3-opus-20240229":
-            mappedName = "Claude 3 Opus";
-            break;
-        case "claude-3-5-sonnet-20241022":
-            mappedName = "Claude 3.5 Sonnet";
-            break;
-        case "claude-3-7-sonnet-20250219":
-            // Check if extendedThinking flag is explicitly true
-            mappedName = extendedThinking === true ?
-                "Claude 3.7 Sonnet (Ext)" : // Shorter name for extended
-                "Claude 3.7 Sonnet";
-            break;
-        case "gemini-2.0-pro-exp-02-05":
-            mappedName = "Gemini 2.5 Pro"; // More specific
-            break;
-        case "gemini-2.0-flash":
-            mappedName = "Gemini 2.0 Flash";
-            break;
-        // Add Cerebras LLaMA models
-        case "llama3.1-8b":
-            mappedName = "Llama 3.1 (8B)";
-            break;
-        case "llama-3.3-70b":
-            mappedName = "Llama 3.3 (70B)";
-            break;
-        case "deepSeek-r1-distill-llama-70B":
-            mappedName = "DeepSeek R1 (70B)"; // Simplified
-            break;
-        default:
-            mappedName = modelName || "Unknown Model"; // Show original name if unknown
-            break;
+    // Find the matching model in our shared list
+    const modelEntry = AVAILABLE_MODELS.find(m => 
+        m.api === modelName && 
+        (!reasoningEffort || m.reasoning === reasoningEffort) &&
+        (!extendedThinking || m.extendedThinking === extendedThinking)
+    );
+
+    if (modelEntry) {
+        return modelEntry.display;
     }
-    // console.log("Mapped model name:", mappedName);
-    return mappedName;
+
+    // Fallback to the original name if not found
+    return modelName || "Unknown Model";
 }
 
-// Function to populate the model dropdown in the modal
 function populateModelDropdownInModal() {
     const modalModelDropdownMenu = document.querySelector('#systemMessageModal .model-dropdown-container .dropdown-menu');
-    const modalModelDropdownButton = document.getElementById('modalModelDropdownButton'); // Button inside modal
+    const modalModelDropdownButton = document.getElementById('modalModelDropdownButton');
 
     if (!modalModelDropdownMenu || !modalModelDropdownButton) {
         console.error("Required elements for modal model dropdown not found.");
@@ -2319,127 +2499,67 @@ function populateModelDropdownInModal() {
     // Clear existing dropdown items
     modalModelDropdownMenu.innerHTML = '';
 
-    // Define the available models with their variants
-    // Keep this list updated with available models from backend/config
-    const models = [
-        { api: "gpt-3.5-turbo", display: "GPT-3.5" },
-        { api: "gpt-4-turbo-2024-04-09", display: "GPT-4 Turbo" },
-        { api: "gpt-4o-2024-08-06", display: "GPT-4o" },
-        { api: "o3-mini", display: "o3-mini (Fast)", reasoning: "low" },
-        { api: "o3-mini", display: "o3-mini (Balanced)", reasoning: "medium" },
-        { api: "o3-mini", display: "o3-mini (Deep)", reasoning: "high" },
-        { api: "claude-3-opus-20240229", display: "Claude 3 Opus" },
-        { api: "claude-3-5-sonnet-20241022", display: "Claude 3.5 Sonnet" },
-        { api: "claude-3-7-sonnet-20250219", display: "Claude 3.7 Sonnet" },
-        {
-            api: "claude-3-7-sonnet-20250219",
-            display: "Claude 3.7 Sonnet (Ext)", // Shortened display name
-            extendedThinking: true,
-            thinkingBudget: 12000 // Default budget
-        },
-        { api: "gemini-2.0-pro-exp-02-05", display: "Gemini 2.5 Pro" },
-        { api: "gemini-2.0-flash", display: "Gemini 2.0 Flash" },
-        { api: "llama3.1-8b", display: "Llama 3.1 (8B)" },
-        { api: "llama-3.3-70b", display: "Llama 3.3 (70B)" },
-        { api: "deepSeek-r1-distill-llama-70B", display: "DeepSeek R1 (70B)" }
-    ];
-
-    // Add each model to the dropdown
-    models.forEach((modelItem) => {
-        let dropdownItem = document.createElement('button');
-        dropdownItem.className = 'dropdown-item';
-        dropdownItem.textContent = modelItem.display;
-        dropdownItem.dataset.apiName = modelItem.api;
-
-        // Add reasoning data if present
-        if (modelItem.reasoning) {
-            dropdownItem.dataset.reasoning = modelItem.reasoning;
-        }
-
-        // Add extended thinking data if present
-        if (modelItem.extendedThinking !== undefined) {
-            dropdownItem.dataset.extendedThinking = modelItem.extendedThinking;
-            if (modelItem.thinkingBudget) {
-                dropdownItem.dataset.thinkingBudget = modelItem.thinkingBudget;
-            }
-        }
-
-        dropdownItem.onclick = function() {
-            // Update the modal's dropdown button text and store API name
+    // Use the shared AVAILABLE_MODELS list
+    AVAILABLE_MODELS.forEach(modelItem => {
+        const dropdownItem = createModelDropdownItem(modelItem, function() {
             modalModelDropdownButton.textContent = this.textContent;
             modalModelDropdownButton.dataset.apiName = this.dataset.apiName;
 
-            // Handle reasoning effort data attribute
             if (this.dataset.reasoning) {
                 modalModelDropdownButton.dataset.reasoning = this.dataset.reasoning;
             } else {
                 delete modalModelDropdownButton.dataset.reasoning;
             }
 
-            // Handle extended thinking data attribute and UI controls
+            // Handle extended thinking UI updates
             const isClaudeSonnet = this.dataset.apiName === 'claude-3-7-sonnet-20250219';
             const extendedThinkingSelected = this.dataset.extendedThinking === 'true';
+            updateExtendedThinkingUI(isClaudeSonnet, extendedThinkingSelected, this.dataset.thinkingBudget);
 
-            const extendedThinkingContainer = document.getElementById('extended-thinking-toggle-container');
-            const thinkingBudgetContainer = document.getElementById('thinking-budget-container');
-            const extendedThinkingToggle = document.getElementById('extended-thinking-toggle');
-            const budgetSlider = document.getElementById('thinking-budget-slider');
-            const budgetValueDisplay = document.getElementById('thinking-budget-value');
-
-            if (isClaudeSonnet) {
-                // Show the toggle container only for Claude 3.7 Sonnet
-                extendedThinkingContainer.style.display = 'block';
-                extendedThinkingToggle.checked = extendedThinkingSelected; // Set toggle based on selection
-
-                // Show/hide budget based on toggle state
-                if (extendedThinkingSelected) {
-                    thinkingBudgetContainer.style.display = 'block';
-                    const budget = this.dataset.thinkingBudget || 12000; // Use default if not set
-                    budgetSlider.value = budget;
-                    budgetValueDisplay.textContent = budget;
-                    modalModelDropdownButton.dataset.extendedThinking = 'true'; // Store state
-                    modalModelDropdownButton.dataset.thinkingBudget = budget; // Store state
-                } else {
-                    thinkingBudgetContainer.style.display = 'none';
-                    delete modalModelDropdownButton.dataset.extendedThinking; // Remove state
-                    delete modalModelDropdownButton.dataset.thinkingBudget; // Remove state
-                }
-            } else {
-                // Hide controls for non-Claude 3.7 Sonnet models
-                extendedThinkingContainer.style.display = 'none';
-                thinkingBudgetContainer.style.display = 'none';
-                delete modalModelDropdownButton.dataset.extendedThinking;
-                delete modalModelDropdownButton.dataset.thinkingBudget;
-            }
-
-
-            console.log('Model selected in modal:', {
-                api: this.dataset.apiName,
-                reasoning: this.dataset.reasoning || 'none',
-                extendedThinking: modalModelDropdownButton.dataset.extendedThinking === 'true',
-                thinkingBudget: modalModelDropdownButton.dataset.thinkingBudget
-            });
-
-            isSaved = false; // Mark changes as unsaved
-        };
+            isSaved = false;
+        })[0]; // Convert jQuery object to DOM element
 
         modalModelDropdownMenu.appendChild(dropdownItem);
     });
 
-    // Add event listener for the extended thinking toggle *inside* the modal
-    const extendedThinkingToggle = document.getElementById('extended-thinking-toggle');
-    if (extendedThinkingToggle) {
-        extendedThinkingToggle.removeEventListener('change', handleExtendedThinkingToggleChange); // Prevent duplicates
-        extendedThinkingToggle.addEventListener('change', handleExtendedThinkingToggleChange);
-    }
+    // Re-attach extended thinking related event listeners
+    setupExtendedThinkingListeners();
+}
 
-    // Add event listener for the budget slider *inside* the modal
+// Helper function for extended thinking UI updates
+function updateExtendedThinkingUI(isClaudeSonnet, extendedThinkingEnabled, budget) {
+    const extendedThinkingContainer = document.getElementById('extended-thinking-toggle-container');
+    const thinkingBudgetContainer = document.getElementById('thinking-budget-container');
+    const extendedThinkingToggle = document.getElementById('extended-thinking-toggle');
     const budgetSlider = document.getElementById('thinking-budget-slider');
-     if (budgetSlider) {
-        budgetSlider.removeEventListener('input', handleBudgetSliderChange); // Prevent duplicates
-        budgetSlider.addEventListener('input', handleBudgetSliderChange);
+    const budgetValueDisplay = document.getElementById('thinking-budget-value');
+    const modalModelDropdownButton = document.getElementById('modalModelDropdownButton');
+
+    if (isClaudeSonnet) {
+        extendedThinkingContainer.style.display = 'block';
+        extendedThinkingToggle.checked = extendedThinkingEnabled;
+
+        if (extendedThinkingEnabled) {
+            thinkingBudgetContainer.style.display = 'block';
+            const defaultBudget = budget || 12000;
+            budgetSlider.value = defaultBudget;
+            budgetValueDisplay.textContent = defaultBudget;
+            modalModelDropdownButton.dataset.extendedThinking = 'true';
+            modalModelDropdownButton.dataset.thinkingBudget = defaultBudget;
+        } else {
+            thinkingBudgetContainer.style.display = 'none';
+            delete modalModelDropdownButton.dataset.extendedThinking;
+            delete modalModelDropdownButton.dataset.thinkingBudget;
+        }
+    } else {
+        extendedThinkingContainer.style.display = 'none';
+        thinkingBudgetContainer.style.display = 'none';
+        delete modalModelDropdownButton.dataset.extendedThinking;
+        delete modalModelDropdownButton.dataset.thinkingBudget;
     }
 }
+
+
 
 // Handler for the extended thinking toggle change
 function handleExtendedThinkingToggleChange() {
@@ -3218,23 +3338,18 @@ function showConversationControls(title = "AI &infin; UI", tokens = null) {
 
 function loadConversation(conversationId) {
     console.log(`Fetching conversation with id: ${conversationId}...`);
-    // Show loading state in chat area
     $('#chat').html('<div class="text-center p-4">Loading conversation...</div>');
-    // Hide conversation controls initially
     $("#conversation-title, #edit-title-btn, #delete-conversation-btn, #token-display").hide();
 
-
-    fetch(`/conversations/${conversationId}`) // Remove /api prefix
+    fetch(`/conversations/${conversationId}`)
         .then(response => {
             console.log('Response status for conversation fetch:', response.status);
             if (!response.ok) {
-                 // Try to get error message from JSON response
-                 return response.json().then(err => {
-                     throw new Error(err.message || `HTTP error! Status: ${response.status}`);
-                 }).catch(() => {
-                     // Fallback if response is not JSON
-                     throw new Error(`HTTP error! Status: ${response.status}`);
-                 });
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! Status: ${response.status}`);
+                }).catch(() => {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                });
             }
             return response.json();
         })
@@ -3242,80 +3357,77 @@ function loadConversation(conversationId) {
             console.log('Parsed JSON data from conversation:', data);
 
             if (!data || !data.history) {
-                 throw new Error("Invalid conversation data received from server.");
+                throw new Error("Invalid conversation data received from server.");
             }
-
 
             // Update global state
-            messages = data.history; // Assuming history is the array of messages
-            activeConversationId = conversationId; // Set the active ID
+            messages = data.history;
+            activeConversationId = conversationId;
 
-            // Find the system message associated with this conversation (if available)
-            // This assumes the backend includes system_message_id in the conversation data
-            let conversationSystemMessage = null;
-            if (data.system_message_id) {
-                conversationSystemMessage = systemMessages.find(sm => sm.id === data.system_message_id);
-            }
-            // If not found or not provided, maybe use the first message if it's system? Or default?
-            if (!conversationSystemMessage && messages.length > 0 && messages[0].role === 'system') {
-                 // Attempt to find based on content match (less reliable)
-                 conversationSystemMessage = systemMessages.find(sm => sm.content === messages[0].content);
-            }
-            // Fallback to default if still not found
-            if (!conversationSystemMessage) {
-                conversationSystemMessage = systemMessages.find(msg => msg.name === "Default System Message") || systemMessages[0];
+            // Clear the chat area
+            $('#chat').empty();
+
+            // First, find and display the system message
+            const systemMessage = messages.find(msg => msg.role === 'system');
+            if (systemMessage) {
+                let systemMessageContent = systemMessage.content;
+                
+                // Create and display the system message first
+                const systemMessageElement = $(`
+                    <div class="chat-entry system system-message" data-system-message-id="${data.system_message_id}">
+                        <strong>System:</strong>${createSystemMessageButton()}
+                        <span class="no-margin">${renderOpenAI(systemMessageContent)}</span><br>
+                        <strong>Model:</strong> <span class="model-name">${modelNameMapping(data.model_name)}</span>
+                        <strong>Temp:</strong> ${data.temperature}°
+                    </div>
+                `);
+                $('#chat').append(systemMessageElement);
+
+                // After system message, display any search results
+                // Extract and display vector search results
+                if (data.vector_search_results) {
+                    displayVectorSearchResults(data.vector_search_results);
+                }
+
+                // Display generated search queries if they exist
+                if (data.generated_search_queries) {
+                    displayGeneratedSearchQueries(data.generated_search_queries);
+                }
+
+                // Display web search results if they exist
+                if (data.web_search_results) {
+                    displayWebSearchResults(data.web_search_results);
+                }
             }
 
-            // Display the determined system message settings in the UI
-            if (conversationSystemMessage) {
-                displaySystemMessage(conversationSystemMessage); // This updates model, temp, activeSystemMessageId etc.
-            } else {
-                console.warn("Could not determine system message for conversation", conversationId);
-                // Display a placeholder or default?
-            }
+            // Then display the rest of the conversation
+            messages.forEach((message) => {
+                // Skip the system message as we've already displayed it
+                if (message.role !== 'system') {
+                    const messageElement = createMessageElement(message);
+                    if (messageElement) {
+                        $('#chat').append(messageElement);
+                    }
+                }
+            });
 
-
-            // Update conversation controls (title, tokens)
-            const tokens = data.usage || { // Use usage data if provided
-                prompt_tokens: data.prompt_tokens_total, // Fallback to older fields if usage missing
+            // Update conversation controls and UI
+            const tokens = data.usage || {
+                prompt_tokens: data.prompt_tokens_total,
                 completion_tokens: data.completion_tokens_total,
                 total_tokens: data.total_tokens
             };
             showConversationControls(data.title || "Untitled Conversation", tokens);
 
+            // Apply syntax highlighting and MathJax
+            Prism.highlightAllUnder(document.getElementById('chat'));
+            MathJax.typesetPromise().catch(err => console.log('Error typesetting math content: ', err));
 
-            // Clear the chat loading message
-            $('#chat').empty();
-
-            // Repopulate the chat with messages
-            // Separate loop for context/search results if they are separate fields
-            // Example: Assuming context fields are part of the data object
-            displayVectorSearchResults(data.vector_search_results); // Display context if available
-            displayGeneratedSearchQueries(data.generated_search_queries);
-            displayWebSearchResults(data.web_search_results);
-
-
-            // Render message history
-            messages.forEach((message, index) => {
-                // Skip rendering the system message here as displaySystemMessage handles it
-                if (message.role === 'system' && index === 0) {
-                    return;
-                }
-
-                let messageElement = createMessageElement(message);
-                if (messageElement) {
-                    $('#chat').append(messageElement);
-                    // Apply syntax highlighting and MathJax after element is added
-                    renderMathInElement(messageElement[0]);
-                    Prism.highlightAllUnder(messageElement[0]);
-                }
-            });
-
-            // Scroll to the bottom after populating the chat
+            // Scroll to the bottom
             const chatContainer = document.getElementById('chat');
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            // Highlight the conversation in the sidebar
+            // Highlight active conversation in sidebar
             $('#conversation-list .conversation-item.active').removeClass('active');
             $(`#conversation-list .conversation-item[data-id="${conversationId}"]`).addClass('active');
 
@@ -3323,11 +3435,13 @@ function loadConversation(conversationId) {
         .catch(error => {
             console.error(`Error fetching conversation with id: ${conversationId}. Error: ${error}`);
             $('#chat').html(`<div class="text-center p-4 text-danger">Error loading conversation: ${error.message}</div>`);
-            // Optionally reset title or show error state
-             showConversationControls("Error Loading", null);
-             activeConversationId = null; // Reset active ID on error
+            showConversationControls("Error Loading", null);
+            activeConversationId = null;
         });
 }
+
+
+
 
 function displayVectorSearchResults(results) {
     // Check if results exist and are meaningful
@@ -3800,6 +3914,16 @@ $(document).ready(function() {  // Document Ready (initialization)
     $("#conversation-title").text("AI ∞ UI");
     $("#conversation-title, #edit-title-btn, #delete-conversation-btn, #token-display").hide(); // Hide controls initially
 
+    // Initialize model buttons
+    const mainDropdownButton = $('#dropdownMenuButton');
+    const currentModelBtn = $('.current-model-btn');
+
+    // Initialize both model dropdowns
+    initializeModelDropdown();
+    populateModelDropdownInModal();
+
+    // Ensure the current-model-btn is visible by default
+    currentModelBtn.css('display', 'inline-block');
 
     // Fetch system messages first, then initialize dependent components
     fetchAndProcessSystemMessages().then(() => {
