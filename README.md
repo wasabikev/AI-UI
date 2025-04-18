@@ -11,7 +11,8 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - **Vector Search**: Document retrieval using semantic search via Pinecone integration
 - **Web Search**: Real-time web information retrieval during conversations
 - **Website Indexing**: Crawl and index websites for context-aware responses
-- **File Processing**: Upload and process various document types for context
+- **File Processing & Vectorization**: Upload and process files for semantic search and retrieval-augmented generation (RAG) via permanent vector storage
+- **Session Context File Upload**: Attach files directly to chat sessions; their full content is extracted and injected into the current conversation context, enabling richer, document-aware AI responses. Supports multiple simultaneous uploads, automatic processing, and temporary storage for each session
 - **Temperature Control**: Adjust AI response variability with temperature settings
 - **WebSocket Status Updates**: Real-time status updates during processing
 - **Modal-Based Interface**: Comprehensive UI for system configuration and management
@@ -171,11 +172,61 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - **app.py**: Main application entry point with route definitions, middleware configuration, and core functionality
 - **models.py**: Database models and ORM definitions for data persistence
 - **auth.py**: Authentication system with login, registration, and admin functionality
-- **file_processing.py**: Utilities for file operations, document processing, and vector search
+- **file_processing.py**: Utilities for file operations, document processing, vector search and RAG functionality
 - **file_utils.py**: File path management and directory structure utilities
 - **embedding_store.py**: Pinecone integration for vector storage and retrieval
 - **llm_whisper_processor.py**: PDF processing and text extraction utilities
 - **run.py**: Application runner with configuration for development and production
+
+### File Management Components
+- **TemporaryFileHandler**: Manages temporary file uploads for chat context
+- **FileProcessor**: Handles permanent file processing and vector indexing
+- **FileUtils**: Manages file paths and directory structures
+- **UploadedFile Model**: Tracks both temporary and permanent file uploads
+
+### File Upload Features
+- **Temporary Context Files**: Files attached to chat messages
+  - Stored in temp directory
+  - Automatically processed and removed
+  - Content injected into chat context
+  - Token count estimation
+  - Supports multiple simultaneous uploads
+
+- **Permanent Vector Files**: Files for semantic search
+  - Stored in user/system directories
+  - Processed for vector indexing
+  - Linked to system messages
+  - Full content preservation
+  - Original and processed text views
+
+### File Processing Capabilities
+- PDF text extraction via LLMWhisperer
+- Document chunking and vectorization
+- Token count estimation
+- MIME type detection
+- Asynchronous processing
+- Error handling and recovery
+- Progress tracking
+- File cleanup management
+
+### File Storage Structure
+```user_files/
+├── [user_id]/
+│   └── [system_message_id]/
+│       ├── uploads/           # Original files
+│       ├── processed_texts/   # Extracted text
+│       ├── llmwhisperer_output/  # PDF processing
+│       └── web_search_results/   # Search data
+```
+
+### File-Related API Endpoints
+- `/upload-temp-file`: Upload temporary chat context files
+- `/remove-temp-file/<file_id>`: Remove temporary files
+- `/upload_file`: Upload permanent vector files
+- `/remove_file/<file_id>`: Remove permanent files
+- `/view_original_file/<file_id>`: View original file
+- `/view_processed_text/<file_id>`: View processed text
+- `/serve_file/<file_id>`: Serve file content
 
 ### Frontend Files
 - **static/js/main.js**: Primary JavaScript for UI interactions, AJAX calls, and WebSocket handling
@@ -493,9 +544,10 @@ The admin dashboard provides interfaces for:
 ## External Services and APIs
 
 ### AI Model Providers
-- **OpenAI API**: GPT-3.5, GPT-4, GPT-4o, o3-mini models
-- **Anthropic API**: Claude 3 Opus, Claude 3.5 Sonnet, Claude 3.7 Sonnet models
-- **Google AI API**: Gemini Pro model
+- **OpenAI API**: GPT-3.5, GPT-4, GPT-4 Turbo, GPT-4o, GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, o3-mini (Fast/Balanced/Deep)
+- **Anthropic API**: Claude 3 Opus, Claude 3.5 Sonnet, Claude 3.7 Sonnet (with Extended Thinking)
+- **Google Generative AI API**: Gemini 2.5 Pro, Gemini 2.0 Flash
+- **Cerebras API**: Llama 3.1 (8B), Llama 3.3 (70B), DeepSeek R1 (70B)
 
 ### Vector Storage
 - **Pinecone**: Vector database for efficient storage and retrieval of embeddings
@@ -606,6 +658,7 @@ The admin dashboard provides interfaces for:
 - `OPENAI_API_KEY`: OpenAI API key
 - `ANTHROPIC_API_KEY`: Anthropic API key
 - `GOOGLE_API_KEY`: Google AI API key
+- `CEREBRAS_API_KEY`: Cerebras API key
 - `PINECONE_API_KEY`: Pinecone API key
 - `PINECONE_CLOUD`: Pinecone cloud provider (aws, gcp, azure)
 - `PINECONE_REGION`: Pinecone region (us-east-1, etc.)
