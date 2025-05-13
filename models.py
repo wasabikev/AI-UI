@@ -112,8 +112,9 @@ class Folder(Base):
     name = Column(String(120), nullable=False)
     path = Column(LtreeType, nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), 
+                       default=lambda: datetime.now(timezone.utc),
                        onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
@@ -149,8 +150,9 @@ class Conversation(Base):
     token_count = Column(Integer, default=0)
     folder_id = Column(Integer, ForeignKey('folder.id'), nullable=True)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True),
+                       default=lambda: datetime.now(timezone.utc),
                        onupdate=lambda: datetime.now(timezone.utc))
     model_name = Column(String(120))
     sentiment = Column(String(120))
@@ -217,9 +219,11 @@ class User(Base):
     password_hash = Column(String(128))
     is_admin = Column(Boolean, default=False)
     status = Column(String(20), default="Pending")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, onupdate=lambda: datetime.now(timezone.utc))
-    last_login = Column(DateTime)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), 
+                       default=lambda: datetime.now(timezone.utc),
+                       onupdate=lambda: datetime.now(timezone.utc))
+    last_login = Column(DateTime(timezone=True))
 
     # Update relationships to use back_populates
     conversations = relationship('Conversation', back_populates='user', lazy='selectin')
@@ -256,8 +260,8 @@ class UserUsage(Base):
     user_id = Column(Integer, ForeignKey('user.id'))
     api_used = Column(String(50))
     tokens_used = Column(Integer)
-    session_start = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    session_end = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    session_start = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    session_end = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     cost = Column(Float)
 
     # Update to use back_populates
@@ -273,8 +277,9 @@ class SystemMessage(Base):
     model_name = Column(String(120))
     temperature = Column(Float)
     created_by = Column(Integer, ForeignKey('user.id'))
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True),
+                       default=lambda: datetime.now(timezone.utc),
                        onupdate=lambda: datetime.now(timezone.utc))
     source_config = Column(JSON)
     enable_web_search = Column(Boolean, default=False)
@@ -313,12 +318,13 @@ class Website(Base):
     site_metadata = Column(JSON)
     system_message_id = Column(Integer, ForeignKey('system_message.id', ondelete='CASCADE'),
                              nullable=False)
-    indexed_at = Column(DateTime)
+    indexed_at = Column(DateTime(timezone=True))
     indexing_status = Column(String(50), default='Pending')
     last_error = Column(Text)
     indexing_frequency = Column(Integer, nullable=True, default=None)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True),
+                       default=lambda: datetime.now(timezone.utc),
                        onupdate=lambda: datetime.now(timezone.utc))
 
     # Update to use back_populates
@@ -352,7 +358,7 @@ class UploadedFile(Base):
     original_filename = Column(String(255), nullable=False)
     file_path = Column(String(255), nullable=False) # Path to the original uploaded file
     processed_text_path = Column(String(255), nullable=True) # Path to the processed text (e.g., from LLMWhisperer)
-    upload_timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    upload_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     file_size = Column(Integer)
     mime_type = Column(String(100))
 

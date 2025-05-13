@@ -170,11 +170,12 @@ async def init_db():
                     )
                     if not result.scalar_one_or_none():
                         result = await session.execute(select(User).filter_by(is_admin=True))
-                        admin_user = result.scalar_one_or_none()
+                        admin_user = result.scalars().first()
                         if admin_user:
                             await create_default_system_message(session, admin_user.id)
                         else:
                             logger.warning("No admin user found")
+
 
         logger.info("Database initialization completed")
 
