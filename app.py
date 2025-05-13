@@ -508,8 +508,10 @@ class TemporaryFileHandler:
         try:
             temp_subfolder = os.path.join(self.temp_folder, file_id)
             if await aio_os.path.exists(temp_subfolder):
+                # Get list of files in subfolder
+                files = await aio_os.scandir(temp_subfolder)
                 # Remove all files in subfolder
-                async for file in aio_os.scandir(temp_subfolder):
+                for file in files:
                     await aio_os.remove(file.path)
                 # Remove the subfolder itself    
                 await aio_os.rmdir(temp_subfolder)
@@ -518,6 +520,7 @@ class TemporaryFileHandler:
         except Exception as e:
             self.app.logger.error(f"Error removing temporary file: {str(e)}")
             raise
+
 
 # Initialize temporary file handler
 temp_file_handler = None  # Initialize later in startup
@@ -2334,37 +2337,69 @@ async def check_directories():
 @app.route('/upload-temp-file', methods=['POST'])
 @login_required
 async def upload_temp_file():
-    """Handle temporary file uploads for chat context"""
+    """
+    Handle temporary file uploads for chat context.
+    Process the file immediately and return extracted text and metadata.
+    """
     try:
-        if 'file' not in (await request.files):
-            return jsonify({
-                'success': False,
-                'error': 'No file provided'
-            }), 400
-            
-        file = (await request.files)['file']
+        files = await request.files
+        if 'file' not in files:
+            return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+        file = files['file']
         if not file.filename:
-            return jsonify({
-                'success': False,
-                'error': 'No filename provided'
-            }), 400
-            
+            return jsonify({'success': False, 'error': 'No filename provided'}), 400
+
         if not allowed_file(file.filename):
-            return jsonify({
-                'success': False,
-                'error': 'File type not allowed'
-            }), 400
-            
-        # Save and process the file
-        result = await temp_file_handler.save_temp_file(file)
-        return jsonify(result)
-        
-    except Exception as e:
-        app.logger.error(f"Error handling temporary file upload: {str(e)}")
+            return jsonify({'success': False, 'error': 'File type not allowed'}), 400
+
+        # Save the file temporarily using the existing handler
+        save_result = await temp_file_handler.save_temp_file(file)
+        if not save_result.get('success'):
+            return jsonify({'success': False, 'error': 'Failed to save file'}), 500
+
+        file_id = save_result['fileId']
+        filename = save_result['filename']
+        file_path = save_result['file_path']
+        file_size = save_result['size']
+        mime_type = save_result['mime_type']
+
+        # Process the file immediately using FileProcessor
+        start_time = time.time()
+        # Use the current user and a dummy system_message_id (0) for context files
+        extracted_text, _ = await file_processor.llm_whisper.process_file(
+            file_path=file_path,
+            user_id=current_user.id,
+            system_message_id=0,
+            file_id=file_id
+        )
+        processing_time = time.time() - start_time
+
+        # Calculate token count if possible
+        token_count = None
+        try:
+            import tiktoken
+            encoding = tiktoken.get_encoding("cl100k_base")
+            token_count = len(encoding.encode(extracted_text or ""))
+        except Exception as token_error:
+            app.logger.warning(f"Could not estimate tokens for extracted text: {str(token_error)}")
+
+        app.logger.info(f"FileProcessor extraction took {processing_time:.2f} seconds for {filename}")
+
         return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+            'success': True,
+            'fileId': file_id,
+            'filename': filename,
+            'size': file_size,
+            'mime_type': mime_type,
+            'tokenCount': token_count,
+            'extractedText': extracted_text,
+            'processingTime': processing_time
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error processing file: {str(e)}")
+        return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'}), 500
 
 @app.route('/remove-temp-file/<file_id>', methods=['DELETE'])
 @login_required

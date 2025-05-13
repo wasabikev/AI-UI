@@ -63,8 +63,6 @@
             <!-- Main content -->
             <main class="col-10" style="padding-left: 0; padding-right: 0;">
 
-   
-
                 <header class="row align-items-center py-4" style="min-height: 100px;">
 
                     <!-- Title -->
@@ -164,37 +162,40 @@
                         </div>
                     </div>
                 </section>
-            </main>       
+      
      
-    <!-- Message Form with File Attachments -->
-    <footer class="col-10 offset-2">
-        <!-- Container for attached files preview -->
-        <div id="attachedFilesPreview" class="attached-files-preview d-none">
-            <!-- Attached files will be listed here as badges -->
-        </div>
-
-            <form id="chat-form" class="bottom-form">
-                <div class="input-group">
-                <!-- Modify the attach file button -->
-                <div class="attachment-menu-container">
-                    <button type="button" class="btn btn-outline-secondary" id="attachFileBtn" title="Attach File">
-                        <i class="fas fa-paperclip"></i>
-                    </button>
-                    <!-- Hidden file input -->
-                    <input type="file" id="fileInput" style="display: none;" 
-                           accept=".doc,.docx,.odt,.ppt,.pptx,.odp,.xls,.xlsx,.ods,.pdf,.txt,.bmp,.gif,.jpeg,.jpg,.png,.tif,.tiff,.webp">
+                <!-- Container for attached files preview -->
+                <div id="attachedFilesPreview" class="attached-files-preview d-none">
+                    <div class="d-flex flex-wrap gap-1 context-pills">
+                        <!-- File badges inserted here by JavaScript -->
+                    </div>
                 </div>
-                
-                <textarea id="user_input" class="form-control" 
-                        placeholder="Type your message or attach a file..." 
-                        rows="1"></textarea>
-                
-                <button type="submit" class="btn btn-primary btn-send">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
-        </form>
-    </footer>
+
+                <!-- ====== Chat Form ====== -->
+                <form id="chat-form" class="bottom-form">
+                    <div class="input-group">
+                        <!-- Modify the attach file button -->
+                        <div class="attachment-menu-container">
+                            <button type="button" class="btn btn-outline-secondary" id="attachFileBtn" title="Attach File">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <!-- Hidden file input -->
+                            <input type="file" id="fileInput" style="display: none;" 
+                                    accept=".doc,.docx,.odt,.ppt,.pptx,.odp,.xls,.xlsx,.ods,.pdf,.txt,.bmp,.gif,.jpeg,.jpg,.png,.tif,.tiff,.webp">
+                        </div>
+                        
+                        <textarea id="user_input" class="form-control" 
+                                placeholder="Type your message or attach a file..." 
+                                rows="1"></textarea>
+                        
+                        <button type="submit" class="btn btn-primary btn-send">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </main>
+        </div> <!-- End of main content row -->
+    </div> <!-- End of main container -->
 
     <!-- Attachment Menu Template -->
     <div id="attachmentMenuTemplate" style="display: none;">
