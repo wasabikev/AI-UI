@@ -390,26 +390,28 @@ function addPlaceholderBadge(file) {
     const container = document.getElementById('attachedFilesPreview');
     container.classList.remove('d-none'); // Ensure container is visible
 
+    // Always use the context-pills container
+    let pillsContainer = container.querySelector('.context-pills');
+    if (!pillsContainer) {
+        pillsContainer = document.createElement('div');
+        pillsContainer.className = 'd-flex flex-wrap gap-1 context-pills';
+        container.appendChild(pillsContainer);
+    }
+
     const placeholderId = `placeholder-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const placeholderBadge = document.createElement('span');
     placeholderBadge.id = placeholderId;
     placeholderBadge.className = 'badge bg-secondary d-inline-flex align-items-center me-1';
+    placeholderBadge.style.minWidth = '200px'; // Give it some minimum width for the progress bar
     placeholderBadge.innerHTML = `
         <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-        Uploading ${escapeHtml(file.name)}...
+        <span class="upload-status">Preparing ${escapeHtml(file.name)}...</span>
     `;
 
-    // Append to the container (or a specific sub-container if preferred)
-    let pillsContainer = container.querySelector('.d-flex.flex-wrap');
-    if (!pillsContainer) {
-        pillsContainer = document.createElement('div');
-        pillsContainer.className = 'd-flex flex-wrap gap-1';
-        container.appendChild(pillsContainer);
-    }
     pillsContainer.appendChild(placeholderBadge);
-
     return placeholderId;
 }
+
 
 // Function to add a persistent error badge
 function addErrorBadge(errorMessage) {
@@ -420,6 +422,13 @@ function addErrorBadge(errorMessage) {
     }
     container.classList.remove('d-none');
 
+    let pillsContainer = container.querySelector('.context-pills');
+    if (!pillsContainer) {
+        pillsContainer = document.createElement('div');
+        pillsContainer.className = 'd-flex flex-wrap gap-1 context-pills';
+        container.appendChild(pillsContainer);
+    }
+
     const errorBadge = document.createElement('span');
     errorBadge.className = 'badge bg-danger d-inline-flex align-items-center me-1';
     errorBadge.innerHTML = `
@@ -427,30 +436,24 @@ function addErrorBadge(errorMessage) {
         ${escapeHtml(errorMessage)}
         <button type="button" class="btn-close btn-close-white ms-2" onclick="this.parentElement.remove(); checkPreviewContainerVisibility();" style="font-size: 0.5em;"></button>
     `;
-
-    let pillsContainer = container.querySelector('.d-flex.flex-wrap');
-    if (!pillsContainer) {
-        pillsContainer = document.createElement('div');
-        pillsContainer.className = 'd-flex flex-wrap gap-1';
-        container.appendChild(pillsContainer);
-    }
     pillsContainer.appendChild(errorBadge);
 }
+
 
 // Helper function to check and hide the preview container if empty
 function checkPreviewContainerVisibility() {
     const container = document.getElementById('attachedFilesPreview');
     if (!container) return;
 
-    // Check if the main container has any child elements at all (pills container or error badges)
-    const hasContent = container.childElementCount > 0;
-
+    const pillsContainer = container.querySelector('.context-pills');
+    const hasContent = pillsContainer && pillsContainer.children.length > 0;
     if (hasContent) {
         container.classList.remove('d-none');
     } else {
         container.classList.add('d-none');
     }
 }
+
 
 async function handleContextFileSelection(file, placeholderId) {
     // Basic validation
@@ -469,7 +472,7 @@ async function handleContextFileSelection(file, placeholderId) {
         return;
     }
 
-    // Start upload
+    // Start upload and processing immediately
     await uploadContextFile(file, placeholderId);
 }
 
@@ -477,32 +480,120 @@ async function uploadContextFile(file, placeholderId) {
     const formData = new FormData();
     formData.append('file', file);
 
+    // Get the placeholder badge to update during upload
+    const placeholderBadge = document.getElementById(placeholderId);
+    
     try {
-        const response = await fetch('/upload-temp-file', {
-            method: 'POST',
-            body: formData,
-        });
-
-        // Remove placeholder badge regardless of success/failure before handling result
-        const placeholderBadge = document.getElementById(placeholderId);
+        // Create a progress indicator inside the placeholder badge
         if (placeholderBadge) {
-            placeholderBadge.remove();
+            placeholderBadge.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span class="upload-status">Uploading ${escapeHtml(file.name)}...</span>
+                <div class="progress mt-1" style="height: 4px; width: 100%;">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            `;
         }
 
-        if (!response.ok) {
-            let errorData;
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { error: `Upload failed: ${response.statusText}` };
-            }
-            throw new Error(errorData.error || `Upload failed: ${response.status}`);
-        }
+        // Add console logging for debugging
+        console.log(`Starting upload for file: ${file.name}`);
 
-        const result = await response.json();
+        // Create a custom XMLHttpRequest to track upload progress
+        const xhr = new XMLHttpRequest();
+        
+        // Set up a promise to handle the XHR response
+        const uploadPromise = new Promise((resolve, reject) => {
+            xhr.open('POST', '/upload-temp-file');
+            
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    console.log(`Upload progress: ${percentComplete}%`);
+                    
+                    // Update progress bar
+                    const progressBar = placeholderBadge?.querySelector('.progress-bar');
+                    const statusText = placeholderBadge?.querySelector('.upload-status');
+                    
+                    if (progressBar) {
+                        progressBar.style.width = `${percentComplete}%`;
+                    }
+                    
+                    if (statusText && percentComplete < 100) {
+                        statusText.textContent = `Uploading ${escapeHtml(file.name)}: ${percentComplete}%`;
+                    } else if (statusText) {
+                        statusText.textContent = `Loading ${escapeHtml(file.name)}...`;
+                        // Add processing animation class
+                        statusText.classList.add('processing-animation');
+                    }
+                }
+            });
+            
+            xhr.onload = function() {
+                console.log(`XHR onload triggered. Status: ${xhr.status}`);
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        console.log('Received response:', response);
+                        resolve(response);
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        reject(new Error('Invalid JSON response from server'));
+                    }
+                } else {
+                    console.error(`Error response: ${xhr.status} ${xhr.statusText}`);
+                    try {
+                        const errorData = JSON.parse(xhr.responseText);
+                        reject(new Error(errorData.error || `Upload failed: ${xhr.statusText}`));
+                    } catch (e) {
+                        reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+                    }
+                }
+            };
+            
+            xhr.onerror = function(e) {
+                console.error('XHR error:', e);
+                reject(new Error('Network error during upload'));
+            };
+        });
+        
+        // Send the form data
+        xhr.send(formData);
+        console.log('Form data sent');
+        
+        // Wait for the upload to complete
+        const result = await uploadPromise;
+        console.log('Upload complete, result:', result);
 
-        if (result.success) {
-            // Store context file info
+        // At this point, the file has been uploaded and processed by the server
+        // Update the placeholder to show completion
+        if (placeholderBadge) {
+            console.log('Updating placeholder badge to show completion');
+            placeholderBadge.innerHTML = `
+                <i class="fas fa-check-circle me-1"></i>
+                <span class="upload-status">Processed ${escapeHtml(file.name)}</span>
+            `;
+            
+            // Add a short delay before removing the placeholder and adding the permanent badge
+            setTimeout(() => {
+                console.log('Removing placeholder and adding permanent badge');
+                // Remove placeholder badge
+                placeholderBadge.remove();
+                
+                // Store context file info
+                attachedContextFiles.set(result.fileId, {
+                    name: result.filename,
+                    size: result.size,
+                    type: result.mime_type,
+                    tokenCount: result.tokenCount,
+                    content: result.extractedText
+                });
+                
+                // Update the UI with the permanent badge
+                updateContextFilesPreview();
+            }, 1000); // 1 second delay to show completion
+        } else {
+            console.log('Placeholder badge not found, storing file info directly');
+            // If placeholder is gone, just store the file info
             attachedContextFiles.set(result.fileId, {
                 name: result.filename,
                 size: result.size,
@@ -510,13 +601,16 @@ async function uploadContextFile(file, placeholderId) {
                 tokenCount: result.tokenCount,
                 content: result.extractedText
             });
-
             updateContextFilesPreview();
-        } else {
-            throw new Error(result.error || 'Upload failed');
         }
     } catch (error) {
         console.error('Context file upload failed:', error);
+        
+        // Remove the placeholder if it exists
+        if (placeholderBadge) {
+            placeholderBadge.remove();
+        }
+        
         addErrorBadge(`Upload failed for ${escapeHtml(file.name)}: ${error.message}`);
         updateContextFilesPreview();
     }
@@ -560,39 +654,38 @@ function updateContextFilesPreview() {
         console.error("attachedFilesPreview container not found!");
         return;
     }
-
-    // Find or create the inner pills container specifically for successful files
-    let pillsContainer = container.querySelector('.d-flex.flex-wrap.context-pills');
+    let pillsContainer = container.querySelector('.context-pills');
     if (!pillsContainer) {
         pillsContainer = document.createElement('div');
         pillsContainer.className = 'd-flex flex-wrap gap-1 context-pills';
-        // Prepend it so error badges added later appear after
-        container.prepend(pillsContainer);
+        container.appendChild(pillsContainer);
     }
+    // Remove all current file badges (not error badges)
+    // We'll identify permanent file badges by their id attribute
+    [...pillsContainer.children].forEach(child => {
+        if (child.id && child.id.startsWith('context-file-')) {
+            child.remove();
+        }
+    });
 
-    // Clear only the successful file pills within this specific container
-    pillsContainer.innerHTML = '';
-
-    // Rebuild badges for successfully attached files into the pillsContainer
+    // Add all current attached files as permanent badges
     attachedContextFiles.forEach((fileInfo, fileId) => {
         const pill = document.createElement('span');
         pill.id = `context-file-${fileId}`;
-        // Use bg-info or similar for success, distinct from bg-danger for errors
         pill.className = 'badge bg-info d-inline-flex align-items-center me-1';
         pill.innerHTML = `
-            <i class="fas fa-paperclip me-1"></i>
+            <i class="fa fa-paperclip me-1"></i>
             ${escapeHtml(fileInfo.name)} (${fileInfo.tokenCount ? fileInfo.tokenCount + ' tokens' : '...'})
             <button type="button" class="btn-close btn-close-white ms-2"
                     onclick="removeContextFile('${fileId}')"
                     style="font-size: 0.5em;">
             </button>
         `;
-        pillsContainer.appendChild(pill); // Append to the specific pills container
+        pillsContainer.appendChild(pill);
     });
-
-    // Call the visibility check helper at the end
     checkPreviewContainerVisibility();
 }
+
 
 function getAttachedContextFilesContent() {
     let content = '';

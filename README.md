@@ -12,7 +12,7 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - **Web Search**: Real-time web information retrieval during conversations
 - **Website Indexing**: Crawl and index websites for context-aware responses
 - **File Processing & Vectorization**: Upload and process files for semantic search and retrieval-augmented generation (RAG) via permanent vector storage
-- **Session Context File Upload**: Attach files directly to chat sessions; their full content is extracted and injected into the current conversation context, enabling richer, document-aware AI responses. Supports multiple simultaneous uploads, automatic processing, and temporary storage for each session
+- **Session Context File Upload**: Attach files directly to chat sessions; their full content is extracted and injected into the current conversation context.
 - **Temperature Control**: Adjust AI response variability with temperature settings
 - **WebSocket Status Updates**: Real-time status updates during processing
 - **Modal-Based Interface**: Comprehensive UI for system configuration and management

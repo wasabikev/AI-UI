@@ -6,6 +6,104 @@ body, html {
     overflow: hidden;
 }
 
+/* File Upload Progress Styles */
+.file-progress {
+    height: 4px;
+    background-color: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 4px 0;
+    width: 100%;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #4285f4;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-bar.complete {
+    background-color: #0f9d58;
+}
+
+.progress-bar.error {
+    background-color: #db4437;
+}
+
+.upload-status {
+    font-size: 0.85em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    display: inline-block;
+}
+
+/* Enhance existing attached files preview styles */
+.attached-files-preview {
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 0 !important;
+    padding-left: 6px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 8px;
+}
+
+.attached-files-preview .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+    font-size: 0.85em;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.3;
+    max-width: 100%;
+    font-weight: 400; /* Normal weight for text */
+}
+
+/* Add spacing for icons in badges */
+.attached-files-preview .badge i {
+    margin-right: 6px; /* Space after paperclip icon */
+}
+
+
+/* Add spacing for spinner during loading */
+.attached-files-preview .badge .spinner-border {
+    margin-right: 6px; /* Space after loading spinner */
+}
+
+/* Ensure consistent spacing for all icon types */
+.attached-files-preview .badge [class*="fa-"] {
+    margin-right: 6px;
+}
+
+.attached-files-preview .badge.bg-secondary {
+    background-color: #6c757d;
+}
+
+.attached-files-preview .badge.bg-info {
+    background-color: #517693;
+}
+
+.attached-files-preview .badge.bg-danger {
+    background-color: #dc3545;
+}
+
+/* Processing animation for file uploads */
+@keyframes processing-pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.processing-animation {
+    animation: processing-pulse 1.5s infinite;
+}
+
 .hidden {
     display: none;
 }
