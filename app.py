@@ -3492,6 +3492,7 @@ async def update_conversation_title(conversation_id):
             try:
                 await db_session.commit()
                 return jsonify({
+                    "success": True,
                     "message": "Title updated successfully",
                     "title": new_title
                 }), 200
