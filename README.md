@@ -18,7 +18,7 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
 - **Modal-Based Interface**: Comprehensive UI for system configuration and management
 - **Authentication System**: User registration, login, and admin management
 - **Rich Text Rendering**: Markdown, code highlighting, and LaTeX support
-- **Responsive Design**: Mobile-friendly interface with Bootstrap
+- **Responsive Design**: Mobile-friendly interface with Bootstrap 4.5.2
 - **Time Sense**: Context-aware responses with current date, time, and timezone information
 
 ## Global Variables
@@ -487,7 +487,9 @@ The admin dashboard provides interfaces for:
    - Secure password handling
 
 ### Implementation Guidelines
-- Use Bootstrap modal components for consistent styling
+- Use Bootstrap 4.5.2 modal components for consistent styling. Do NOT use Bootstrap 5 APIs
+- Follow Bootstrap 4.x conventions for components and utilities
+- Ensure jQuery compatibility (Bootstrap 4.x requires jQuery)
 - Implement proper focus management for accessibility
 - Ensure keyboard navigation works correctly
 - Handle modal state in JavaScript
@@ -496,6 +498,17 @@ The admin dashboard provides interfaces for:
 - Use consistent button placement and naming
 - Provide clear error messages within the modal
 - Implement confirmation for destructive actions
+
+### Minimize Unnecessary Changes in Mature Code
+- Respect Stable Code: AI-assisted changes should be limited to the specific feature or bug in question. Avoid refactoring, updating, or “modernizing” mature, stable code unless it directly relates to the task at hand or addresses a known issue.
+- Preserve Working Patterns:
+When working in established code, maintain the existing framework versions, coding styles, and APIs. Do not upgrade libraries, change APIs, or introduce new patterns unless explicitly required by the feature or bug.
+- Justify Broad Changes:
+Any change that affects code outside the immediate scope of the task (such as updating library versions, refactoring unrelated modules, or altering UI frameworks) must be clearly justified, documented, and approved by the project owner.
+- Change with Context:
+Before suggesting or applying “best practices,” always verify the current stack and project conventions. If in doubt, ask for confirmation before proceeding with changes that could impact unrelated functionality.
+Minimize Risk:
+- Avoid “over-eager” improvements or optimizations in legacy or mature areas of the codebase. Prioritize stability and predictability over theoretical improvements.
 
 ### Modal Interaction Patterns
 - Open modals with clear triggers (buttons, links)
@@ -511,7 +524,9 @@ The admin dashboard provides interfaces for:
 
 ### Frontend Libraries
 - **jQuery**: DOM manipulation and AJAX requests
-- **Bootstrap**: UI components and responsive design
+- **Bootstrap 4.5.2**: UI components and responsive design
+- **jQuery 3.5.1**: DOM manipulation and AJAX requests
+- **Popper.js 1.14.3**: Required for Bootstrap 4.x tooltips and popovers
 - **Marked.js**: Markdown parsing and rendering
 - **Prism.js**: Code syntax highlighting
 - **MathJax**: LaTeX rendering for mathematical notation
@@ -703,6 +718,7 @@ The admin dashboard provides interfaces for:
 - Set up regular database backups
 - Implement CI/CD pipeline
 - Use DigitalOcean App Platform for production
+- All commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/) standard for clarity and automation.
 
 ## Error Handling and Logging
 - Structured logging with UnicodeFormatter

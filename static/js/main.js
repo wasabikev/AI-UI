@@ -369,9 +369,11 @@ function initializeContextFileAttachment() {
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {
+            setSendButtonState(false); // Disable send button while uploading
             // Immediately add a placeholder and start the upload process
             const placeholderId = addPlaceholderBadge(file);
             await handleContextFileSelection(file, placeholderId);
+            setSendButtonState(true); // Re-enable send button after upload
         }
         // Reset the input to allow selecting the same file again
         e.target.value = '';
@@ -477,6 +479,7 @@ async function handleContextFileSelection(file, placeholderId) {
 }
 
 async function uploadContextFile(file, placeholderId) {
+    setSendButtonState(false); // Disable send button while uploading
     const formData = new FormData();
     formData.append('file', file);
 
@@ -613,6 +616,7 @@ async function uploadContextFile(file, placeholderId) {
         
         addErrorBadge(`Upload failed for ${escapeHtml(file.name)}: ${error.message}`);
         updateContextFilesPreview();
+        setSendButtonState(true); // Always re-enable after upload finishes or errors
     }
 }
 
@@ -696,6 +700,24 @@ function getAttachedContextFilesContent() {
     }
     return content;
 }
+
+function setSendButtonState(isEnabled, message = null) {
+    const sendBtn = $('.btn-send');
+    if (isEnabled) {
+        sendBtn.prop('disabled', false);
+        sendBtn.html('<i class="fas fa-paper-plane"></i>');
+        $('#send-wait-message').remove(); // Remove any wait message
+    } else {
+        sendBtn.prop('disabled', true);
+        sendBtn.html('<span class="spinner-border spinner-border-sm mr-1"></span> <span>Wait for file...</span>');
+        // Optionally show a message below the input
+        if (!$('#send-wait-message').length) {
+            $('<div id="send-wait-message" class="text-warning mt-2" style="font-size:0.95em;">File is uploading. Please wait...</div>')
+                .insertAfter('#chat-form');
+        }
+    }
+}
+
 
 // --- End Context File Attachment Functions ---
 
@@ -1867,9 +1889,7 @@ function openStatusModal(userId, currentStatus) {
         statusNARadio.checked = true;
     }
 
-    // Open the modal using Bootstrap's JavaScript API
-    var statusModal = new bootstrap.Modal(document.getElementById('statusUpdateModal'));
-    statusModal.show();
+    $('#systemMessageModal').modal('show'); // Show the modal using Bootstrap 4's modal method
 }
 
 // Function to submit the status update form
@@ -1989,7 +2009,7 @@ function populateSystemMessageModal() {
     isSaved = false;
 }
 
-function fetchAndProcessSystemMessages() {
+function fetchAndProcessSystemMessages(forceActiveId = null) {
     return new Promise((resolve, reject) => {
         fetch('/api/system_messages')
             .then(response => {
@@ -1999,48 +2019,44 @@ function fetchAndProcessSystemMessages() {
                 return response.json();
              })
             .then(data => {
-                systemMessages = data; // Update the global systemMessages array
-                console.log("System messages:", systemMessages); // Log fetched messages
+                systemMessages = data;
+                console.log("System messages:", systemMessages);
 
-                // Determine the active system message to display initially in the chat
                 let messageToDisplay = null;
-                if (activeConversationId) {
-                    messageToDisplay = systemMessages.find(msg => msg.id === activeConversationId);
+                let idToUse = forceActiveId || activeSystemMessageId;
+
+                if (idToUse) {
+                    messageToDisplay = systemMessages.find(msg => msg.id == idToUse);
                 }
-                // If no active ID or message not found, try default, then first
                 if (!messageToDisplay) {
                     messageToDisplay = systemMessages.find(msg => msg.name === "Default System Message");
                     if (messageToDisplay) {
-                        activeSystemMessageId = messageToDisplay.id; // Set active ID if using default
+                        activeSystemMessageId = messageToDisplay.id;
                     } else if (systemMessages.length > 0) {
-                        messageToDisplay = systemMessages[0]; // Fallback to the first message
-                        activeSystemMessageId = messageToDisplay.id; // Set active ID if using first
+                        messageToDisplay = systemMessages[0];
+                        activeSystemMessageId = messageToDisplay.id;
                     }
+                } else {
+                    activeSystemMessageId = messageToDisplay.id;
                 }
 
-
-                // Display the determined system message in the chat UI
                 if (messageToDisplay) {
                     displaySystemMessage(messageToDisplay);
-                    // Initialize search toggles based on the displayed message
                     initializeSearchToggles(messageToDisplay);
                 } else {
-                    console.warn("No system message available to display.");
-                    // Handle case with no system messages (e.g., display a placeholder)
-                    $('#chat').prepend('<div class="chat-entry system system-message">No system messages configured.</div>');
+                    $('#chat').prepend('<div class="chat-entry system system-message text-danger">No system messages configured.</div>');
                 }
 
-
-                resolve(); // Resolve the promise after system messages are processed
+                resolve();
             })
             .catch(error => {
                 console.error('Error fetching system messages:', error);
-                // Display error to user?
                 $('#chat').prepend(`<div class="chat-entry system system-message text-danger">Error loading system messages: ${error.message}</div>`);
-                reject(error); // Reject the promise if there's an error
+                reject(error);
             });
     });
 }
+
 
 
 
@@ -2119,19 +2135,16 @@ $('#systemMessageModal').on('hide.bs.modal', function (event) {
 
 
 document.getElementById('saveSystemMessageChanges').addEventListener('click', function() {
-    console.log("Attempting to save system message. Current selectedTemperature:", selectedTemperature);
+    const saveButton = this;
     const messageName = document.getElementById('systemMessageName').value.trim();
     const messageDescription = document.getElementById('systemMessageDescription').value;
     const messageContent = document.getElementById('systemMessageContent').value;
     const modelDropdownButton = document.getElementById('modalModelDropdownButton');
     const modelName = modelDropdownButton.dataset.apiName;
-    const temperature = selectedTemperature; // Use the globally tracked selectedTemperature
+    const temperature = selectedTemperature;
     const enableWebSearch = document.getElementById('enableWebSearch').checked;
     const enableTimeSense = document.getElementById('enableTimeSense').checked;
-
-    // Get the message ID from the modal's dataset
-    const messageId = activeSystemMessageId; // Use the global variable
-    console.log("Saving with activeSystemMessageId:", messageId); // Add log for confirmation
+    const messageId = activeSystemMessageId;
 
     // Basic validation
     if (!messageName) {
@@ -2142,17 +2155,13 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         showModalFlashMessage("Please select a model.", "warning");
         return;
     }
-
-
-    // Check if a system message with the same name already exists (only when creating or renaming)
     const existingMessage = systemMessages.find(message =>
-        message.name.toLowerCase() === messageName.toLowerCase() && message.id != messageId // Exclude self when updating
+        message.name.toLowerCase() === messageName.toLowerCase() && message.id != messageId
     );
     if (existingMessage) {
         showModalFlashMessage("A system message with this name already exists. Please choose a different name.", "warning");
         return;
     }
-
     const messageData = {
         name: messageName,
         description: messageDescription,
@@ -2162,89 +2171,86 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         enable_web_search: enableWebSearch,
         enable_time_sense: enableTimeSense
     };
-
     const url = messageId ? `/system-messages/${messageId}` : '/system-messages';
     const method = messageId ? 'PUT' : 'POST';
 
-    // Add detailed logging before save attempt
-    console.log(`Attempting to save system message. URL: ${url}, Method: ${method}, ID: ${messageId}`);
-    console.log('Payload being sent:', JSON.stringify(messageData, null, 2));
-
-    // Disable button while saving
-    this.disabled = true;
-    this.textContent = 'Saving...';
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving...';
 
     $.ajax({
         url: url,
         method: method,
         contentType: 'application/json',
         data: JSON.stringify(messageData),
-        // Add CSRF token if needed: headers: { 'X-CSRFToken': getCsrfToken() },
         success: function(response) {
-            console.log('System message saved successfully:', response);
-            isSaved = true; // Mark as saved
-
-            // Update global state immediately
-            const savedModelName = response.model_name || modelName; // Use response if available
-            const savedTemperature = response.temperature !== undefined ? response.temperature : temperature;
-            model = savedModelName;
-            selectedTemperature = savedTemperature;
-            console.log('Global model variable updated to:', model);
-            console.log("Global temperature updated to:", selectedTemperature);
-            updateTemperatureDisplay(); // Update display if needed
-
-            console.log("Attempting to hide modal...");
-            // Use the jQuery method directly
-            $('#systemMessageModal').modal('hide');
-            console.log("Modal hide command issued.");
-
-            // Trigger the UI refresh after a short delay, decoupled from the modal event
-            setTimeout(() => {
-                try {
-                    console.log("Refreshing UI after modal hide delay.");
-                    fetchAndProcessSystemMessages().then(() => {
-                        const savedMessageId = response.id || messageId; // Use the ID from the response if available, else the original ID
-                        const updatedMessage = systemMessages.find(msg => msg.id == savedMessageId);
-
-                        if (updatedMessage) {
-                            activeSystemMessageId = updatedMessage.id; // Ensure global ID is updated
-                            displaySystemMessage(updatedMessage); // Update main chat display
-                            // Update main page model dropdown button text
-                            $('#dropdownMenuButton').text(modelNameMapping(updatedMessage.model_name));
-                            // Re-initialize search toggles based on the saved state
-                            initializeSearchToggles(updatedMessage);
-                        } else {
-                            console.error('Could not find the saved system message in the refreshed list. ID:', savedMessageId);
-                            // Fallback: display default or first message if available
-                            if (systemMessages.length > 0) {
-                                const fallbackMsg = systemMessages.find(msg => msg.name === "Default System Message") || systemMessages[0];
-                                displaySystemMessage(fallbackMsg);
-                                initializeSearchToggles(fallbackMsg);
-                            }
-                        }
-                    }).catch(error => {
-                        console.error("Error refreshing system messages after save:", error);
-                        // Optionally show flash message on main page about refresh failure
-                    });
-                } catch (e) {
-                    console.error("Error occurred during delayed UI refresh:", e);
-                    // Display a non-modal error if needed
+            console.log('Ajax success - response received:', response);
+            isSaved = true;
+            const savedMessageId = response.id || messageId;
+            console.log('Saved/Updated message ID:', savedMessageId);
+            
+            let updatedMessage = null;
+            if (messageId) {
+                const idx = systemMessages.findIndex(msg => msg.id == savedMessageId);
+                console.log('Found message index:', idx);
+                if (idx !== -1) {
+                    systemMessages[idx] = {...systemMessages[idx], ...response};
+                    updatedMessage = systemMessages[idx];
+                    console.log('Updated existing message:', updatedMessage);
                 }
-            }, 500); // 500ms delay - adjust if necessary
+            } else {
+                updatedMessage = response;
+                systemMessages.push(updatedMessage);
+                console.log('Added new message:', updatedMessage);
+            }
+            
+            if (updatedMessage) {
+                console.log('Updating UI with message:', updatedMessage);
+                activeSystemMessageId = updatedMessage.id;
+                displaySystemMessage(updatedMessage);
+                $('#dropdownMenuButton').text(modelNameMapping(updatedMessage.model_name));
+                initializeSearchToggles(updatedMessage);
+            }
+            
+            console.log('About to hide modal...');
+            // Try both approaches to ensure modal hiding
+            try {
+                $('#systemMessageModal').modal('hide');
+                console.log('Modal hide called via jQuery');
+            } catch (e) {
+                console.error('Error hiding modal via jQuery:', e);
+            }
+            
+            console.log('Starting background refresh...');
+            fetchAndProcessSystemMessages(updatedMessage.id).then(() => {
+                console.log('Background refresh complete');
+            });
         },
         error: function(xhr) {
-            console.error('Error saving system message:', xhr.status, xhr.responseText);
-            const errorMsg = xhr.responseJSON?.error || xhr.responseText || "Unknown error saving system message";
+            console.error('Ajax error:', xhr);
+            let errorMsg = "Unknown error saving system message";
+            try {
+                errorMsg = xhr.responseJSON?.error || xhr.responseText || errorMsg;
+            } catch (e) {
+                errorMsg = xhr.responseText || errorMsg;
+            }
             showModalFlashMessage(`Error: ${errorMsg}`, "danger");
         },
         complete: function() {
-            // Re-enable button
-            const saveButton = document.getElementById('saveSystemMessageChanges');
+            console.log('Ajax complete - resetting button state');
             saveButton.disabled = false;
             saveButton.textContent = 'Save Changes';
         }
     });
+
 });
+
+
+
+
+
+
+
+
 
 function updateTemperatureDisplay() {
     // Find the checked radio button
@@ -2438,8 +2444,7 @@ document.getElementById('delete-system-message-btn').addEventListener('click', f
 
                         // Close the modal after a short delay to allow user to see the flash message
                         setTimeout(() => {
-                             var systemModal = bootstrap.Modal.getInstance(document.getElementById('systemMessageModal'));
-                             systemModal.hide();
+                             $('#systemMessageModal').modal('show');
                         }, 2000); // 2 seconds delay
 
 
@@ -2786,6 +2791,7 @@ $('#systemMessageModal').on('show.bs.modal', function (event) {
             activeSystemMessage = systemMessages.find(msg => msg.name === "Default System Message") || (systemMessages.length > 0 ? systemMessages[0] : null);
             if (activeSystemMessage) {
                 activeSystemMessageId = activeSystemMessage.id; // Update active ID
+                displaySystemMessage(activeSystemMessage);
             }
         }
 
@@ -2833,12 +2839,14 @@ $('#systemMessageModal').on('shown.bs.modal', function () {
     // Focus the first relevant input field based on the visible group
     const visibleGroup = $('.modal-content-group:not(.hidden)').first();
     if (visibleGroup.length) {
-        const firstInput = visibleGroup.find('input:not([type=hidden]), textarea, select, button:not(.btn-close)').first();
+        // Exclude Bootstrap 4 close button (.close), not .btn-close (Bootstrap 5)
+        const firstInput = visibleGroup.find('input:not([type=hidden]), textarea, select, button:not(.close)').first();
         if (firstInput.length) {
             firstInput.focus();
         }
     }
 });
+
 
 
 // Event listener for the system message button in the chat interface
@@ -2849,9 +2857,7 @@ document.addEventListener('click', function(event) {
         // Set the target group to 'systemMessageContentGroup' when clicking the gear icon
         $('#systemMessageModal').data('targetGroup', 'systemMessageContentGroup');
 
-        // Show the modal using Bootstrap's JS API
-        var systemModal = new bootstrap.Modal(document.getElementById('systemMessageModal'));
-        systemModal.show();
+        $('#systemMessageModal').modal('show');
     }
 });
 
@@ -2917,8 +2923,8 @@ document.addEventListener('click', function(event) {
     if (event.target && event.target.id === 'add-new-system-message-main-ui-btn') { // Example ID
         // Logic to handle adding a new system message, likely opens the modal in 'new' state
         $('#new-system-message-btn').click(); // Trigger the modal's 'new' button logic
-        var systemModal = new bootstrap.Modal(document.getElementById('systemMessageModal'));
-        systemModal.show();
+        $('#systemMessageModal').modal('show');
+
     }
 });
 
@@ -3353,23 +3359,23 @@ $('#edit-title-btn').click(function() {
                         targetConversationItem.text(updatedTitle);
                         console.log('Sidebar title updated for conversation ID:', activeConversationId);
                     } else {
-                        console.warn('Could not find conversation item in sidebar to update title for ID:', activeConversationId);
-                        // Optionally refresh the whole list if item not found
-                        // updateConversationList(1, false);
+                        // If not found, refresh the conversation list (optional fallback)
+                        updateConversationList(currentPage, false);
                     }
                 } else {
-                     alert("Error updating title: " + (response.message || "Unknown error"));
+                    alert("Error updating title: " + (response.message || "Unknown error"));
                 }
             },
             error: function(xhr) {
                 console.error("Error updating title:", xhr.status, xhr.responseText);
-                 alert("Error updating title: " + (xhr.responseJSON?.message || xhr.responseText || "Unknown error"));
+                alert("Error updating title: " + (xhr.responseJSON?.message || xhr.responseText || "Unknown error"));
             }
         });
     } else if (newTitle !== null) { // User didn't cancel, but input was empty or same
         console.log("Title not changed.");
     }
 });
+
 
 
 $('#delete-conversation-btn').click(function() {
@@ -3703,6 +3709,11 @@ function renderOpenAIWithFootnotes(content, enableWebSearch) {
 }
 
 $('#chat-form').on('submit', async function (e) {
+    if ($('.btn-send').prop('disabled')) {
+        // Prevent sending while a file is uploading
+        e.preventDefault();
+        return false;
+    }
     console.log('Chat form submitted.');
     e.preventDefault();
 
@@ -3996,6 +4007,17 @@ function checkActiveConversation() {
 
 
 $(document).ready(function() {  // Document Ready (initialization)
+    window.addEventListener('popstate', function(event) {
+        const pathParts = window.location.pathname.split('/');
+        const conversationIdFromUrl = (pathParts.length >= 3 && pathParts[1] === 'c') ? pathParts[2] : null;
+
+        if (conversationIdFromUrl) {
+            loadConversation(conversationIdFromUrl);
+        } else {
+            // Reset to new chat state
+            $('#new-chat-btn').click();
+        }
+    });
     console.log("Document ready."); // Debug
 
     // Initialize autosize for the textarea
@@ -4018,6 +4040,63 @@ $(document).ready(function() {  // Document Ready (initialization)
     // Ensure the current-model-btn is visible by default
     currentModelBtn.css('display', 'inline-block');
 
+    // Initialize the modal with Bootstrap 4
+    const $modal = $('#systemMessageModal');
+    $modal.modal({
+        show: false,
+        backdrop: 'static',
+        keyboard: true
+    });
+
+    // Bind modal events
+    $modal
+        .on('show.bs.modal', function(e) {
+            console.log('Modal show event triggered');
+        })
+        .on('shown.bs.modal', function(e) {
+            console.log('Modal shown event triggered');
+            updateVectorFileMoreIndicator();
+
+            // Focus the first relevant input field
+            const visibleGroup = $('.modal-content-group:not(.hidden)').first();
+            if (visibleGroup.length) {
+                const firstInput = visibleGroup.find('input:not([type=hidden]), textarea, select, button:not(.close)').first();
+                if (firstInput.length) {
+                    firstInput.focus();
+                }
+            }
+        })
+        .on('hide.bs.modal', function(e) {
+            console.log('Modal hide event triggered');
+        })
+        .on('hidden.bs.modal', function(e) {
+            console.log('Modal hidden event triggered');
+            // Clean up any temporary states
+            $(this).find('form').trigger('reset');
+            // Remove any lingering backdrops
+            $('.modal-backdrop').remove();
+            // Remove modal-open class from body
+            $('body').removeClass('modal-open');
+        });
+
+    // Add global modal cleanup function
+    window.cleanupModal = function() {
+        const $body = $('body');
+        
+        // Remove modal-open class from body
+        $body.removeClass('modal-open');
+        
+        // Remove any lingering backdrop
+        $('.modal-backdrop').remove();
+        
+        // Reset modal state
+        $modal
+            .removeClass('show')
+            .removeAttr('aria-modal')
+            .attr('aria-hidden', 'true')
+            .css('display', 'none');
+    };
+
     // Fetch system messages first, then initialize dependent components
     fetchAndProcessSystemMessages().then(() => {
         console.log("System messages processed.");
@@ -4038,20 +4117,19 @@ $(document).ready(function() {  // Document Ready (initialization)
         // Initialize temperature display in modal (based on initially loaded system message)
         updateTemperatureDisplay();
 
-        // Initialize search toggles based on the initially loaded system message
-        // This should be handled within fetchAndProcessSystemMessages or displaySystemMessage
-
     }).catch(error => {
         console.error("Initialization failed due to error fetching system messages:", error);
         // Display a prominent error to the user
         $('#chat').prepend('<div class="alert alert-danger">Failed to initialize application settings. Please try refreshing the page.</div>');
     });
 
-
     // Add click event handler for the "+ New" button
     $('#new-chat-btn').click(function() {
         // Clear the chat area
         $('#chat').empty();
+
+        // Reset URL to root without page reload
+        window.history.pushState({}, '', '/');
 
         // Clear the conversation title and hide controls
         $('#conversation-title').text("AI ∞ UI");
@@ -4070,8 +4148,8 @@ $(document).ready(function() {  // Document Ready (initialization)
         }
 
         // Clear temporary context file attachments
-        attachedContextFiles.clear(); // Use renamed map
-        updateContextFilesPreview(); // Use renamed function
+        attachedContextFiles.clear();
+        updateContextFilesPreview();
         resetUploadProgress();
 
         // Clear the user input area
@@ -4080,28 +4158,23 @@ $(document).ready(function() {  // Document Ready (initialization)
         userInputTextarea.css('height', defaultHeight);
         autosize.update(userInputTextarea);
 
-
-        // Navigate to the root URL without reloading (optional, good for SPA feel)
-        window.history.pushState({}, '', '/');
-
         // Deselect any active conversation in the sidebar
         $('#conversation-list .conversation-item.active').removeClass('active');
 
-        console.log("New chat started.");
+        console.log("New chat started, URL reset to root.");
     });
-
 
     // Handler for system settings dropdown items (triggering the modal)
     $('.settings-dropdown .dropdown-item').on('click', function(event) {
         event.preventDefault();
-        const targetGroup = $(this).data('target'); // Get target group from data-target attribute
+        const targetGroup = $(this).data('target');
         console.log("Settings dropdown item clicked, target group:", targetGroup);
 
         if (targetGroup) {
             // Pass the target group to the modal before showing it
             $('#systemMessageModal').data('targetGroup', targetGroup);
-            var systemModal = new bootstrap.Modal(document.getElementById('systemMessageModal'));
-            systemModal.show(this); // Pass the trigger element
+            // Use Bootstrap 4's jQuery modal show
+            $('#systemMessageModal').modal('show');
         } else {
             console.warn("Settings dropdown item clicked, but no data-target specified.");
         }
@@ -4115,17 +4188,15 @@ $(document).ready(function() {  // Document Ready (initialization)
         }
     });
 
-
     // Add listener for the semantic file upload button in the modal
-    const addSemanticFileBtn = document.getElementById('add-semantic-file-btn'); // Ensure this ID exists on the button in the modal's file group
+    const addSemanticFileBtn = document.getElementById('add-semantic-file-btn');
     if (addSemanticFileBtn) {
-        addSemanticFileBtn.addEventListener('click', handleAddVectorFileButtonClick); // Use renamed handler
+        addSemanticFileBtn.addEventListener('click', handleAddVectorFileButtonClick);
     } else {
         console.warn("Button with ID 'add-semantic-file-btn' not found for vector file upload.");
     }
-
-
 });
+
 
     // ... other initialization code ...
 
