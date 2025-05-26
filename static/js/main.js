@@ -746,12 +746,18 @@ function showUploadProgress(percent) {
 }
 
 function hideUploadProgress() {
-    document.getElementById('uploadProgressArea').classList.add('d-none');
+    const progressArea = document.getElementById('uploadProgressArea');
+    if (progressArea) {
+        progressArea.classList.add('d-none');
+    }
 }
 
 function resetUploadProgress() {
     hideUploadProgress();
-    document.getElementById('uploadStatus').classList.add('d-none');
+    const statusElement = document.getElementById('uploadStatus');
+    if (statusElement) {
+        statusElement.classList.add('d-none');
+    }
 }
 
 // --- End Shared Upload Status/Progress Functions ---
@@ -2340,15 +2346,21 @@ function displaySystemMessage(systemMessage) {
     $('#chat').prepend(renderedContent);
 
     // Update the `messages` array (used for sending to backend)
-    // Ensure the first message is always the system message content
-    if (messages.length > 0 && messages[0].role === "system") {
-        messages[0].content = systemMessage.content; // Update existing system message
+    // IMPORTANT: Only update if we're not in a loaded conversation
+    if (!activeConversationId) {
+        // Ensure the first message is always the system message content
+        if (messages.length > 0 && messages[0].role === "system") {
+            messages[0].content = systemMessage.content; // Update existing system message
+        } else {
+            // If no system message exists at the start, add it
+            messages.unshift({
+                role: "system",
+                content: systemMessage.content
+            });
+        }
+        console.log("System message added to messages array for new conversation");
     } else {
-        // If no system message exists at the start, add it
-        messages.unshift({
-            role: "system",
-            content: systemMessage.content
-        });
+        console.log("Loaded conversation - not modifying messages array");
     }
 
     // Update both model dropdown buttons and ensure visibility
@@ -3852,9 +3864,15 @@ $('#chat-form').on('submit', async function (e) {
         }
 
         // Add conversation ID if continuing an existing conversation
-        if (activeConversationId !== null) {
+        if (activeConversationId !== null && activeConversationId !== undefined) {
             requestPayload.conversation_id = activeConversationId;
+            console.log('Continuing existing conversation:', activeConversationId);
+        } else {
+            console.log('Starting new conversation - no conversation ID sent');
+            console.log('activeConversationId value:', activeConversationId);
+            console.log('typeof activeConversationId:', typeof activeConversationId);
         }
+
 
         console.log('Sending request to /chat with payload:', {
             ...requestPayload,
@@ -3918,9 +3936,15 @@ $('#chat-form').on('submit', async function (e) {
 
         // Update URL if it's a new conversation
         if (data.conversation_id && activeConversationId !== data.conversation_id) {
+            const previousConversationId = activeConversationId;
             activeConversationId = data.conversation_id;
             window.history.pushState({ conversationId: activeConversationId }, '', `/c/${activeConversationId}`);
-            console.log("New conversation started, URL updated to:", `/c/${activeConversationId}`);
+            console.log("Conversation ID updated from", previousConversationId, "to", activeConversationId);
+            console.log("URL updated to:", `/c/${activeConversationId}`);
+        } else if (data.conversation_id) {
+            console.log("Received same conversation ID:", data.conversation_id, "- not updating URL");
+        } else {
+            console.log("No conversation ID received in response");
         }
 
         // Update conversation title and token counts
@@ -4128,6 +4152,14 @@ $(document).ready(function() {  // Document Ready (initialization)
 
     // Add click event handler for the "+ New" button
     $('#new-chat-btn').click(function() {
+        console.log("New chat button clicked - resetting all state");
+
+        // IMPORTANT: Clear conversation ID FIRST
+        activeConversationId = null;
+
+        // Clear the messages array BEFORE clearing chat
+        messages = [];
+
         // Clear the chat area
         $('#chat').empty();
 
@@ -4138,13 +4170,7 @@ $(document).ready(function() {  // Document Ready (initialization)
         $('#conversation-title').text("AI ∞ UI");
         $('#edit-title-btn, #delete-conversation-btn, #token-display').hide();
 
-        // Reset the messages array
-        messages = [];
-
-        // Reset the active conversation ID
-        activeConversationId = null;
-
-        // Display the default system message
+        // Display the default system message (this will add to messages array)
         const defaultMsg = systemMessages.find(msg => msg.name === "Default System Message") || systemMessages[0];
         if (defaultMsg) {
             displaySystemMessage(defaultMsg);
@@ -4153,7 +4179,13 @@ $(document).ready(function() {  // Document Ready (initialization)
         // Clear temporary context file attachments
         attachedContextFiles.clear();
         updateContextFilesPreview();
-        resetUploadProgress();
+
+        // Fix the upload progress reset with null checks
+        try {
+            resetUploadProgress();
+        } catch (error) {
+            console.warn("Error resetting upload progress:", error);
+        }
 
         // Clear the user input area
         const userInputTextarea = $('#user_input');
@@ -4164,7 +4196,12 @@ $(document).ready(function() {  // Document Ready (initialization)
         // Deselect any active conversation in the sidebar
         $('#conversation-list .conversation-item.active').removeClass('active');
 
-        console.log("New chat started, URL reset to root.");
+        // Force a small delay to ensure state is completely reset
+        setTimeout(() => {
+            console.log("New chat state verified - activeConversationId:", activeConversationId, "messages length:", messages.length);
+        }, 100);
+
+        console.log("New chat initialized - activeConversationId:", activeConversationId, "messages length:", messages.length);
     });
 
     // Handler for system settings dropdown items (triggering the modal)

@@ -3940,7 +3940,7 @@ async def chat():
         system_message_id = request_data.get('system_message_id')
         enable_web_search = request_data.get('enable_web_search', False)
         enable_intelligent_search = request_data.get('enable_intelligent_search', False)
-        conversation_id = request_data.get('conversation_id') or session.get('conversation_id')
+        conversation_id = request_data.get('conversation_id')
         user_timezone = request_data.get('timezone', 'UTC')
         extended_thinking = request_data.get('extended_thinking', False)
         thinking_budget = request_data.get('thinking_budget', 12000)
