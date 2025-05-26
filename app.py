@@ -3781,11 +3781,13 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
                 if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
                     anthropic_messages.insert(0, {"role": "user", "content": ""})
 
-                # Configure max tokens based on model
+                # Set max_tokens for Claude models
                 if model == "claude-3-7-sonnet-20250219":
-                    max_tokens = 64000  # Updated limit for Claude 3.7 Sonnet
+                    max_tokens = 64000
+                elif model in ["claude-opus-4-20250514", "claude-sonnet-4-20250514"]:
+                    max_tokens = 32000
                 else:
-                    max_tokens = 4096   # Default for other Claude models
+                    max_tokens = 4096
 
                 # Make the API call
                 response = await asyncio.to_thread(
@@ -3796,13 +3798,26 @@ async def get_response_from_model(client, model, messages, temperature, reasonin
                     temperature=temperature
                 )
 
-                response_content = response.content[0].text
+                # Handle new refusal stop reason for Claude 4
+                stop_reason = getattr(response, "stop_reason", None)
+                app.logger.info(f"Claude API stop_reason: {stop_reason}")
+
+                if stop_reason == "refusal":
+                    refusal_message = (
+                        "The model refused to answer this request for safety reasons."
+                    )
+                    return refusal_message, model, None
+
+                # Extract the main content
+                response_content = response.content[0].text if hasattr(response, "content") and response.content else ""
                 return response_content, model, None
 
             except Exception as e:
                 app.logger.error(f"Error in Claude API call: {str(e)}")
                 app.logger.exception("Full traceback:")
                 raise
+
+
 
         elif model.startswith("gemini-"):
             contents = [{

@@ -46,7 +46,6 @@ let attachedContextFiles = new Map(); // Store temporary file attachments: Map<f
 
 const AVAILABLE_MODELS = [
     { api: "gpt-3.5-turbo", display: "GPT-3.5" },
-    { api: "gpt-4-turbo-2024-04-09", display: "GPT-4 Turbo" },
     { api: "gpt-4o-2024-08-06", display: "GPT-4o" },
     { api: "gpt-4.1", display: "GPT-4.1" },
     { api: "gpt-4.1-mini", display: "GPT-4.1 Mini" },
@@ -54,7 +53,7 @@ const AVAILABLE_MODELS = [
     { api: "o3-mini", display: "o3-mini (Fast)", reasoning: "low" },
     { api: "o3-mini", display: "o3-mini (Balanced)", reasoning: "medium" },
     { api: "o3-mini", display: "o3-mini (Deep)", reasoning: "high" },
-    { api: "claude-3-opus-20240229", display: "Claude 3 Opus" },
+    // Removed: { api: "claude-3-opus-20240229", display: "Claude 3 Opus" },
     { api: "claude-3-5-sonnet-20241022", display: "Claude 3.5 Sonnet" },
     { api: "claude-3-7-sonnet-20250219", display: "Claude 3.7 Sonnet", supportsExtendedThinking: true },
     {
@@ -63,12 +62,16 @@ const AVAILABLE_MODELS = [
         extendedThinking: true,
         thinkingBudget: 12000
     },
+    // New Claude 4 models:
+    { api: "claude-sonnet-4-20250514", display: "Claude Sonnet 4" },
+    { api: "claude-opus-4-20250514", display: "Claude Opus 4" },
     { api: "gemini-2.0-pro-exp-02-05", display: "Gemini 2.5 Pro" },
     { api: "gemini-2.0-flash", display: "Gemini 2.0 Flash" },
-    { api: "llama3.1-8b", display: "Llama 3.1 (8B)" },
+    // Removed: { api: "llama3.1-8b", display: "Llama 3.1 (8B)" },
     { api: "llama-3.3-70b", display: "Llama 3.3 (70B)" },
     { api: "deepSeek-r1-distill-llama-70B", display: "DeepSeek R1 (70B)" }
 ];
+
 
 // Helper function to create dropdown items
 function createModelDropdownItem(modelItem, onClick) {
