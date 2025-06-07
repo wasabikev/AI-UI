@@ -108,6 +108,9 @@ from embedding_store import EmbeddingStore
 from init_db import init_db
 from time_utils import clean_and_update_time_context, generate_time_context
 
+from orchestration.status import StatusUpdateManager, SessionStatus
+
+
 # Load environment variables
 load_dotenv()
 
@@ -462,13 +465,13 @@ class TemporaryFileHandler:
             if file_path_local is None:
                 self.app.logger.error(f"{log_prefix}No file found in temporary folder {temp_subfolder} for file ID: {file_id}")
                 if session_id:
-                    await update_status(f"Could not locate file for ID {file_id[:8]}.", session_id, status="error")
+                    await status_manager.update_status(f"Could not locate file for ID {file_id[:8]}.", session_id, status="error")
                 return None
 
             if not file_path_local:
                 self.app.logger.warning(f"{log_prefix}No file found in temporary folder {temp_subfolder} for file ID: {file_id}")
                 if session_id:
-                    await update_status(f"Could not locate file for ID {file_id[:8]}.", session_id, status="error")
+                    await status_manager.update_status(f"Could not locate file for ID {file_id[:8]}.", session_id, status="error")
                 return None
 
             try:
@@ -485,22 +488,22 @@ class TemporaryFileHandler:
                 if extracted_text:
                     self.app.logger.info(f"{log_prefix}FileProcessor extracted text successfully for file ID: {file_id}")
                     if session_id:
-                        await update_status(f"Text extracted from {found_filename or file_id[:8]}.", session_id)
+                        await status_manager.update_status(f"Text extracted from {found_filename or file_id[:8]}.", session_id)
                     return extracted_text
                 else:
                     self.app.logger.warning(f"{log_prefix}FileProcessor extraction for {file_id} completed but no text found.")
                     if session_id:
-                        await update_status(f"Extraction complete but no text found for {found_filename or file_id[:8]}.", session_id, status="warning")
+                        await status_manager.update_status(f"Extraction complete but no text found for {found_filename or file_id[:8]}.", session_id, status="warning")
                     return None
             except LLMWhispererClientException as llm_error:
                 self.app.logger.error(f"{log_prefix}LLMWhisperer extraction failed for {file_id}: {llm_error}")
                 if session_id:
-                    await update_status(f"Error processing file {file_id[:8]}...", session_id, status="error")
+                    await status_manager.update_status(f"Error processing file {file_id[:8]}...", session_id, status="error")
                 return None
         except Exception as e:
             self.app.logger.error(f"{log_prefix}Error retrieving temporary file content for {file_id}: {str(e)}")
             if session_id:
-                await update_status(f"Error processing file ID {file_id[:8]}...", session_id, status="error")
+                await status_manager.update_status(f"Error processing file ID {file_id[:8]}...", session_id, status="error")
             return None
             
     async def remove_temp_file(self, file_id):
@@ -589,232 +592,11 @@ async def shutdown():
         app.logger.exception("Full shutdown error traceback:")
         raise
 
-# Begin of status update manager
-
-@dataclass
-class SessionStatus:
-    user_id: int
-    session_id: str
-    message: str
-    last_updated: float
-    expires_at: float
-    websocket: Optional[object] = None
-    active: bool = False
-
-
-class StatusUpdateManager:
-    PING_INTERVAL = 30  # seconds
-    SESSION_TIMEOUT = 3600  # 1 hour in seconds
-    CLEANUP_INTERVAL = 300  # 5 minutes
-
-    def __init__(self):
-        self._sessions: Dict[str, SessionStatus] = {}
-        self._cleanup_lock = asyncio.Lock()
-        self._last_cleanup = time.time()
-        self.connection_count = 0
-        self.locks = {}
-        self.initial_messages_sent = set()
-
-
-    def _generate_session_id(self, user_id: int) -> str:
-        """Generate a unique session ID combining user_id and UUID."""
-        return f"{user_id}-{uuid.uuid4()}"
-
-    def create_session(self, user_id: int) -> str:
-        """Create a new session and return its ID."""
-        session_id = self._generate_session_id(user_id)
-        current_time = time.time()
-        
-        self._sessions[session_id] = SessionStatus(
-            user_id=user_id,
-            session_id=session_id,
-            message="Session initialized",
-            last_updated=current_time,
-            expires_at=current_time + self.SESSION_TIMEOUT
-        )
-        
-        self._cleanup_expired_sessions()
-        return session_id
-
-    async def register_connection(self, session_id: str, websocket) -> bool:
-        """Register a WebSocket connection for a session."""
-        async with self._cleanup_lock:
-            if session_id not in self._sessions:
-                return False
-
-            session = self._sessions[session_id]
-            
-            # Only increment if session wasn't already active
-            if not session.active:
-                self.connection_count += 1
-
-            self._sessions[session_id] = SessionStatus(
-                user_id=session.user_id,
-                session_id=session_id,
-                message="Connected to status updates",
-                last_updated=time.time(),
-                expires_at=time.time() + self.SESSION_TIMEOUT,
-                websocket=websocket,
-                active=True
-            )
-
-            self.locks[session_id] = asyncio.Lock()
-            
-            # Send initial connection message with session ID
-            try:
-                await websocket.send(json.dumps({
-                    'type': 'status',
-                    'status': 'connected',
-                    'session_id': session_id,
-                    'timestamp': datetime.now().isoformat()
-                }))
-            except Exception as e:
-                app.logger.error(f"Error sending initial connection message: {str(e)}")
-                return False
-
-            app.logger.debug(f"WebSocket connection registered for session ID: {session_id}. Active connections: {self.connection_count}")
-            return True
-
-    async def send_status_update(self, session_id: str, message: str, status: str = None) -> bool:
-        """
-        Send a status update to a session.
-        
-        Args:
-            session_id: The session ID
-            message: Status message to send
-            status: Optional status type (e.g. 'error')
-        """
-        if session_id not in self._sessions or not self._sessions[session_id].active:
-            return False
-
-        session = self._sessions[session_id]
-        current_time = time.time()
-
-        # Update session status
-        self._sessions[session_id] = SessionStatus(
-            user_id=session.user_id,
-            session_id=session_id,
-            message=message,
-            last_updated=current_time,
-            expires_at=current_time + self.SESSION_TIMEOUT,
-            websocket=session.websocket,
-            active=session.active
-        )
-
-        # Send WebSocket update
-        lock = self.locks.get(session_id)
-        if lock:
-            async with lock:
-                try:
-                    status_data = {
-                        'type': 'status',
-                        'message': message,
-                        'timestamp': datetime.now().isoformat(),
-                        'id': str(uuid.uuid4())
-                    }
-                    if status:
-                        status_data['status'] = status
-                    await session.websocket.send(json.dumps(status_data))
-                    return True
-                except Exception as e:
-                    app.logger.error(f"Error sending status update: {str(e)}")
-                    await self.remove_connection(session_id)
-                    return False
-
-        return False
-
-    async def send_ping(self, session_id: str) -> bool:
-        """Send a ping message to keep the connection alive."""
-        if session_id not in self._sessions or not self._sessions[session_id].active:
-            return False
-
-        session = self._sessions[session_id]
-        try:
-            ping_data = {
-                'type': 'ping',
-                'timestamp': datetime.now().isoformat()
-            }
-            await session.websocket.send(json.dumps(ping_data))
-            return True
-        except Exception as e:
-            app.logger.debug(f"Error sending ping: {str(e)}")
-            await self.remove_connection(session_id)
-            return False
-
-    async def remove_connection(self, session_id: str) -> None:
-        """Remove a session's WebSocket connection."""
-        async with self._cleanup_lock:
-            if session_id in self._sessions:
-                session = self._sessions[session_id]
-                
-                # Only decrement if session was active
-                if session.active:
-                    self.connection_count = max(0, self.connection_count - 1)
-                
-                # Only try to close the WebSocket if it's not being called from the WebSocket handler
-                # Check the call stack to determine if we're in the WebSocket handler
-                import inspect
-                caller_frame = inspect.currentframe().f_back
-                caller_function_name = caller_frame.f_code.co_name if caller_frame else ""
-                
-                if session.websocket and caller_function_name != "ws_chat_status":
-                    try:
-                        await session.websocket.close(1000, "Connection closed normally")
-                    except Exception as e:
-                        app.logger.debug(f"Error closing websocket: {str(e)}")
-
-                # Update session to inactive state
-                self._sessions[session_id] = SessionStatus(
-                    user_id=session.user_id,
-                    session_id=session_id,
-                    message=session.message,
-                    last_updated=time.time(),
-                    expires_at=session.expires_at,
-                    websocket=None,
-                    active=False
-                )
-
-                self.locks.pop(session_id, None)
-                self.initial_messages_sent.discard(session_id)
-                app.logger.debug(f"WebSocket connection removed for session ID: {session_id}. Active connections: {self.connection_count}")
-
-    def _cleanup_expired_sessions(self) -> None:
-        """Clean up expired sessions."""
-        current_time = time.time()
-        
-        if current_time - self._last_cleanup < self.CLEANUP_INTERVAL:
-            return
-
-        expired_sessions = [
-            session_id for session_id, session in self._sessions.items()
-            if current_time > session.expires_at
-        ]
-        
-        for session_id in expired_sessions:
-            del self._sessions[session_id]
-
-        self._last_cleanup = current_time
 
 # Initialize the status update manager
 status_manager = StatusUpdateManager()
 
-async def update_status(message: str, session_id: str, status: str = None):
-    """
-    Helper status update function.
-    
-    Args:
-        message: Status message to send
-        session_id: WebSocket session ID
-        status: Optional status type (e.g. 'error')
-    """
-    try:
-        await status_manager.send_status_update(
-            session_id=session_id,
-            message=message,
-            status=status
-        )
-    except Exception as e:
-        app.logger.error(f"Error sending status update: {str(e)}")
+
 
 
 @app.route('/ws/diagnostic')
@@ -1087,7 +869,7 @@ async def debug_websocket_config():
         }
     })
 
-# Ending of status update manager
+
 
 # Begining of web search 
 
@@ -1191,20 +973,20 @@ async def understand_query(client, model: str, messages: List[Dict[str, str]], u
 
     try:
         if session_id:
-            await update_status(f"Asking {query_model} for analysis to generate a query", session_id)
+            await status_manager.update_status(f"Asking {query_model} for analysis to generate a query", session_id)
             
         interpretation, _ = await get_response_from_model(client, query_model, messages_for_model, temperature=0.3)
         interpreted_query = interpretation.strip()
         app.logger.info(f"Query interpreted. Interpretation: '{interpreted_query[:100]}'")
         
         if session_id:
-            await update_status("Query analysis completed", session_id)
+            await status_manager.update_status("Query analysis completed", session_id)
             
         return interpreted_query
     except Exception as e:
         app.logger.error(f"Error in understand_query: {str(e)}")
         if session_id:
-            await update_status("Error occurred during query interpretation", session_id)
+            await status_manager.update_status("Error occurred during query interpretation", session_id)
         raise WebSearchError(f"Failed to interpret query: {str(e)}")
 
 class WebSearchError(Exception):
@@ -1399,32 +1181,32 @@ async def perform_web_search_process(
 
     try:
         app.logger.info('Step 1: Understanding user query')
-        await update_status("Analyzing user query for web search", session_id)
+        await status_manager.update_status("Analyzing user query for web search", session_id)
         understood_query = await understand_query(client, model, messages, user_query, is_standard_search=not enable_intelligent_search)
         app.logger.info(f'Understood query: {understood_query}')
-        await update_status("User query analyzed successfully.", session_id)
+        await status_manager.update_status("User query analyzed successfully.", session_id)
 
         if enable_intelligent_search:
             app.logger.info('Initiating intelligent web search')
-            await update_status("Starting intelligent web search", session_id)
+            await status_manager.update_status("Starting intelligent web search", session_id)
             results = await intelligent_web_search_process(client, model, messages, understood_query, user_id, system_message_id)
-            await update_status("Intelligent web search completed.", session_id)
+            await status_manager.update_statuss("Intelligent web search completed.", session_id)
             return results
         else:
             app.logger.info('Initiating standard web search')
-            await update_status("Starting standard web search", session_id)
+            await status_manager.update_status("Starting standard web search", session_id)
             results = await standard_web_search_process(client, model, understood_query, user_id, system_message_id)
-            await update_status("Standard web search completed.", session_id)
+            await status_manager.update_status("Standard web search completed.", session_id)
             return results
 
     except WebSearchError as e:
         app.logger.error(f'Web search process error: {str(e)}')
-        await update_status("Error occurred during web search process.", session_id)
+        await status_manager.update_status("Error occurred during web search process.", session_id)
         return [], f"An error occurred during the web search process: {str(e)}"
     except Exception as e:
         app.logger.error(f'Unexpected error in web search process: {str(e)}')
         app.logger.exception("Full traceback:")
-        await update_status("Unexpected error during web search process.", session_id)
+        await status_manager.update_status("Unexpected error during web search process.", session_id)
         return [], "An unexpected error occurred during the web search process."
     
 #### Functions for intelligent web search
@@ -1476,7 +1258,7 @@ async def intelligent_web_search_process(
         # Step 1: Use the understood query to generate search queries
         app.logger.info("Step 1: Generating search queries based on understood query")
         if session_id:
-            await update_status("Generating search queries", session_id)
+            await status_manager.update_status("Generating search queries", session_id)
             
         generated_search_queries = await generate_search_queries(client, model, understood_query)
         app.logger.info(f"Generated {len(generated_search_queries)} search queries")
@@ -1484,13 +1266,13 @@ async def intelligent_web_search_process(
         if not generated_search_queries:
             app.logger.error("Failed to generate search queries")
             if session_id:
-                await update_status("Failed to generate search queries", session_id)
+                await status_manager.update_status("Failed to generate search queries", session_id)
             raise WebSearchError('Failed to generate search queries')
 
         # Step 2: Performing multiple web searches
         app.logger.info("Step 2: Performing multiple web searches")
         if session_id:
-            await update_status("Performing web searches", session_id)
+            await status_manager.update_status("Performing web searches", session_id)
             
         web_search_results = await perform_multiple_web_searches(generated_search_queries)
         app.logger.info(f"Received {len(web_search_results)} web search results")
@@ -1499,7 +1281,7 @@ async def intelligent_web_search_process(
             # Step 3: Fetching full content for search results
             app.logger.info("Step 3: Fetching full content for search results")
             if session_id:
-                await update_status("Fetching detailed content from search results", session_id)
+                await status_manager.update_status("Fetching detailed content from search results", session_id)
                 
             full_content_results = await fetch_full_content(web_search_results, app, user_id, system_message_id)
             app.logger.info(f"Fetched full content for {len(full_content_results)} results")
@@ -1507,32 +1289,32 @@ async def intelligent_web_search_process(
             # Step 4: Summarizing search results
             app.logger.info("Step 4: Summarizing search results")
             if session_id:
-                await update_status("Summarizing search results", session_id)
+                await status_manager.update_status("Summarizing search results", session_id)
                 
             summarized_results = await summarize_search_results(client, model, full_content_results, understood_query)
             app.logger.info(f"Generated summary of length: {len(summarized_results)} characters")
 
             if session_id:
-                await update_status("Web search completed successfully", session_id)
+                await status_manager.update_status("Web search completed successfully", session_id)
                 
             app.logger.info("Intelligent web search completed successfully")
             return generated_search_queries, summarized_results
         else:
             app.logger.warning("No relevant web search results were found")
             if session_id:
-                await update_status("No relevant web search results found", session_id)
+                await status_manager.update_status("No relevant web search results found", session_id)
             return generated_search_queries, "No relevant web search results were found."
 
     except WebSearchError as e:
         app.logger.error(f"WebSearchError in intelligent web search: {str(e)}")
         if session_id:
-            await update_status(f"Web search error: {str(e)}", session_id)
+            await status_manager.update_status(f"Web search error: {str(e)}", session_id)
         raise
     except Exception as e:
         app.logger.error(f"Unexpected error in intelligent web search: {str(e)}")
         app.logger.exception("Full traceback:")
         if session_id:
-            await update_status("Unexpected error during web search", session_id)
+            await status_manager.update_statuss("Unexpected error during web search", session_id)
         raise WebSearchError(f"Unexpected error during intelligent web search: {str(e)}")
 
 # Create a rate limiter: 1 request per second
@@ -3923,7 +3705,7 @@ async def chat():
             app.logger.debug(f'Using session ID from headers: {session_id}')
 
         # Send initial status update using the helper function
-        await update_status(
+        await status_manager.update_status(
             message="Connected to status updates",
             session_id=session_id,
         )
@@ -3957,7 +3739,7 @@ async def chat():
         app.logger.info(f'[{session_id}] Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}, enable_web_search: {enable_web_search}, enable_intelligent_search: {enable_intelligent_search}')
         params_extracted_time = time.time()
 
-        await update_status(
+        await status_manager.update_status(
             message="Initializing conversation",
             session_id=session_id
         )
@@ -4003,7 +3785,7 @@ async def chat():
 
         if file_ids:
             app.logger.info(f"[{session_id}] Found {len(file_ids)} temporary context file IDs. Processing content.")
-            await update_status(
+            await status_manager.update_status(
                 message="Processing attached files...",
                 session_id=session_id
             )
@@ -4069,7 +3851,7 @@ async def chat():
 
             # Clean and update time context in messages
             if enable_time_sense:
-                await update_status(
+                await status_manager.update_status(
                     message="Processing time context information",
                     session_id=session_id
                 )
@@ -4094,7 +3876,7 @@ async def chat():
         time_context_end_time = time.time()
 
         app.logger.info(f'[{session_id}] Getting storage context for system_message_id: {system_message_id}')
-        await update_status(
+        await status_manager.update_status(
             message="Checking document database",
             session_id=session_id
         )
@@ -4118,7 +3900,7 @@ async def chat():
 
             if user_query_embedding_tokens > EMBEDDING_MODEL_TOKEN_LIMIT:
                 app.logger.warning(f"[{session_id}] Query token count ({user_query_embedding_tokens}) exceeds limit ({EMBEDDING_MODEL_TOKEN_LIMIT}).")
-                await update_status(
+                await status_manager.update_status(
                     message="Query is too long for semantic search, generating concise version...",
                     session_id=session_id
                 )
@@ -4143,7 +3925,7 @@ async def chat():
         if user_query_embedding_tokens <= EMBEDDING_MODEL_TOKEN_LIMIT * 1.5:
             try:
                 app.logger.info(f'[{session_id}] Querying index with semantic search query (length {len(semantic_search_query)} chars): {semantic_search_query[:100]}...')
-                await update_status(
+                await status_manager.update_status(
                     message="Searching through documents",
                     session_id=session_id
                 )
@@ -4164,25 +3946,25 @@ async def chat():
 
                 if relevant_info:
                     app.logger.info(f'[{session_id}] Retrieved relevant info (first 100 chars): {str(relevant_info)[:100]}')
-                    await update_status( message="Found relevant information in documents", session_id=session_id )
+                    await status_manager.update_status( message="Found relevant information in documents", session_id=session_id )
                 else:
                     app.logger.info(f'[{session_id}] No relevant information found in the index.')
-                    await update_status( message="No relevant documents found", session_id=session_id )
+                    await status_manager.update_status( message="No relevant documents found", session_id=session_id )
                     relevant_info = None
 
             except RuntimeError as init_error: # Catch initialization errors
-                 await update_status( message=f"Error during setup: {init_error}", session_id=session_id, status="error" )
+                 await status_manager.update_status( message=f"Error during setup: {init_error}", session_id=session_id, status="error" )
                  relevant_info = None
             except Exception as e:
                 app.logger.error(f'[{session_id}] Error querying index: {str(e)}')
                 if not isinstance(e, openai.BadRequestError) or "maximum context length" not in str(e):
                      app.logger.exception(f"[{session_id}] Full traceback for unexpected index query error:")
-                await update_status( message="Error searching document database", session_id=session_id, status="error" )
+                await status_manager.update_status( message="Error searching document database", session_id=session_id, status="error" )
                 relevant_info = None
         else:
              # Semantic search is skipped, NO coroutine was created.
              app.logger.warning(f"[{session_id}] Skipping semantic search because query is too long ({user_query_embedding_tokens} tokens) even after potential summarization.")
-             await update_status( message="Skipping document search as the query is too long.", session_id=session_id )
+             await status_manager.update_status( message="Skipping document search as the query is too long.", session_id=session_id )
              relevant_info = None # Ensure relevant_info is None
 
         semantic_search_end_time = time.time()
@@ -4208,7 +3990,7 @@ async def chat():
         if enable_web_search:
             try:
                 app.logger.info(f'[{session_id}] Web search enabled, starting search process')
-                await update_status(
+                await status_manager.update_status(
                     message="Starting web search process",
                     session_id=session_id
                 )
@@ -4224,7 +4006,7 @@ async def chat():
                     session_id
                 )
 
-                await update_status(
+                await status_manager.update_status(
                     message="Web search completed, processing results",
                     session_id=session_id
                 )
@@ -4245,7 +4027,7 @@ async def chat():
             except Exception as e:
                 app.logger.error(f'[{session_id}] Error in web search process: {str(e)}')
                 app.logger.exception(f"[{session_id}] Full traceback for web search error:")
-                await update_status(
+                await status_manager.update_status(
                     message="Error during web search process",
                     session_id=session_id,
                     status="error"
@@ -4261,7 +4043,7 @@ async def chat():
         # Avoid logging full messages if they are huge
         # app.logger.debug(f'[{session_id}] Sending messages to model: {json.dumps(messages, indent=2)}')
 
-        await update_status(
+        await status_manager.update_status(
             message=f"Generating final analysis and response using model: {model}",
             session_id=session_id
         )
@@ -4289,7 +4071,7 @@ async def chat():
 
         if chat_output is None:
             app.logger.error(f"[{session_id}] Failed to get response from model {model_name or model}.")
-            await update_status(
+            await status_manager.update_status(
                 message="Error getting response from AI model",
                 session_id=session_id,
                 status="error"
@@ -4360,7 +4142,7 @@ async def chat():
                 conversation.generated_search_queries = json.dumps(generated_search_queries) if generated_search_queries else None
                 conversation.web_search_results = json.dumps(summarized_results) if summarized_results else None
 
-                await update_status(
+                await status_manager.update_status(
                     message="Saving conversation",
                     session_id=session_id
                 )
@@ -4433,7 +4215,7 @@ async def chat():
         app.logger.error(f'{log_prefix}Unexpected error in chat route: {str(e)}')
         app.logger.exception(f"{log_prefix}Full traceback for chat route error:")
         if session_id: # Only send status if we have a session ID
-            await update_status(
+            await status_manager.update_status(
                 message="An error occurred during processing",
                 session_id=session_id,
                 status="error"

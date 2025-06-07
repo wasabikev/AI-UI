@@ -520,6 +520,14 @@ Minimize Risk:
 - Prevent background scrolling when modal is open
 - Use flash messages for important notifications
 
+### Authentcation Layer: Useage Guidelines:
+Important:
+This project uses a custom authentication wrapper (auth.py) on top of quart_auth.
+Always import login_required and current_user from auth.py
+Why?
+Our login_required decorator and current_user wrapper enforce additional checks (such as "Active" status, async user lookup, etc.) beyond what quart_auth provides.
+
+
 ## External Libraries and Scripts
 
 ### Frontend Libraries
