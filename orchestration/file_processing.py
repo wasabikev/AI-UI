@@ -4,8 +4,8 @@ import os
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, Document
 from llama_index.core.node_parser import SimpleNodeParser
 from llama_index.core.ingestion import IngestionPipeline
-from llm_whisper_processor import LLMWhisperProcessor
-from file_utils import get_file_path
+from services.llm_whisper_processor import LLMWhisperProcessor
+from utils.file_utils import get_file_path
 import asyncio
 from typing import List, Optional, Tuple, Any
 from aiofiles import open as aio_open

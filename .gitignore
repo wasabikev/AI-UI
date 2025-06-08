@@ -51,8 +51,12 @@ __pycache__/
 
 #Local Dev Tools
 test_db_direct.py
+test_aider_config.py
+test_aider.py
+test_modules.py
 test_db.py
 full_requirements.txt
 .aider*
 aider.conf.yml
 Guidance.md
+get-pip.py

@@ -4,7 +4,7 @@ import os
 import asyncio
 from typing import Optional, Tuple, Dict, Any
 from unstract.llmwhisperer.client import LLMWhispererClient, LLMWhispererClientException
-from file_utils import get_file_path
+from utils.file_utils import get_file_path
 import aiofiles
 
 class LLMWhisperProcessor:
