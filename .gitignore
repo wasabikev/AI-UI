@@ -60,3 +60,6 @@ full_requirements.txt
 aider.conf.yml
 Guidance.md
 get-pip.py
+
+# Node.js dependencies
+node_modules/
