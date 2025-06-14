@@ -3506,7 +3506,7 @@ function loadConversation(conversationId) {
                     $('#dropdownMenuButton').removeAttr('data-reasoning data-extended-thinking data-thinking-budget');
                 }
             }
-            
+
             // Clear the chat area
             $('#chat').empty();
 
@@ -4062,6 +4062,12 @@ function checkActiveConversation() {
 }
 
 
+function resetTokenDisplay() {
+    $("#prompt-tokens").text("Prompt Tokens: ");
+    $("#completion-tokens").text("Completion Tokens: ");
+    $("#total-tokens").text("Total Tokens:");
+}
+
 $(document).ready(function() {  // Document Ready (initialization)
     window.addEventListener('popstate', function(event) {
         const pathParts = window.location.pathname.split('/');
@@ -4191,6 +4197,9 @@ $(document).ready(function() {  // Document Ready (initialization)
 
         // Clear the chat area
         $('#chat').empty();
+
+        // Reset the token display
+        resetTokenDisplay();
 
         // Reset URL to root without page reload
         window.history.pushState({}, '', '/');
