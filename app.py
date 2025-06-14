@@ -3080,6 +3080,7 @@ async def get_conversation(conversation_id):
             "title": conversation.title,
             "history": safe_json_loads(conversation.history, default=[]),
             "token_count": conversation.token_count,
+            "total_tokens": conversation.token_count,
             "model_name": conversation.model_name,
             "temperature": conversation.temperature,
             "vector_search_results": safe_json_loads(conversation.vector_search_results),

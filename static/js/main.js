@@ -3527,9 +3527,9 @@ function loadConversation(conversationId) {
 
             // Update conversation controls and UI
             const tokens = data.usage || {
-                prompt_tokens: data.prompt_tokens_total,
-                completion_tokens: data.completion_tokens_total,
-                total_tokens: data.total_tokens
+                prompt_tokens: data.prompt_tokens_total ?? null,
+                completion_tokens: data.completion_tokens_total ?? null,
+                total_tokens: data.total_tokens ?? data.token_count ?? null
             };
             showConversationControls(data.title || "Untitled Conversation", tokens);
 
