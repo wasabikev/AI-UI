@@ -3100,7 +3100,7 @@ async def get_conversation(conversation_id):
         }
         return jsonify(conversation_dict)
 
-@app.route('/c/<conversation_id>')
+@app.route('/c/<int:conversation_id>')
 @login_required
 async def show_conversation(conversation_id):
     print(f"Attempting to load conversation {conversation_id}")  # Log the attempt
