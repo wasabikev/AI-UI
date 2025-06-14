@@ -35,6 +35,7 @@ models.backup.py
 backup.js
 README_v1.md
 static/js/backup.js
+templates/chat.backup.html
 
 #Related to Docker
 docker-compose.yml
