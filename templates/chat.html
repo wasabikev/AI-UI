@@ -92,7 +92,9 @@
 
                     <!-- Loading Animation -->
                     <div class="col-2 text-center">
-                    <iframe id="loading" class="loading" src="https://giphy.com/embed/xTk9ZvMnbIiIew7IpW" frameBorder="0" allowFullScreen></iframe>
+                        <img id="loading" class="loading"
+                            src="{{ url_for('static', filename='loading.gif') }}"
+                            width="80" height="80" alt="Loading..." />
                     </div>
 
                     <!-- Models  -->

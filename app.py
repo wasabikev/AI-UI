@@ -208,7 +208,7 @@ async def handle_exception(error):
 
 @app.errorhandler(404)
 async def not_found_error(error):
-    app.logger.error(f"404 Error: {error}")
+    app.logger.error(f"404 Not Found: Path={request.path} | Args={dict(request.args)} | Method={request.method}")
     return await render_template('error.html', error="Page not found"), 404
 
 @app.errorhandler(500)
