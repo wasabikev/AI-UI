@@ -3478,6 +3478,35 @@ function loadConversation(conversationId) {
             messages = data.history;
             activeConversationId = conversationId;
 
+            if (data.model_name) {
+                let loadedModelObj = AVAILABLE_MODELS.find(m => m.api === data.model_name);
+                if (loadedModelObj) {
+                    model = loadedModelObj.api;
+                    const mainDropdownButton = $('#dropdownMenuButton');
+                    mainDropdownButton.text(loadedModelObj.display);
+
+                    // Set attributes as before
+                    if (loadedModelObj.reasoning) {
+                        mainDropdownButton.attr('data-reasoning', loadedModelObj.reasoning);
+                    } else {
+                        mainDropdownButton.removeAttr('data-reasoning');
+                    }
+                    if (loadedModelObj.extendedThinking) {
+                        mainDropdownButton.attr('data-extended-thinking', true);
+                        mainDropdownButton.attr('data-thinking-budget', loadedModelObj.thinkingBudget);
+                    } else {
+                        mainDropdownButton.removeAttr('data-extended-thinking');
+                        mainDropdownButton.removeAttr('data-thinking-budget');
+                    }
+                } else {
+                    model = data.model_name;
+                    // Fallback: prettify the model name for display
+                    const prettyName = modelNameMapping(data.model_name) || data.model_name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    $('#dropdownMenuButton').text(prettyName);
+                    $('#dropdownMenuButton').removeAttr('data-reasoning data-extended-thinking data-thinking-budget');
+                }
+            }
+            
             // Clear the chat area
             $('#chat').empty();
 
