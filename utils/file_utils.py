@@ -156,3 +156,16 @@ async def ensure_folder_exists(folder_path):
 async def get_file_path(app, user_id, system_message_id, filename, folder_type):
     utils = FileUtils(app)
     return await utils.get_file_path(user_id, system_message_id, filename, folder_type)
+
+ALLOWED_EXTENSIONS = {
+    'docx', 'doc', 'odt',  # Word Processing Formats
+    'pptx', 'ppt', 'odp',  # Presentation Formats
+    'xlsx', 'xls', 'ods',  # Spreadsheet Formats
+    'pdf',                 # Document Format
+    'txt',                 # Plain Text Format
+    'bmp', 'gif', 'jpeg', 'jpg', 'png', 'tif', 'tiff', 'webp'  # Image Formats
+}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

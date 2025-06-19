@@ -100,7 +100,7 @@ from models import (
 from utils.file_utils import (
     get_user_folder, get_system_message_folder, get_uploads_folder,
     get_processed_texts_folder, get_llmwhisperer_output_folder, 
-    ensure_folder_exists, get_file_path, FileUtils
+    ensure_folder_exists, get_file_path, FileUtils, allowed_file, ALLOWED_EXTENSIONS
 )
 from utils.time_utils import clean_and_update_time_context, generate_time_context
 
@@ -110,6 +110,9 @@ from orchestration.temp_file_handler import TemporaryFileHandler
 
 # Local imports - Web Search
 from orchestration.web_search_orchestrator import perform_web_search_process
+
+from orchestration.vectordb_file_manager import VectorDBFileManager
+vectordb_file_manager = None
 
 # Local imports - Chat Orchestration
 from orchestration.chat_orchestrator import ChatOrchestrator
@@ -373,16 +376,6 @@ BASE_UPLOAD_FOLDER = Path(os.path.abspath(os.path.join(os.path.dirname(__file__)
 app.config['BASE_UPLOAD_FOLDER'] = str(BASE_UPLOAD_FOLDER)
 
 
-
-ALLOWED_EXTENSIONS = {
-    'docx', 'doc', 'odt',  # Word Processing Formats
-    'pptx', 'ppt', 'odp',  # Presentation Formats
-    'xlsx', 'xls', 'ods',  # Spreadsheet Formats
-    'pdf',                 # Document Format
-    'txt',                 # Plain Text Format
-    'bmp', 'gif', 'jpeg', 'jpg', 'png', 'tif', 'tiff', 'webp'  # Image Formats
-}
-
 # Create the upload folder if it doesn't exist
 try:
     upload_folder = Path(app.config['BASE_UPLOAD_FOLDER'])
@@ -412,7 +405,7 @@ file_processor = None
 
 @app.before_serving
 async def startup():
-    global embedding_store, file_processor, temp_file_handler
+    global embedding_store, file_processor, temp_file_handler, vectordb_file_manager
     
     try:
         app.logger.info("Initializing application components")
@@ -458,7 +451,14 @@ async def startup():
             file_utils=app.file_utils,
             logger=app.logger,
         )
-        # -------------------------------------------
+        # ------------------------------------------- 
+
+        vectordb_file_manager = VectorDBFileManager(
+            file_processor=file_processor,
+            embedding_store=embedding_store,
+            file_utils=app.file_utils,
+            logger=app.logger
+        )       
         
         app.logger.info("Application initialization completed successfully")
             
@@ -774,8 +774,7 @@ async def debug_websocket_config():
     })
 
 
-
-#### Helper functions for both standard and intelligent web search - will go in API blueprint / module
+# Helper functions for both standard and intelligent web search - will go in API blueprint / module
 
 @app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
 @login_required
@@ -862,242 +861,70 @@ def query_documents():
 
 from flask import make_response, send_file, abort
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Vector database file management
+
+@app.route('/upload_file', methods=['POST'])
+@login_required
+async def upload_file():
+    files = await request.files
+    if 'file' not in files:
+        return jsonify({'success': False, 'error': 'No file part'}), 400
+
+    file = files['file']
+    form = await request.form
+    try:
+        system_message_id = int(form.get('system_message_id'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Invalid system message ID'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': 'File type not allowed'}), 400
+
+    result, status = await vectordb_file_manager.upload_file(
+        file=file,
+        user_id=current_user.id,
+        system_message_id=system_message_id
+    )
+    return jsonify(result), status
 
 @app.route('/view_original_file/<file_id>')
 @login_required
 async def view_original_file(file_id):
-    try:
-        async with get_session() as session:
-            result = await session.execute(
-                select(UploadedFile).filter_by(id=file_id)
-            )
-            file = result.scalar_one_or_none()
-            
-            if not file:
-                return Response(
-                    json.dumps({'error': 'File not found'}),
-                    status=404,
-                    mimetype='application/json'
-                )
-            
-            if file.user_id != current_user.id:
-                return Response(
-                    json.dumps({'error': 'Unauthorized'}),
-                    status=403,
-                    mimetype='application/json'
-                )
-            
-            if not os.path.exists(file.file_path):
-                return Response(
-                    json.dumps({'error': 'File not found on disk'}),
-                    status=404,
-                    mimetype='application/json'
-                )
-
-            try:
-                html_content = f'''
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>{file.original_filename}</title>
-                    <style>
-                        html, body {{
-                            margin: 0;
-                            padding: 0;
-                            height: 100%;
-                            overflow: hidden;
-                        }}
-                        #file-embed {{
-                            width: 100%;
-                            height: 100%;
-                            border: none;
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <embed id="file-embed" src="/serve_file/{file_id}" type="{file.mime_type}">
-                    <script>
-                        function resizeEmbed() {{
-                            var embed = document.getElementById('file-embed');
-                            embed.style.height = window.innerHeight + 'px';
-                        }}
-                        window.onload = resizeEmbed;
-                        window.onresize = resizeEmbed;
-                    </script>
-                </body>
-                </html>
-                '''
-                
-                return Response(
-                    html_content,
-                    mimetype='text/html'
-                )
-
-            except Exception as render_error:
-                app.logger.error(f"Error rendering template: {str(render_error)}")
-                app.logger.exception("Full traceback:")
-                return Response(
-                    json.dumps({'error': 'Error rendering file view'}),
-                    status=500,
-                    mimetype='application/json'
-                )
-
-    except Exception as e:
-        app.logger.error(f"Error in view_original_file: {str(e)}")
-        app.logger.exception("Full traceback:")
-        return Response(
-            json.dumps({'error': 'Internal server error'}),
-            status=500,
-            mimetype='application/json'
-        )
-
+    html_content, status, message = await vectordb_file_manager.get_original_file_html(file_id, current_user.id)
+    if status != 200:
+        return Response(json.dumps({'error': message}), status=status, mimetype='application/json')
+    return Response(html_content, mimetype='text/html')
 
 @app.route('/serve_file/<file_id>')
 @login_required
 async def serve_file(file_id):
-    try:
-        async with get_session() as session:
-            result = await session.execute(
-                select(UploadedFile).filter_by(id=file_id)
-            )
-            file = result.scalar_one_or_none()
-            
-            if not file:
-                return Response(
-                    json.dumps({'error': 'File not found'}),
-                    status=404,
-                    mimetype='application/json'
-                )
-            
-            if file.user_id != current_user.id:
-                return Response(
-                    json.dumps({'error': 'Unauthorized'}),
-                    status=403,
-                    mimetype='application/json'
-                )
-            
-            if not os.path.exists(file.file_path):
-                return Response(
-                    json.dumps({'error': 'File not found on disk'}),
-                    status=404,
-                    mimetype='application/json'
-                )
-
-            try:
-                # Create response using Quart's Response class
-                with open(file.file_path, 'rb') as f:
-                    data = f.read()
-                
-                response = Response(
-                    data,
-                    mimetype=file.mime_type
-                )
-                
-                # Add headers
-                response.headers['Content-Disposition'] = f'inline; filename="{file.original_filename}"'
-                response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-                response.headers['Pragma'] = 'no-cache'
-                response.headers['Expires'] = '0'
-                
-                return response
-
-            except Exception as file_error:
-                app.logger.error(f"Error serving file: {str(file_error)}")
-                app.logger.exception("Full traceback:")
-                return Response(
-                    json.dumps({'error': 'Error serving file'}),
-                    status=500,
-                    mimetype='application/json'
-                )
-
-    except Exception as e:
-        app.logger.error(f"Error in serve_file: {str(e)}")
-        app.logger.exception("Full traceback:")
-        return Response(
-            json.dumps({'error': 'Internal server error'}),
-            status=500,
-            mimetype='application/json'
-        )
-
+    data, status, mimetype, headers = await vectordb_file_manager.get_file_bytes(file_id, current_user.id)
+    if status != 200:
+        return Response(json.dumps({'error': mimetype}), status=status, mimetype='application/json')
+    response = Response(data, mimetype=mimetype)
+    for k, v in headers.items():
+        response.headers[k] = v
+    return response
 
 @app.route('/view_processed_text/<file_id>')
 @login_required
 async def view_processed_text(file_id):
-    try:
-        async with get_session() as session:
-            # Get the file record
-            result = await session.execute(
-                select(UploadedFile).filter_by(id=file_id)
-            )
-            file = result.scalar_one_or_none()
-            
-            if not file:
-                return Response(
-                    json.dumps({'error': 'File not found'}),
-                    status=404,
-                    mimetype='application/json'
-                )
-            
-            # Check authorization
-            if file.user_id != current_user.id:
-                return Response(
-                    json.dumps({'error': 'Unauthorized'}),
-                    status=403,
-                    mimetype='application/json'
-                )
-            
-            if not file.processed_text_path or not os.path.exists(file.processed_text_path):
-                app.logger.error(f"Processed text not found for file ID: {file_id}")
-                return Response(
-                    json.dumps({'error': 'Processed text not available'}),
-                    status=404,
-                    mimetype='application/json'
-                )
+    content, status, mimetype, headers = await vectordb_file_manager.get_processed_text(file_id, current_user.id)
+    if status != 200:
+        return Response(json.dumps({'error': mimetype}), status=status, mimetype='application/json')
+    response = Response(content, mimetype=mimetype)
+    for k, v in headers.items():
+        response.headers[k] = v
+    return response
 
-            try:
-                # Read the processed text file
-                async with aiofiles.open(file.processed_text_path, 'r', encoding='utf-8') as f:
-                    content = await f.read()
+@app.route('/remove_file/<file_id>', methods=['DELETE'])
+@login_required
+async def remove_file(file_id):
+    response_data, status = await vectordb_file_manager.remove_file(file_id, current_user.id)
+    return jsonify(response_data), status
 
-                # Create a response with the text content
-                response = Response(
-                    content,
-                    mimetype='text/plain'
-                )
-                
-                # Add headers
-                processed_filename = f"{file.original_filename}_processed.txt"
-                response.headers['Content-Disposition'] = f'inline; filename="{processed_filename}"'
-                response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-                response.headers['Pragma'] = 'no-cache'
-                response.headers['Expires'] = '0'
-                
-                return response
-
-            except Exception as e:
-                app.logger.error(f"Error reading processed text file: {str(e)}")
-                app.logger.exception("Full traceback:")
-                return Response(
-                    json.dumps({'error': 'Error reading processed text file'}),
-                    status=500,
-                    mimetype='application/json'
-                )
-
-    except Exception as e:
-        app.logger.error(f"Error in view_processed_text: {str(e)}")
-        app.logger.exception("Full traceback:")
-        return Response(
-            json.dumps({'error': 'Internal server error'}),
-            status=500,
-            mimetype='application/json'
-        )
-
-# File handling routes
+# End vector database file management
 
 @app.route('/debug/check-directories')
 @login_required
@@ -1207,116 +1034,7 @@ async def remove_temp_file(file_id):
             'error': str(e)
         }), 500
 
-@app.route('/upload_file', methods=['POST'])
-@login_required
-async def upload_file():
-    files = await request.files
-    if 'file' not in files:
-        return jsonify({'success': False, 'error': 'No file part'})
-    
-    file = files['file']
-    form = await request.form
-    
-    try:
-        system_message_id = int(form.get('system_message_id'))
-    except (TypeError, ValueError):
-        return jsonify({'success': False, 'error': 'Invalid system message ID'}), 400
-    
-    app.logger.info(f"Received file upload request: {file.filename}, system_message_id: {system_message_id}")
-    
-    if file.filename == '':
-        return jsonify({'success': False, 'error': 'No selected file'})
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        
-        try:
-            # Get file path using FileUtils
-            file_path = await app.file_utils.get_file_path(
-                current_user.id,
-                system_message_id,
-                filename,
-                'uploads'
-            )
-            
-            # Ensure the directory exists
-            await app.file_utils.ensure_folder_exists(file_path.parent)
-            
-            # Save the file
-            app.logger.info(f"Attempting to save file to: {file_path}")
-            await file.save(str(file_path))
-            app.logger.info(f"File saved successfully to: {file_path}")
-            
-            async with get_session() as session:
-                # Get file size asynchronously
-                file_size = await async_get_file_size(str(file_path))
-                
-                # Create timezone-naive datetime for database
-                current_time = datetime.now(timezone.utc).replace(tzinfo=None)
-                
-                # Create a new UploadedFile record
-                new_file = UploadedFile(
-                    id=str(uuid.uuid4()),
-                    user_id=current_user.id,
-                    original_filename=filename,
-                    file_path=str(file_path),
-                    system_message_id=system_message_id,
-                    file_size=file_size,
-                    mime_type=file.content_type,
-                    upload_timestamp=current_time
-                )
-                
-                session.add(new_file)
-                await session.commit()
-                await session.refresh(new_file)
-                
-                app.logger.info(f"New file record created with ID: {new_file.id}")
-                
-                # Get the storage context for this system message
-                storage_context = await embedding_store.get_storage_context(system_message_id)
-                
-                # Process and index the file
-                processed_text_path = await file_processor.process_file(
-                    str(file_path),
-                    storage_context,
-                    new_file.id,
-                    current_user.id,
-                    system_message_id
-                )
-                
-                app.logger.info(f"Processed text path returned: {processed_text_path}")
-                
-                # Update the processed_text_path
-                if processed_text_path:
-                    new_file.processed_text_path = str(processed_text_path)
-                    await session.commit()
-                    app.logger.info(f"File {filename} processed successfully. Processed text path: {processed_text_path}")
-                else:
-                    app.logger.warning(f"File {filename} processed, but no processed text path was returned.")
-                
-                return jsonify({
-                    'success': True,
-                    'message': 'File uploaded and indexed successfully',
-                    'file_id': new_file.id
-                })
-                
-        except Exception as e:
-            app.logger.error(f"Error processing file: {str(e)}")
-            # Try to clean up the file if something went wrong
-            try:
-                if await async_file_exists(str(file_path)):
-                    await aio_os.remove(str(file_path))
-                    app.logger.info(f"Cleaned up file after error: {file_path}")
-            except Exception as cleanup_error:
-                app.logger.error(f"Error during cleanup: {str(cleanup_error)}")
-            
-            return jsonify({
-                'success': False,
-                'error': f'Error processing file: {str(e)}'
-            }), 500
-    
-    app.logger.error(f"File type not allowed: {file.filename}")
-    return jsonify({'success': False, 'error': 'File type not allowed'}), 400
+
 
 # Helper functions for async file operations
 async def async_file_exists(file_path: str) -> bool:
@@ -1327,10 +1045,6 @@ async def async_file_exists(file_path: str) -> bool:
     except (OSError, FileNotFoundError):
         return False
 
-async def async_get_file_size(file_path: str) -> int:
-    """Async wrapper for getting file size."""
-    stat = await aio_os.stat(file_path)
-    return stat.st_size
 
 @app.route('/get_files/<int:system_message_id>')
 @login_required
@@ -1355,209 +1069,8 @@ async def get_files(system_message_id):
     except Exception as e:
         app.logger.error(f"Error fetching files: {str(e)}")
         return jsonify({'error': 'Error fetching files'}), 500
-    
-@app.route('/remove_file/<file_id>', methods=['DELETE'])
-@login_required
-async def remove_file(file_id):
-    """
-    Delete a file and all its associated resources (vectors, processed text, etc.).
-    
-    Args:
-        file_id (str): The ID of the file to delete
-        
-    Returns:
-        JSON response indicating success or failure
-    """
-    app.logger.info(f"Starting file removal process for file ID: {file_id}")
-    
-    async with get_session() as session:
-        try:
-            # Fetch the file record
-            result = await session.execute(
-                select(UploadedFile).filter_by(id=file_id)
-            )
-            file = result.scalar_one_or_none()
-            
-            if not file:
-                app.logger.warning(f"File not found: {file_id}")
-                return jsonify({'success': False, 'error': 'File not found'}), 404
-            
-            # Check authorization
-            if file.user_id != current_user.id:
-                app.logger.warning(f"Unauthorized access attempt for file {file_id} by user {current_user.id}")
-                return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
-            deletion_results = {
-                'vectors_deleted': False,
-                'original_file_deleted': False,
-                'processed_file_deleted': False,
-                'database_entry_deleted': False
-            }
 
-            try:
-                # Delete vectors from Pinecone
-                system_message_id = file.system_message_id
-                storage_context = await embedding_store.get_storage_context(system_message_id)
-                namespace = embedding_store.generate_namespace(system_message_id)
-                
-                if storage_context and storage_context.vector_store:
-                    try:
-                        deleted = await delete_vectors_for_file(
-                            storage_context.vector_store, 
-                            file_id, 
-                            namespace
-                        )
-                        deletion_results['vectors_deleted'] = deleted
-                        app.logger.info(f"Vector deletion {'successful' if deleted else 'not needed'} for file {file_id}")
-                    except Exception as vector_error:
-                        app.logger.error(f"Error deleting vectors: {str(vector_error)}")
-                        # Continue with file deletion even if vector deletion fails
-                
-                # Remove original file
-                if await async_file_exists(file.file_path):
-                    try:
-                        await aio_os.remove(file.file_path)
-                        deletion_results['original_file_deleted'] = True
-                        app.logger.info(f"Original file removed: {file.file_path}")
-                    except Exception as file_error:
-                        app.logger.error(f"Error deleting original file: {str(file_error)}")
-                else:
-                    app.logger.warning(f"Original file not found: {file.file_path}")
-                
-                # Remove processed text file if it exists
-                if file.processed_text_path and await async_file_exists(file.processed_text_path):
-                    try:
-                        await aio_os.remove(file.processed_text_path)
-                        deletion_results['processed_file_deleted'] = True
-                        app.logger.info(f"Processed text file removed: {file.processed_text_path}")
-                    except Exception as processed_error:
-                        app.logger.error(f"Error deleting processed file: {str(processed_error)}")
-                
-                # Remove database entry
-                try:
-                    await session.delete(file)
-                    await session.commit()
-                    deletion_results['database_entry_deleted'] = True
-                    app.logger.info(f"Database entry deleted for file {file_id}")
-                except Exception as db_error:
-                    app.logger.error(f"Error deleting database entry: {str(db_error)}")
-                    await session.rollback()
-                    raise
-                
-                # Prepare detailed response
-                success_message = "File and associated resources removed successfully"
-                if not all(deletion_results.values()):
-                    success_message = "File partially removed with some errors"
-                
-                response_data = {
-                    'success': True,
-                    'message': success_message,
-                    'details': deletion_results
-                }
-                
-                app.logger.info(f"File removal completed for {file_id}: {deletion_results}")
-                return jsonify(response_data)
-                
-            except Exception as e:
-                app.logger.error(f"Error during file removal process for {file_id}: {str(e)}")
-                app.logger.exception("Full traceback:")
-                
-                # Try to clean up any remaining files if database deletion failed
-                if not deletion_results['database_entry_deleted']:
-                    try:
-                        await session.rollback()
-                    except Exception as rollback_error:
-                        app.logger.error(f"Error during session rollback: {str(rollback_error)}")
-                
-                return jsonify({
-                    'success': False,
-                    'error': str(e),
-                    'partial_deletion_results': deletion_results
-                }), 500
-                
-        except Exception as outer_error:
-            app.logger.error(f"Unexpected error in remove_file: {str(outer_error)}")
-            app.logger.exception("Full traceback:")
-            return jsonify({
-                'success': False,
-                'error': 'An unexpected error occurred during file removal'
-            }), 500
-    
-async def delete_vectors_for_file(vector_store, file_id: str, namespace: str) -> bool:
-    """
-    Delete vectors associated with a specific file from the vector store.
-    
-    Args:
-        vector_store: The vector store instance
-        file_id (str): The ID of the file whose vectors should be deleted
-        namespace (str): The namespace in which to search for vectors
-        
-    Returns:
-        bool: True if vectors were deleted successfully, False otherwise
-        
-    Raises:
-        ValueError: If vector_store or file_id is invalid
-    """
-    if not vector_store or not hasattr(vector_store, '_pinecone_index'):
-        raise ValueError("Invalid vector store provided")
-    
-    if not file_id:
-        raise ValueError("file_id cannot be empty")
-
-    try:
-        # Get the Pinecone index from the vector store
-        pinecone_index = vector_store._pinecone_index
-        app.logger.debug(f"Attempting to delete vectors for file ID {file_id} in namespace {namespace}")
-
-        # Query for vectors related to this file
-        try:
-            query_response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: pinecone_index.query(
-                    namespace=namespace,
-                    vector=[0] * 1536,  # Dummy vector of zeros
-                    top_k=10000,
-                    include_metadata=True
-                )
-            )
-        except Exception as query_error:
-            app.logger.error(f"Error querying vectors: {str(query_error)}")
-            raise
-
-        # Filter the results to only include vectors with matching file_id
-        vector_ids = [
-            match.id for match in query_response.matches 
-            if match.metadata.get('file_id') == str(file_id)
-        ]
-
-        if vector_ids:
-            try:
-                # Delete the vectors
-                delete_response = await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    lambda: pinecone_index.delete(
-                        ids=vector_ids,
-                        namespace=namespace
-                    )
-                )
-                app.logger.info(
-                    f"Successfully deleted {len(vector_ids)} vectors for file ID: {file_id}. "
-                    f"Delete response: {delete_response}"
-                )
-                return True
-            except Exception as delete_error:
-                app.logger.error(f"Error deleting vectors: {str(delete_error)}")
-                raise
-        else:
-            app.logger.warning(f"No vectors found for file ID: {file_id} in namespace: {namespace}")
-            return False
-
-    except Exception as e:
-        app.logger.error(
-            f"Error in delete_vectors_for_file for file ID {file_id}: {str(e)}\n"
-            f"Namespace: {namespace}"
-        )
-        raise
 
 @app.route('/health')
 def health_check():
