@@ -111,12 +111,13 @@ from orchestration.temp_file_handler import TemporaryFileHandler
 # Local imports - Web Search
 from orchestration.web_search_orchestrator import perform_web_search_process
 
+# Local imports - Chat Orchestration
+from orchestration.chat_orchestrator import ChatOrchestrator
+chat_orchestrator = None
+
 from services.embedding_store import EmbeddingStore
 
 from init_db import init_db
-
-
-
 
 
 # Load environment variables
@@ -406,6 +407,9 @@ temp_file_handler = None  # Initialize later in startup
 embedding_store = None
 file_processor = None
 
+
+
+
 @app.before_serving
 async def startup():
     global embedding_store, file_processor, temp_file_handler
@@ -432,6 +436,29 @@ async def startup():
         app.file_utils = FileUtils(app)
         base_upload_folder = Path(app.config['BASE_UPLOAD_FOLDER'])
         await app.file_utils.ensure_folder_exists(base_upload_folder)
+
+        # ---- Instatiate ChatOrchestrator ----
+        global chat_orchestrator
+        chat_orchestrator = ChatOrchestrator(
+            status_manager=status_manager,
+            embedding_store=embedding_store,
+            file_processor=file_processor,
+            temp_file_handler=temp_file_handler,
+            get_session=get_session,
+            Conversation=Conversation,
+            SystemMessage=SystemMessage,
+            generate_summary=generate_summary,
+            count_tokens=count_tokens,
+            get_response_from_model=get_response_from_model,
+            perform_web_search_process=perform_web_search_process,
+            EMBEDDING_MODEL_TOKEN_LIMIT=EMBEDDING_MODEL_TOKEN_LIMIT,
+            generate_concise_query_for_embedding=generate_concise_query_for_embedding,
+            client=client,
+            BRAVE_SEARCH_API_KEY=BRAVE_SEARCH_API_KEY,
+            file_utils=app.file_utils,
+            logger=app.logger,
+        )
+        # -------------------------------------------
         
         app.logger.info("Application initialization completed successfully")
             
@@ -747,8 +774,6 @@ async def debug_websocket_config():
     })
 
 
-
-# Begining of web search 
 
 #### Helper functions for both standard and intelligent web search - will go in API blueprint / module
 
@@ -2668,559 +2693,43 @@ async def get_response_from_model_sync(client, model, messages, temperature, rea
 @app.route('/chat', methods=['POST'])
 @login_required
 async def chat():
-    """Handle chat requests with session management"""
-    request_start_time = time.time() # Record start time for overall request duration
-    session_id = None # Initialize session_id
+    request_data = await request.get_json()
+    # Extract all the fields as before...
+    messages = request_data.get('messages')
+    model = request_data.get('model')
+    temperature = request_data.get('temperature')
+    system_message_id = request_data.get('system_message_id')
+    enable_web_search = request_data.get('enable_web_search', False)
+    enable_deep_search = request_data.get('enable_deep_search', False)
+    conversation_id = request_data.get('conversation_id')
+    user_timezone = request_data.get('timezone', 'UTC')
+    extended_thinking = request_data.get('extended_thinking', False)
+    thinking_budget = request_data.get('thinking_budget', 12000)
+    file_ids = request_data.get('file_ids', [])
+    session_id = request.headers.get('X-Session-ID') or status_manager.create_session(int(current_user.auth_id))
+
+    result = await chat_orchestrator.run_chat(
+        messages=messages,
+        model=model,
+        temperature=temperature,
+        system_message_id=system_message_id,
+        enable_web_search=enable_web_search,
+        enable_deep_search=enable_deep_search,
+        conversation_id=conversation_id,
+        user_timezone=user_timezone,
+        extended_thinking=extended_thinking,
+        thinking_budget=thinking_budget,
+        file_ids=file_ids,
+        current_user=current_user,
+        session_id=session_id,
+        request_data=request_data,
+        session=session,  # Quart's session object
+    )
+    if isinstance(result, tuple):
+        return jsonify(result[0]), result[1]
+    return jsonify(result)
 
-    try:
-        # Get session ID from headers or create new one
-        session_id = request.headers.get('X-Session-ID')
 
-        if not session_id:
-            app.logger.warning('No session ID in headers, creating new session')
-            # Ensure current_user.auth_id is valid before creating session
-            if current_user and hasattr(current_user, 'auth_id') and current_user.auth_id:
-                 session_id = status_manager.create_session(int(current_user.auth_id))
-                 app.logger.info(f'Created new session ID: {session_id}')
-            else:
-                 app.logger.error("Cannot create session ID: current_user or auth_id is invalid.")
-                 return jsonify({'error': 'User authentication error'}), 401 # Or appropriate error
-        else:
-            app.logger.debug(f'Using session ID from headers: {session_id}')
-
-        # Send initial status update using the helper function
-        await status_manager.update_status(
-            message="Connected to status updates",
-            session_id=session_id,
-        )
-
-        # Get JSON data with await
-        request_data = await request.get_json()
-        app.logger.debug(f'[{session_id}] Request data: {json.dumps(request_data)}')
-        data_received_time = time.time()
-
-        # Extract data from the request_data
-        messages = request_data.get('messages')
-        model = request_data.get('model')
-        temperature = request_data.get('temperature')
-        system_message_id = request_data.get('system_message_id')
-        enable_web_search = request_data.get('enable_web_search', False)
-        enable_deep_search = request_data.get('enable_deep_search', False)
-        conversation_id = request_data.get('conversation_id')
-        user_timezone = request_data.get('timezone', 'UTC')
-        extended_thinking = request_data.get('extended_thinking', False)
-        thinking_budget = request_data.get('thinking_budget', 12000)
-        file_ids = request_data.get('file_ids', [])  # Get the list of temporary file IDs
-
-        # Log the Claude 3.7 Sonnet specific parameters if present
-        if model == 'claude-3-7-sonnet-20250219':
-            app.logger.info(f'[{session_id}] Claude 3.7 Sonnet parameters - Extended thinking: {extended_thinking}, Budget: {thinking_budget}')
-
-        if system_message_id is None:
-            app.logger.error(f"[{session_id}] No system_message_id provided in the chat request")
-            return jsonify({'error': 'No system message ID provided'}), 400
-
-        app.logger.info(f'[{session_id}] Received model: {model}, temperature: {temperature}, system_message_id: {system_message_id}, enable_web_search: {enable_web_search}, enable_deep_search: {enable_deep_search}')
-        params_extracted_time = time.time()
-
-        await status_manager.update_status(
-            message="Initializing conversation",
-            session_id=session_id
-        )
-
-        # After fetching the converstation history, clean dynamic context if needed
-        conversation = None
-        if conversation_id:
-            async with get_session() as db_session:
-                result = await db_session.execute(
-                    select(Conversation).filter_by(id=conversation_id)
-                )
-                conversation = result.scalar_one_or_none()
-
-                if conversation and conversation.user_id == current_user.id:
-                    app.logger.info(f'[{session_id}] Using existing conversation with id {conversation_id}.')
-                else:
-                    app.logger.info(f'[{session_id}] No valid conversation found with id {conversation_id}, starting a new one.')
-                    conversation = None
-        conv_fetch_time = time.time()
-
-        # Fetch the system message to check if time sense is enabled
-        async with get_session() as db_session:
-            result = await db_session.execute(
-                select(SystemMessage).filter_by(id=system_message_id)
-            )
-            db_system_message = result.scalar_one_or_none()
-
-            if not db_system_message:
-                app.logger.error(f"[{session_id}] System message with ID {system_message_id} not found")
-                return jsonify({'error': 'System message not found'}), 404
-
-            enable_time_sense = db_system_message.enable_time_sense
-            app.logger.info(f"[{session_id}] Time sense enabled: {enable_time_sense}")
-        sys_msg_fetch_time = time.time()
-
-        system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
-
-        # --- Context File Injection (Before Time Context) ---
-        original_user_query_text = messages[-1]['content']  # Get the raw user message content
-        user_query_for_semantic_search = original_user_query_text  # Default to original
-        injected_file_content = ""
-        context_block_regex = r"\n*--- Attached Files Context ---[\s\S]*?--- End Attached Files Context ---\n*"
-
-        if file_ids:
-            app.logger.info(f"[{session_id}] Found {len(file_ids)} temporary context file IDs. Processing content.")
-            await status_manager.update_status(
-                message="Processing attached files...",
-                session_id=session_id
-            )
-            retrieved_contents = []
-            filenames_processed = []  # Keep track of filenames for logging/context markers
-
-            for file_id in file_ids:
-                app.logger.debug(f"[{session_id}] Attempting to get content for file ID: {file_id}")
-                content = await temp_file_handler.get_temp_file_content(
-                    file_id=file_id,
-                    user_id=current_user.id, # Pass user ID
-                    system_message_id=system_message_id, # Pass system message ID
-                    session_id=session_id
-                )
-                if content:
-                    filename_placeholder = f"File ID {file_id[:8]}"  # Default placeholder
-                    try:
-                        temp_subfolder = os.path.join(temp_file_handler.temp_folder, file_id)
-                        async for entry in aio_os.scandir(temp_subfolder):
-                            if entry.is_file():
-                                filename_placeholder = entry.name
-                                break
-                    except Exception:
-                        pass  # Ignore errors finding filename, use placeholder
-
-                    filenames_processed.append(filename_placeholder)
-                    retrieved_contents.append(f"\n--- Content from {filename_placeholder} ---\n{content}\n--- End Content from {filename_placeholder} ---")
-                    app.logger.info(f"[{session_id}] Successfully retrieved content for file: {filename_placeholder} (ID: {file_id})")
-                else:
-                    app.logger.warning(f"[{session_id}] Could not retrieve content for temporary file ID: {file_id}")
-
-            if retrieved_contents:
-                injected_file_content = "\n".join(retrieved_contents)
-                # Remove the placeholder block added by the frontend
-                user_text_without_block = re.sub(context_block_regex, "", original_user_query_text).strip()
-                app.logger.debug(f"[{session_id}] User text after removing placeholder block: '{user_text_without_block[:100]}...'")
-
-                # Construct the new user message content for the AI
-                messages[-1]['content'] = (user_text_without_block + "\n\n" + injected_file_content).strip()
-                app.logger.info(f"[{session_id}] Injected content from {len(retrieved_contents)} files into user message for AI.")
-                app.logger.debug(f"[{session_id}] Updated user message content for AI (truncated): {messages[-1]['content'][:200]}...")
-
-                # Set the query for semantic search to be *only* the user's text part
-                user_query_for_semantic_search = user_text_without_block
-            else:
-                app.logger.warning(f"[{session_id}] No content retrieved for provided file IDs. User message unchanged.")
-                # If no content was injected, still clean the original query for semantic search
-                user_query_for_semantic_search = re.sub(context_block_regex, "", original_user_query_text).strip()
-        else:
-            # No file_ids provided, clean the query for semantic search if the block exists
-            user_query_for_semantic_search = re.sub(context_block_regex, "", original_user_query_text).strip()
-        # --- End Context File Injection ---
-
-        # Process time context only if enabled
-        time_context_start_time = time.time()
-        if enable_time_sense and messages:
-            app.logger.info(f"[{session_id}] ===== BEFORE TIME CONTEXT PROCESSING =====") # Use logger
-            app.logger.info(f"[{session_id}] Enable time sense: {enable_time_sense}") # Use logger
-            from utils.time_utils import clean_and_update_time_context
-
-            # Create a user object with timezone for time context
-            time_context_user = {'timezone': user_timezone}
-
-            # Clean and update time context in messages
-            if enable_time_sense:
-                await status_manager.update_status(
-                    message="Processing time context information",
-                    session_id=session_id
-                )
-                app.logger.info(f"[{session_id}] About to call clean_and_update_time_context") # Use logger
-                # Call the consolidated function to handle time context
-                messages = await clean_and_update_time_context(
-                    messages,
-                    time_context_user,
-                    enable_time_sense,
-                    app.logger
-                )
-                app.logger.info(f"[{session_id}] After calling clean_and_update_time_context") # Use logger
-                app.logger.info(f"[{session_id}] Time context processing completed")
-
-            # Update system_message reference after potential modification
-            system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
-
-            if not system_message:
-                system_message = {"role": "system", "content": ""}
-                messages.insert(0, system_message)
-                app.logger.info(f"[{session_id}] Created new system message after time context processing")
-        time_context_end_time = time.time()
-
-        app.logger.info(f'[{session_id}] Getting storage context for system_message_id: {system_message_id}')
-        await status_manager.update_status(
-            message="Checking document database",
-            session_id=session_id
-        )
-
-        # Use the cleaned query for semantic search
-        user_query = user_query_for_semantic_search
-        app.logger.info(f'[{session_id}] User query for semantic search (first 50 chars): {user_query[:50]}')
-        query_extracted_time = time.time()
-
-        # --- Semantic Search Section ---
-        semantic_search_start_time = time.time()
-        relevant_info = None
-        semantic_search_query = user_query # Start with the full user query
-        user_query_embedding_tokens = 0 # Initialize
-
-        # Estimate token count for the *embedding* model
-        try:
-            embedding_encoding = tiktoken.get_encoding("cl100k_base")
-            user_query_embedding_tokens = len(embedding_encoding.encode(user_query))
-            app.logger.info(f"[{session_id}] Estimated token count for embedding query: {user_query_embedding_tokens}")
-
-            if user_query_embedding_tokens > EMBEDDING_MODEL_TOKEN_LIMIT:
-                app.logger.warning(f"[{session_id}] Query token count ({user_query_embedding_tokens}) exceeds limit ({EMBEDDING_MODEL_TOKEN_LIMIT}).")
-                await status_manager.update_status(
-                    message="Query is too long for semantic search, generating concise version...",
-                    session_id=session_id
-                )
-                semantic_search_query = await generate_concise_query_for_embedding(client, user_query)
-                concise_query_tokens = len(embedding_encoding.encode(semantic_search_query))
-                app.logger.info(f"[{session_id}] Concise query generated (length {len(semantic_search_query)} chars, {concise_query_tokens} tokens).")
-                if concise_query_tokens > EMBEDDING_MODEL_TOKEN_LIMIT:
-                     app.logger.warning(f"[{session_id}] Concise query still too long ({concise_query_tokens} tokens). Truncating further.")
-                     max_chars = EMBEDDING_MODEL_TOKEN_LIMIT * 3
-                     semantic_search_query = semantic_search_query[:max_chars]
-                     app.logger.info(f"[{session_id}] Truncated concise query to {len(semantic_search_query)} chars.")
-
-        except tiktoken.EncodingError as enc_error:
-             app.logger.error(f"[{session_id}] Tiktoken encoding error: {enc_error}. Cannot estimate tokens accurately.")
-             user_query_embedding_tokens = len(user_query) // 3
-             app.logger.warning(f"[{session_id}] Using rough token estimate: {user_query_embedding_tokens}")
-        except Exception as token_error:
-             app.logger.error(f"[{session_id}] Error estimating token count for embedding query: {token_error}. Proceeding with original query, may fail.")
-             user_query_embedding_tokens = len(user_query.split())
-
-        # Proceed with semantic search only if the query isn't excessively long
-        if user_query_embedding_tokens <= EMBEDDING_MODEL_TOKEN_LIMIT * 1.5:
-            try:
-                app.logger.info(f'[{session_id}] Querying index with semantic search query (length {len(semantic_search_query)} chars): {semantic_search_query[:100]}...')
-                await status_manager.update_status(
-                    message="Searching through documents",
-                    session_id=session_id
-                )
-                # Only get the storage context if we are actually going to query
-                if embedding_store is None:
-                     app.logger.error(f"[{session_id}] Embedding store is not initialized!")
-                     raise RuntimeError("Embedding store not ready") # Raise error to prevent proceeding
-                if file_processor is None:
-                     app.logger.error(f"[{session_id}] File processor is not initialized!")
-                     raise RuntimeError("File processor not ready") # Raise error
-
-                app.logger.debug(f"[{session_id}] Getting and awaiting storage context...")
-                storage_context = await embedding_store.get_storage_context(system_message_id)
-                app.logger.debug(f"[{session_id}] Got storage context. Type: {type(storage_context)}")
-
-                # Pass the awaited storage_context directly
-                relevant_info = await file_processor.query_index(semantic_search_query, storage_context)
-
-                if relevant_info:
-                    app.logger.info(f'[{session_id}] Retrieved relevant info (first 100 chars): {str(relevant_info)[:100]}')
-                    await status_manager.update_status( message="Found relevant information in documents", session_id=session_id )
-                else:
-                    app.logger.info(f'[{session_id}] No relevant information found in the index.')
-                    await status_manager.update_status( message="No relevant documents found", session_id=session_id )
-                    relevant_info = None
-
-            except RuntimeError as init_error: # Catch initialization errors
-                 await status_manager.update_status( message=f"Error during setup: {init_error}", session_id=session_id, status="error" )
-                 relevant_info = None
-            except Exception as e:
-                app.logger.error(f'[{session_id}] Error querying index: {str(e)}')
-                if not isinstance(e, openai.BadRequestError) or "maximum context length" not in str(e):
-                     app.logger.exception(f"[{session_id}] Full traceback for unexpected index query error:")
-                await status_manager.update_status( message="Error searching document database", session_id=session_id, status="error" )
-                relevant_info = None
-        else:
-             # Semantic search is skipped, NO coroutine was created.
-             app.logger.warning(f"[{session_id}] Skipping semantic search because query is too long ({user_query_embedding_tokens} tokens) even after potential summarization.")
-             await status_manager.update_status( message="Skipping document search as the query is too long.", session_id=session_id )
-             relevant_info = None # Ensure relevant_info is None
-
-        semantic_search_end_time = time.time()
-        # --- End of Semantic Search Section ---
-
-        # Ensure system_message is available (should be defined earlier)
-        if system_message is None:
-             system_message = {"role": "system", "content": ""}
-             messages.insert(0, system_message) # Ensure it exists if somehow lost
-
-        # Inject relevant_info into system message *only if it was found*
-        if relevant_info:
-            app.logger.info(f"[{session_id}] Injecting relevant document info into system message.")
-            system_message['content'] += f"\n\n<Added Context Provided by Vector Search>\n{relevant_info}\n</Added Context Provided by Vector Search>"
-        else:
-            app.logger.info(f"[{session_id}] No relevant document info to inject.")
-
-        summarized_results = None
-        generated_search_queries = None
-
-        # Web search process
-        web_search_start_time = time.time()
-        if enable_web_search:
-            try:
-                app.logger.info(f'[{session_id}] Web search enabled, starting search process')
-                await status_manager.update_status(
-                    message="Starting web search process",
-                    session_id=session_id
-                )
-
-                generated_search_queries, summarized_results = await perform_web_search_process(
-                    client,
-                    model,
-                    messages,
-                    user_query, # Use original user query for web search understanding
-                    current_user.id,
-                    system_message_id,
-                    enable_deep_search,
-                    session_id,
-                    status_manager=status_manager,
-                    logger=app.logger,
-                    get_response_from_model=get_response_from_model,
-                    BRAVE_SEARCH_API_KEY=BRAVE_SEARCH_API_KEY,
-                    get_file_path=app.file_utils.get_file_path
-                )
-
-                await status_manager.update_status(
-                    message="Web search completed, processing results",
-                    session_id=session_id
-                )
-
-                app.logger.info(f'[{session_id}] Web search process completed. Generated queries: {generated_search_queries}')
-                app.logger.info(f'[{session_id}] Summarized results (first 100 chars): {summarized_results[:100] if summarized_results else None}')
-
-                if not isinstance(generated_search_queries, list):
-                    app.logger.warning(f"[{session_id}] generated_search_queries is not a list. Type: {type(generated_search_queries)}. Value: {generated_search_queries}")
-                    generated_search_queries = [str(generated_search_queries)] if generated_search_queries else []
-
-                if summarized_results:
-                    app.logger.info(f"[{session_id}] Injecting web search results into system message.")
-                    system_message['content'] += f"\n\n<Added Context Provided by Web Search>\n{summarized_results}\n</Added Context Provided by Web Search>"
-                    system_message['content'] += "\n\nIMPORTANT: In your response, please include relevant footnotes using [1], [2], etc. At the end of your response, list all sources under a 'Sources:' section, providing full URLs for each footnote."
-                else:
-                    app.logger.warning(f'[{session_id}] No summarized results from web search to inject.')
-            except Exception as e:
-                app.logger.error(f'[{session_id}] Error in web search process: {str(e)}')
-                app.logger.exception(f"[{session_id}] Full traceback for web search error:")
-                await status_manager.update_status(
-                    message="Error during web search process",
-                    session_id=session_id,
-                    status="error"
-                )
-                generated_search_queries = None
-                summarized_results = None
-        else:
-            app.logger.info(f'[{session_id}] Web search is disabled')
-        web_search_end_time = time.time()
-
-        app.logger.info(f"[{session_id}] Final system message (first 200 chars): {system_message['content'][:200]}")
-        app.logger.info(f'[{session_id}] Sending final message list ({len(messages)} messages) to model.')
-        # Avoid logging full messages if they are huge
-        # app.logger.debug(f'[{session_id}] Sending messages to model: {json.dumps(messages, indent=2)}')
-
-        await status_manager.update_status(
-            message=f"Generating final analysis and response using model: {model}",
-            session_id=session_id
-        )
-
-        # --- AI Model Call Section ---
-        app.logger.info(f"[{session_id}] >>> Calling get_response_from_model for model {model}...")
-        start_model_call_time = time.time()
-
-        # Get model response
-        reasoning_effort = request_data.get('reasoning_effort')
-        chat_output, model_name, thinking_process = await get_response_from_model(
-            client=client,
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            reasoning_effort=reasoning_effort,
-            extended_thinking=extended_thinking if model == 'claude-3-7-sonnet-20250219' else None,
-            thinking_budget=thinking_budget if model == 'claude-3-7-sonnet-20250219' and extended_thinking else None
-        )
-
-        end_model_call_time = time.time()
-        model_call_duration = end_model_call_time - start_model_call_time
-        app.logger.info(f"[{session_id}] <<< get_response_from_model completed. Duration: {model_call_duration:.2f}s")
-        # --- End AI Model Call Section ---
-
-        if chat_output is None:
-            app.logger.error(f"[{session_id}] Failed to get response from model {model_name or model}.")
-            await status_manager.update_status(
-                message="Error getting response from AI model",
-                session_id=session_id,
-                status="error"
-            )
-            # Consider returning a more specific error if possible
-            raise Exception(f"Failed to get response from model {model_name or model}")
-        else:
-             app.logger.info(f"[{session_id}] Model returned output (first 100 chars): {chat_output[:100]}...")
-
-        # --- Post-Processing and Saving ---
-        post_process_start_time = time.time()
-        prompt_tokens = count_tokens(model_name, messages)
-        completion_tokens = count_tokens(model_name, [{"role": "assistant", "content": chat_output}]) # Pass as message list
-        total_tokens = prompt_tokens + completion_tokens
-
-        app.logger.info(f'[{session_id}] Tokens - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}')
-
-        new_message = {"role": "assistant", "content": chat_output}
-        messages.append(new_message) # Append the successful response
-
-        # Update or create conversation
-        async with get_session() as db_session:
-            try:
-                # Create timezone-naive datetime by converting UTC to naive
-                current_time = datetime.now(timezone.utc).replace(tzinfo=None)
-
-                if not conversation:
-                    # Creating new conversation
-                    app.logger.info(f"[{session_id}] Creating new conversation.")
-                    conversation = Conversation(
-                        history=json.dumps(messages),
-                        temperature=temperature,
-                        user_id=current_user.id,
-                        token_count=total_tokens,
-                        created_at=current_time,
-                        updated_at=current_time,
-                        model_name=model_name # Use the actual model name returned
-                    )
-                    # Generate summary title (ensure generate_summary is async or run in executor if needed)
-                    # Assuming generate_summary is synchronous for now
-                    conversation_title = generate_summary(messages)
-                    conversation.title = conversation_title
-                    db_session.add(conversation)
-                    app.logger.info(f'[{session_id}] Added new conversation with title: {conversation_title}')
-                else:
-                    # Fetch fresh instance of existing conversation within this session
-                    app.logger.info(f"[{session_id}] Updating existing conversation ID: {conversation.id}")
-                    result = await db_session.execute(
-                        select(Conversation).filter_by(id=conversation.id)
-                    )
-                    conversation = result.scalar_one_or_none()
-
-                    if not conversation:
-                        # This case should ideally not happen if conversation_id was valid initially
-                        app.logger.error(f"[{session_id}] Failed to re-fetch conversation {conversation_id} before update.")
-                        raise ValueError(f"Conversation {conversation_id} not found in database for update")
-
-                    # Update conversation
-                    conversation.history = json.dumps(messages)
-                    conversation.temperature = temperature
-                    conversation.token_count += total_tokens # Increment token count
-                    conversation.updated_at = current_time
-                    conversation.model_name = model_name # Update with actual model used
-                    app.logger.info(f'[{session_id}] Updated existing conversation with id: {conversation.id}')
-
-                # Set the additional fields consistently
-                conversation.vector_search_results = json.dumps(relevant_info) if relevant_info else None
-                conversation.generated_search_queries = json.dumps(generated_search_queries) if generated_search_queries else None
-                conversation.web_search_results = json.dumps(summarized_results) if summarized_results else None
-
-                await status_manager.update_status(
-                    message="Saving conversation",
-                    session_id=session_id
-                )
-
-                # Commit changes
-                await db_session.commit()
-                app.logger.info(f"[{session_id}] Conversation committed to database.")
-
-                # Refresh the instance to get the final state after commit (especially the ID if new)
-                await db_session.refresh(conversation)
-                final_conversation_id = conversation.id # Get ID after commit/refresh
-
-                # Update the request session with the conversation ID
-                session['conversation_id'] = final_conversation_id
-
-                app.logger.info(f'[{session_id}] Chat response prepared. Conversation ID: {final_conversation_id}, Title: {conversation.title}')
-                db_save_end_time = time.time()
-
-                # Log detailed timings
-                app.logger.info(f"[{session_id}] --- Request Timing Breakdown ---")
-                app.logger.info(f"[{session_id}] Data Received: {data_received_time - request_start_time:.3f}s")
-                app.logger.info(f"[{session_id}] Param Extraction: {params_extracted_time - data_received_time:.3f}s")
-                app.logger.info(f"[{session_id}] Conv Fetch: {conv_fetch_time - params_extracted_time:.3f}s")
-                app.logger.info(f"[{session_id}] Sys Msg Fetch: {sys_msg_fetch_time - conv_fetch_time:.3f}s")
-                if enable_time_sense:
-                    app.logger.info(f"[{session_id}] Time Context Proc: {time_context_end_time - time_context_start_time:.3f}s")
-                app.logger.info(f"[{session_id}] Query Extraction: {query_extracted_time - sys_msg_fetch_time:.3f}s") # Adjust base time if time sense ran
-                app.logger.info(f"[{session_id}] Semantic Search: {semantic_search_end_time - semantic_search_start_time:.3f}s")
-                if enable_web_search:
-                    app.logger.info(f"[{session_id}] Web Search: {web_search_end_time - web_search_start_time:.3f}s")
-                app.logger.info(f"[{session_id}] AI Model Call: {model_call_duration:.3f}s")
-                app.logger.info(f"[{session_id}] Post-Processing & DB Save: {db_save_end_time - post_process_start_time:.3f}s")
-                app.logger.info(f"[{session_id}] Total Request Duration: {db_save_end_time - request_start_time:.3f}s")
-                app.logger.info(f"[{session_id}] --- End Timing Breakdown ---")
-
-
-                return jsonify({
-                    'response': chat_output,
-                    'conversation_id': final_conversation_id,
-                    'conversation_title': conversation.title,
-                    'vector_search_results': relevant_info if relevant_info else "No results found",
-                    'generated_search_queries': generated_search_queries if generated_search_queries else [],
-                    'web_search_results': summarized_results if summarized_results else "No web search performed",
-                    'system_message_content': system_message['content'], # Return the potentially modified system message
-                    'thinking_process': thinking_process if thinking_process else None,
-                    'usage': {
-                        'prompt_tokens': prompt_tokens,
-                        'completion_tokens': completion_tokens,
-                        'total_tokens': total_tokens
-                    },
-                    'enable_web_search': enable_web_search,
-                    'enable_deep_search': enable_deep_search,
-                    'model_info': {
-                        'name': model_name, # Use actual model name returned
-                        'extended_thinking': extended_thinking if model == 'claude-3-7-sonnet-20250219' else None,
-                        'thinking_budget': thinking_budget if model == 'claude-3-7-sonnet-20250219' and extended_thinking else None
-                    }
-                })
-
-            except Exception as db_error:
-                app.logger.error(f'[{session_id}] Database error during save: {str(db_error)}')
-                app.logger.exception(f"[{session_id}] Full traceback for database save error:")
-                await db_session.rollback()
-                # Don't remove connection here, let finally handle it
-                raise # Re-raise to be caught by outer try/except
-
-    except Exception as e:
-        # Log error with session ID if available
-        log_prefix = f"[{session_id}] " if session_id else ""
-        app.logger.error(f'{log_prefix}Unexpected error in chat route: {str(e)}')
-        app.logger.exception(f"{log_prefix}Full traceback for chat route error:")
-        if session_id: # Only send status if we have a session ID
-            await status_manager.update_status(
-                message="An error occurred during processing",
-                session_id=session_id,
-                status="error"
-            )
-        # Return a generic error response
-        return jsonify({'error': 'An unexpected error occurred'}), 500
-
-    finally:
-        # Ensure the session is marked as inactive when the chat request processing ends (success or failure)
-        if session_id:
-            app.logger.info(f"[{session_id}] Cleaning up connection status for session.")
-            await status_manager.remove_connection(session_id)
-            # Small delay might not be necessary here, but can leave if needed for message delivery assurance
-            # await asyncio.sleep(0.1)
-        else:
-             app.logger.warning("No session ID available in finally block for cleanup.")
 
 def count_tokens(model_name, messages):
     if model_name.startswith("gpt-"):
