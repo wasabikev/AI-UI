@@ -283,6 +283,7 @@ class SystemMessage(Base):
                        onupdate=lambda: datetime.now(timezone.utc))
     source_config = Column(JSON)
     enable_web_search = Column(Boolean, default=False)
+    enable_deep_search = Column(Boolean, default=False)
     enable_time_sense = Column(Boolean, default=False)
 
     # Update relationships to use back_populates
@@ -307,6 +308,7 @@ class SystemMessage(Base):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'source_config': self.source_config,
             'enable_web_search': self.enable_web_search,
+            'enable_deep_search': self.enable_deep_search,
             'enable_time_sense': self.enable_time_sense,
         }
 

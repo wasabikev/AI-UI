@@ -17,18 +17,19 @@ async def run_migrations():
     try:
         logger.info("Running database migrations...")
         
-        # Use subprocess to run the migration script
-        import subprocess
-        result = subprocess.run([sys.executable, "run_migrations.py"], capture_output=True, text=True)
+        # Import and run the migration function directly
+        from run_migrations import run_migrations as run_migration_process
+        success = await run_migration_process()
         
-        if result.returncode == 0:
+        if success:
             logger.info("Database migrations completed successfully")
         else:
-            logger.error(f"Migration failed: {result.stderr}")
-            raise Exception(f"Migration failed: {result.stderr}")
+            logger.error("Migration failed")
+            raise Exception("Migration failed")
     except Exception as e:
         logger.error(f"Failed to run migrations: {str(e)}", exc_info=True)
         raise
+
 
 # Configure logging
 logging.basicConfig(

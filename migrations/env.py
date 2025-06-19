@@ -1,9 +1,8 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import pool, engine_from_config
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
@@ -61,43 +60,27 @@ def do_run_migrations(connection: Connection) -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-async def run_async_migrations() -> None:
-    """In this scenario we need to create an Engine
-    and associate a connection with the context."""
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode using synchronous engine."""
     
-    # Get the database URL from environment if available
-    db_url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    # Get the database URL - it should already be converted to sync by run_migrations.py
+    db_url = config.get_main_option("sqlalchemy.url")
     
-    # For asyncpg, we need to ensure the URL starts with postgresql+asyncpg://
-    if db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    # Ensure we're using a synchronous URL (not async)
+    if "postgresql+asyncpg://" in db_url:
+        db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
     
-    # Create the engine with the updated URL
-    connectable = async_engine_from_config(
+    # Create synchronous engine
+    connectable = engine_from_config(
         {"sqlalchemy.url": db_url},
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+    with connectable.connect() as connection:
+        do_run_migrations(connection)
 
-    await connectable.dispose()
-
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
-    # Check if we're already in an event loop
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # We're in an existing event loop, use run_until_complete
-            loop.run_until_complete(run_async_migrations())
-        else:
-            # No running event loop, create a new one
-            asyncio.run(run_async_migrations())
-    except RuntimeError:
-        # No event loop exists, create a new one
-        asyncio.run(run_async_migrations())
+    connectable.dispose()
 
 if context.is_offline_mode():
     run_migrations_offline()

@@ -17,7 +17,7 @@ let showTemperature = false;  // Tracks the visibility of the temperature settin
 let selectedTemperature = 0.7; // Default temperature value
 let activeWebsiteId = null;  // This will store the currently active website ID for the Websites Group
 let tempWebSearchState = false; // This will store the temporary web search state
-let tempIntelligentSearchState = false; // This will store the temporary intelligent search state
+let tempDeepSearchState = false; // This will store the temporary deep search state
 
 // Safely initialize APP_DATA related variables
 const APP_DATA = window.APP_DATA || {};
@@ -273,36 +273,47 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
-        // Add event listeners for the web search toggles
+        // Add event listeners for the web search toggles - WITH NULL CHECKS
         const enableWebSearchToggle = document.getElementById('enableWebSearch');
-        const enableIntelligentSearchToggle = document.getElementById('enableIntelligentSearch');
+        const enableDeepSearchToggle = document.getElementById('enableDeepSearch');
 
-        enableWebSearchToggle.addEventListener('change', function() {
-            tempWebSearchState = this.checked;
-            if (!this.checked) {
-                enableIntelligentSearchToggle.checked = false;
-                tempIntelligentSearchState = false;
-                enableIntelligentSearchToggle.disabled = true;
-            } else {
-                enableIntelligentSearchToggle.disabled = false;
-            }
-            updateSearchSettings();
-        });
+        if (enableWebSearchToggle && enableDeepSearchToggle) {
+            console.log('Attaching search toggle listeners'); // Debug log
+            
+            enableWebSearchToggle.addEventListener('change', function() {
+                console.log('Web search toggle changed:', this.checked); // Debug log
+                tempWebSearchState = this.checked;
+                if (!this.checked) {
+                    enableDeepSearchToggle.checked = false;
+                    tempDeepSearchState = false;
+                    enableDeepSearchToggle.disabled = true;
+                } else {
+                    enableDeepSearchToggle.disabled = false;
+                }
+                updateSearchSettings();
+            });
 
-        enableIntelligentSearchToggle.addEventListener('change', function() {
-            tempIntelligentSearchState = this.checked;
-            if (this.checked) {
-                enableWebSearchToggle.checked = true;
-                tempWebSearchState = true;
-            }
-            updateSearchSettings();
-        });
-
+            enableDeepSearchToggle.addEventListener('change', function() {
+                console.log('Deep search toggle changed:', this.checked); // Debug log
+                tempDeepSearchState = this.checked;
+                if (this.checked) {
+                    enableWebSearchToggle.checked = true;
+                    tempWebSearchState = true;
+                }
+                updateSearchSettings();
+            });
+        } else {
+            console.error('Search toggle elements not found:', {
+                enableWebSearch: !!enableWebSearchToggle,
+                enableDeepSearch: !!enableDeepSearchToggle
+            });
+        }
 
     }).catch(error => {
         console.error('Error during system message fetch and display:', error);
     });
 });
+
 
 // --- Context File Attachment Functions (Direct Chat Attachments) ---
 
@@ -986,7 +997,7 @@ window.addEventListener('beforeunload', function() {
 
 function updateSearchSettings() {
     // Only send an update if the temporary state differs from the current system message state
-    if (tempWebSearchState !== currentSystemMessage.enable_web_search || tempIntelligentSearchState !== false) {
+    if (tempWebSearchState !== currentSystemMessage.enable_web_search || tempDeepSearchState !== false) {
         fetch(`/api/system-messages/${activeSystemMessageId}/toggle-search`, {
             method: 'POST',
             headers: {
@@ -994,7 +1005,7 @@ function updateSearchSettings() {
             },
             body: JSON.stringify({
                 enableWebSearch: tempWebSearchState,
-                enableIntelligentSearch: tempIntelligentSearchState
+                enableDeepSearch: tempDeepSearchState
             }),
         })
         .then(response => response.json())
@@ -1002,7 +1013,7 @@ function updateSearchSettings() {
             console.log('Search settings updated:', data);
             // Update the current system message with the new settings
             currentSystemMessage.enable_web_search = data.enableWebSearch;
-            // Note: We're not storing enableIntelligentSearch in the model
+            currentSystemMessage.enable_deep_search = data.enableDeepSearch;
         })
         .catch((error) => {
             console.error('Error updating search settings:', error);
@@ -1013,25 +1024,30 @@ function updateSearchSettings() {
 }
 
 function initializeSearchToggles(systemMessage) {
+    console.log('initializeSearchToggles called with:', systemMessage.name, 'web_search:', systemMessage.enable_web_search);
+    
     const enableWebSearchToggle = document.getElementById('enableWebSearch');
-    const enableIntelligentSearchToggle = document.getElementById('enableIntelligentSearch');
+    const enableDeepSearchToggle = document.getElementById('enableDeepSearch');
 
     // Set the web search toggle based on the saved setting
-    enableWebSearchToggle.checked = systemMessage.enable_web_search;
-    tempWebSearchState = systemMessage.enable_web_search;
+    enableWebSearchToggle.checked = !!systemMessage.enable_web_search;
+    tempWebSearchState = !!systemMessage.enable_web_search;
 
-    // Always start with intelligent search disabled
-    enableIntelligentSearchToggle.checked = false;
-    tempIntelligentSearchState = false;
+    // Set deep search toggle from system message
+    enableDeepSearchToggle.checked = !!systemMessage.enable_deep_search;
+    tempDeepSearchState = !!systemMessage.enable_deep_search;
 
-    // Enable or disable the intelligent search toggle based on web search setting
-    enableIntelligentSearchToggle.disabled = !systemMessage.enable_web_search;
+    // CHANGE: Don't disable deep search toggle - let it be clickable always
+    // enableDeepSearchToggle.disabled = !systemMessage.enable_web_search;
+    enableDeepSearchToggle.disabled = false;
+    
+    console.log('Toggle states set - web:', enableWebSearchToggle.checked, 'deep:', enableDeepSearchToggle.checked, 'disabled:', enableDeepSearchToggle.disabled);
 }
 
-document.getElementById('enableWebSearch').addEventListener('change', function() {
-    tempWebSearchState = this.checked;
-    console.log('Temporary web search state updated:', tempWebSearchState);
-});
+
+
+
+
 
 // --- End Search Settings Functions ---
 
@@ -2818,7 +2834,9 @@ $('#systemMessageModal').on('show.bs.modal', function (event) {
             document.getElementById('systemMessageDescription').value = activeSystemMessage.description || '';
             document.getElementById('systemMessageContent').value = activeSystemMessage.content || '';
             document.getElementById('systemMessageModal').dataset.messageId = activeSystemMessage.id; // Set ID on modal
-            document.getElementById('enableWebSearch').checked = activeSystemMessage.enable_web_search;
+
+            initializeSearchToggles(activeSystemMessage); // Initialize search toggles based on the message
+
             document.getElementById('enableTimeSense').checked = activeSystemMessage.enable_time_sense;
 
             // Update model and temperature controls based on the active message
@@ -3878,7 +3896,7 @@ $('#chat-form').on('submit', async function (e) {
             system_message_id: activeSystemMessageId, // Send active system message ID
             // Search toggles state from the main UI checkboxes
             enable_web_search: $('#enableWebSearch').is(':checked'),
-            enable_intelligent_search: $('#enableIntelligentSearch').is(':checked'),
+            enable_deep_search: $('#enableDeepSearch').is(':checked'),
             timezone: userTimezone,
             file_ids: Array.from(attachedContextFiles.keys()) // Send IDs of *temporary context* files
         };
