@@ -111,13 +111,17 @@ from orchestration.temp_file_handler import TemporaryFileHandler
 # Local imports - Web Search
 from orchestration.web_search_orchestrator import perform_web_search_process
 
+# Local imports - Vector DB Management
 from orchestration.vectordb_file_manager import VectorDBFileManager
 vectordb_file_manager = None
+from orchestration.vector_search_utils import VectorSearchUtils
 
 # Local imports - Chat Orchestration
 from orchestration.chat_orchestrator import ChatOrchestrator
 chat_orchestrator = None
 
+
+from orchestration.llm_router import LLMRouter, count_tokens
 
 from services.embedding_store import EmbeddingStore
 
@@ -135,6 +139,8 @@ QuartSchema(app)
 # Local imports - Conversation Orchestration
 from orchestration.conversation import ConversationOrchestrator
 conversation_orchestrator = ConversationOrchestrator(app.logger)
+
+
 
 # Initialize LLMWhisperer client
 from unstract.llmwhisperer.client import LLMWhispererClient
@@ -373,6 +379,11 @@ if cerebras_api_key:
 else:
     app.logger.warning("CEREBRAS_API_KEY environment variable not set")
 
+llm_router = LLMRouter(
+    cerebras_client=cerebras_client,
+    logger=app.logger,
+)
+
 # Usage in app.py
 setup_logging(app, debug_mode)
 
@@ -447,10 +458,10 @@ async def startup():
             SystemMessage=SystemMessage,
             generate_summary=generate_summary,
             count_tokens=count_tokens,
-            get_response_from_model=get_response_from_model,
+            get_response_from_model=llm_router.get_response_from_model,
             perform_web_search_process=perform_web_search_process,
             EMBEDDING_MODEL_TOKEN_LIMIT=EMBEDDING_MODEL_TOKEN_LIMIT,
-            generate_concise_query_for_embedding=generate_concise_query_for_embedding,
+            generate_concise_query_for_embedding=vector_search_utils.generate_concise_query_for_embedding,
             client=client,
             BRAVE_SEARCH_API_KEY=BRAVE_SEARCH_API_KEY,
             file_utils=app.file_utils,
@@ -778,7 +789,7 @@ async def debug_websocket_config():
     })
 
 
-# Helper functions for both standard and intelligent web search - will go in API blueprint / module
+# Toggle web search settings for system messages
 
 @app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
 @login_required
@@ -866,7 +877,7 @@ def query_documents():
 from flask import make_response, send_file, abort
 
 
-# Vector database file management
+#----------------- Vector database file management
 
 @app.route('/upload_file', methods=['POST'])
 @login_required
@@ -928,7 +939,7 @@ async def remove_file(file_id):
     response_data, status = await vectordb_file_manager.remove_file(file_id, current_user.id)
     return jsonify(response_data), status
 
-# End vector database file management
+#------------------------ End vector database file management
 
 @app.route('/debug/check-directories')
 @login_required
@@ -1696,7 +1707,14 @@ async def create_conversation_in_folder(folder_id):
         return jsonify({"error": "Folder not found"}), 404
     return jsonify({"message": "Conversation created successfully"}), 201
 
-# End of conversation-related routes
+@app.route('/reset-conversation', methods=['POST'])
+@login_required
+def reset_conversation():
+    if 'conversation_id' in session:
+        del session['conversation_id']
+    return jsonify({"message": "Conversation reset successful"})
+
+#-------------------------- End of conversation-related routes
 
 @app.route('/')
 @login_required
@@ -1761,311 +1779,24 @@ def generate_summary(messages):
     return summary
 
 
+#-------------------------- Start of vector search-related routes
 
-
-@app.route('/reset-conversation', methods=['POST'])
-@login_required
-def reset_conversation():
-    if 'conversation_id' in session:
-        del session['conversation_id']
-    return jsonify({"message": "Conversation reset successful"})
+from orchestration.vector_search_utils import VectorSearchUtils
 
 # Define the approximate token limit for your embedding model
 # text-embedding-ada-002 and text-embedding-3-small have 8191/8192 limits
 EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Use a slightly lower buffer
 
-async def generate_concise_query_for_embedding(client, long_query_text: str, target_model: str = "gpt-4o-mini") -> str:
-    """
-    Generates a concise summary of a long text, suitable for use as an embedding query.
-    """
-    app.logger.warning(f"Original query length ({len(long_query_text)} chars) exceeds limit. Generating concise query.")
-
-    # Estimate original token count roughly for logging if needed (optional)
-    # Note: Use the *chat* model's tokenizer here, as we're calling the chat API
-    # original_tokens = count_tokens(target_model, [{"role": "user", "content": long_query_text}])
-    # app.logger.warning(f"Estimated original tokens: {original_tokens}")
-
-    # Truncate the input to the summarization model if it's excessively long even for that
-    # GPT-4o-mini has a large context, but let's be reasonable. ~16k tokens is safe.
-    max_summary_input_chars = 16000 * 4 # Rough estimate: 4 chars/token
-    if len(long_query_text) > max_summary_input_chars:
-        app.logger.warning(f"Truncating input for summarization model from {len(long_query_text)} to {max_summary_input_chars} chars.")
-        long_query_text = long_query_text[:max_summary_input_chars] + "..."
-
-    system_message = """You are an expert at summarizing long texts into concise search queries.
-Analyze the following text and extract the core question, topic, or instruction.
-Your output should be a short phrase or sentence (ideally under 100 words, definitely under 500 tokens)
-that captures the essence of the text and is suitable for a semantic database search.
-Focus on the key entities, concepts, and the user's likely goal.
-Respond ONLY with the concise search query, no preamble or explanation."""
-
-    messages = [
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": long_query_text}
-    ]
-
-    try:
-        # Use get_response_from_model to handle API calls, retries, etc.
-        # Use a low temperature for factual summary
-        concise_query, _, _ = await get_response_from_model(
-            client=client,
-            model=target_model,
-            messages=messages,
-            temperature=0.1 # Low temp for focused summary
-        )
-
-        if concise_query:
-            app.logger.info(f"Generated concise query: {concise_query}")
-            return concise_query.strip()
-        else:
-            app.logger.error("Failed to generate concise query (model returned empty). Falling back to truncation.")
-            # Fallback: Truncate the original query (less ideal)
-            # Estimate max chars based on token limit
-            max_chars = EMBEDDING_MODEL_TOKEN_LIMIT * 3 # Very rough estimate
-            return long_query_text[:max_chars]
-
-    except Exception as e:
-        app.logger.error(f"Error generating concise query: {str(e)}. Falling back to truncation.")
-        # Fallback: Truncate the original query
-        max_chars = EMBEDDING_MODEL_TOKEN_LIMIT * 3
-        return long_query_text[:max_chars]
-
-async def get_response_from_model(client, model, messages, temperature, reasoning_effort=None, extended_thinking=None, thinking_budget=None):
-    """
-    Routes the request to the appropriate API based on the model selected.
-    """
-    app.logger.info(f"Getting response from model: {model}")
-    app.logger.info(f"Temperature: {temperature}")
-    app.logger.info(f"Number of messages: {len(messages)}")
-    app.logger.info(f"Extended thinking: {extended_thinking}")
-    app.logger.info(f"Thinking budget: {thinking_budget}")
-
-    max_retries = 3
-    retry_delay = 1
-
-    async def handle_openai_request(payload):
-        for attempt in range(max_retries):
-            try:
-                # Handle o3-mini specific parameters
-                if model == "o3-mini":
-                    if "max_tokens" in payload:
-                        payload["max_completion_tokens"] = payload.pop("max_tokens")
-                    if reasoning_effort:
-                        payload["reasoning_effort"] = reasoning_effort
-                response = client.chat.completions.create(**payload)
-                return response.choices[0].message.content.strip(), response.model, None  # Add None for thinking_process
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay * (2 ** attempt))
-                    continue
-                raise
-
-    async def handle_gemini_request(model_name, contents, temperature):
-        for attempt in range(max_retries):
-            try:
-                gemini_model = GenerativeModel(model_name=model_name)
-                response = await asyncio.to_thread(
-                    gemini_model.generate_content,
-                    contents,
-                    generation_config={"temperature": temperature}
-                )
-                return response.text, model_name, None  # Add None for thinking_process
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay * (2 ** attempt))
-                    continue
-                raise
-                
-    async def handle_cerebras_request(model_name, messages, temperature):
-        for attempt in range(max_retries):
-            try:
-                # Format messages for Cerebras API
-                formatted_messages = [
-                    {"role": msg["role"], "content": msg["content"]} 
-                    for msg in messages
-                ]
-                
-                app.logger.info(f"Sending request to Cerebras API with model: {model_name}")
-                app.logger.debug(f"Formatted messages: {formatted_messages}")
-                
-                # Verify the Cerebras client is initialized
-                if cerebras_client is None:
-                    app.logger.error("Cerebras client is None. API key may be missing or invalid.")
-                    raise ValueError("Cerebras client is not initialized")
-            
-                # Log the API key (first 4 and last 4 characters only for security)
-                api_key = os.getenv("CEREBRAS_API_KEY")
-                if api_key:
-                    masked_key = f"{api_key[:4]}...{api_key[-4:]}"
-                    app.logger.info(f"Using Cerebras API key: {masked_key}")
-                else:
-                    app.logger.error("CEREBRAS_API_KEY environment variable is not set")
-                    raise ValueError("CEREBRAS_API_KEY environment variable is not set")
-
-                # Call the Cerebras API
-                response = cerebras_client.chat.completions.create(
-                    messages=formatted_messages,
-                    model=model_name,
-                    temperature=temperature
-                )
+vector_search_utils = VectorSearchUtils(
+    get_response_from_model=llm_router.get_response_from_model,  
+    logger=app.logger,
+    embedding_model_token_limit=EMBEDDING_MODEL_TOKEN_LIMIT
+)
 
 
-                
-                app.logger.info(f"Received response from Cerebras API: {response}")
-                return response.choices[0].message.content, model_name, None
-            except Exception as e:
-                app.logger.error(f"Error in Cerebras API call (attempt {attempt+1}): {str(e)}")
-                app.logger.exception("Full traceback:")
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay * (2 ** attempt))
-                    continue
-                raise
+#-------------------------- End of vector search-related routes
 
-    try:
-        if model.startswith("gpt-"):
-            payload = {
-                "model": model,
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": 4096
-            }
-            return await handle_openai_request(payload)
-
-        elif model.startswith("claude-"):
-            try:
-                anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-                
-                # Process messages for Anthropic format
-                anthropic_messages = []
-                system_message = None
-                for message in messages:
-                    if message['role'] == 'system':
-                        system_message = message['content']
-                    elif message['role'] in ['user', 'assistant']:
-                        anthropic_messages.append({"role": message['role'], "content": message['content']})
-
-                if system_message and anthropic_messages:
-                    anthropic_messages[0]['content'] = f"{system_message}\n\nUser: {anthropic_messages[0]['content']}"
-
-                if not anthropic_messages or anthropic_messages[0]['role'] != 'user':
-                    anthropic_messages.insert(0, {"role": "user", "content": ""})
-
-                # Set max_tokens for Claude models
-                if model == "claude-3-7-sonnet-20250219":
-                    max_tokens = 64000
-                elif model in ["claude-opus-4-20250514", "claude-sonnet-4-20250514"]:
-                    max_tokens = 32000
-                else:
-                    max_tokens = 4096
-
-                # Make the API call
-                response = await asyncio.to_thread(
-                    anthropic_client.messages.create,
-                    model=model,
-                    messages=anthropic_messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
-
-                # Handle new refusal stop reason for Claude 4
-                stop_reason = getattr(response, "stop_reason", None)
-                app.logger.info(f"Claude API stop_reason: {stop_reason}")
-
-                if stop_reason == "refusal":
-                    refusal_message = (
-                        "The model refused to answer this request for safety reasons."
-                    )
-                    return refusal_message, model, None
-
-                # Extract the main content
-                response_content = response.content[0].text if hasattr(response, "content") and response.content else ""
-                return response_content, model, None
-
-            except Exception as e:
-                app.logger.error(f"Error in Claude API call: {str(e)}")
-                app.logger.exception("Full traceback:")
-                raise
-
-
-
-        elif model.startswith("gemini-"):
-            contents = [{
-                "role": "user",
-                "parts": [{"text": "\n".join([m['content'] for m in messages])}]
-            }]
-            return await handle_gemini_request(model, contents, temperature)
-
-        elif model == "o3-mini":
-            payload = {
-                "model": model,
-                "messages": messages,
-                "max_tokens": 4096
-            }
-            if reasoning_effort:
-                payload["reasoning_effort"] = reasoning_effort
-            return await handle_openai_request(payload)
-            
-        elif model.startswith("llama3") or model == "llama-3.3-70b" or model == "deepSeek-r1-distill-llama-70B":
-            # Check if Cerebras client is initialized
-            if cerebras_client is None:
-                app.logger.error("Cerebras client not initialized. Please set CEREBRAS_API_KEY environment variable.")
-                raise ValueError("Cerebras client not initialized. Please set CEREBRAS_API_KEY environment variable.")
-            
-            app.logger.info(f"Routing request to Cerebras API for model: {model}")
-            return await handle_cerebras_request(model, messages, temperature)
-
-        else:
-            app.logger.error(f"Unsupported model: {model}")
-            raise ValueError(f"Unsupported model: {model}")
-
-    except Exception as e:
-        app.logger.error(f"Error getting response from model {model}: {str(e)}")
-        app.logger.exception("Full traceback:")
-        
-        # Attempt to fall back to a different model if possible
-        try:
-            if model.startswith("claude-") and 'OPENAI_API_KEY' in os.environ:
-                app.logger.info("Attempting to fall back to GPT-4 after error")
-                return await get_response_from_model(client, "gpt-4", messages, temperature)
-            elif model.startswith("gpt-") and 'ANTHROPIC_API_KEY' in os.environ:
-                app.logger.info("Attempting to fall back to Claude after error")
-                return await get_response_from_model(client, "claude-3-5-sonnet-20240620", messages, temperature)
-        except Exception as fallback_error:
-            app.logger.error(f"Fallback attempt failed: {str(fallback_error)}")
-        
-        return None, None, None
-
-# Wrapper function for synchronous calls
-async def get_response_from_model_sync(client, model, messages, temperature, reasoning_effort=None, extended_thinking=False, thinking_budget=None):
-    """
-    Synchronous wrapper for get_response_from_model
-    
-    Args:
-        client: The API client instance
-        model: The model name to use
-        messages: List of message dictionaries
-        temperature: Float value for response temperature
-        reasoning_effort: Optional reasoning effort parameter for specific models
-        extended_thinking: Boolean for extended thinking mode (Claude 3.7)
-        thinking_budget: Integer for thinking tokens budget (Claude 3.7)
-    
-    Returns:
-        tuple: (chat_output, model_name, thinking_process)
-    """
-    try:
-        chat_output, model_name, thinking_process = await get_response_from_model(
-            client,
-            model,
-            messages,
-            temperature,
-            reasoning_effort=reasoning_effort,
-            extended_thinking=extended_thinking,
-            thinking_budget=thinking_budget
-        )
-        return chat_output, model_name, thinking_process
-    except Exception as e:
-        app.logger.error(f"Error in get_response_from_model_sync: {str(e)}")
-        raise
+#-------------------------- Start of chat-related routes
 
 
 @app.route('/chat', methods=['POST'])
@@ -2109,148 +1840,7 @@ async def chat():
 
 
 
-def count_tokens(model_name, messages):
-    if model_name.startswith("gpt-"):
-        try:
-            encoding = tiktoken.encoding_for_model(model_name)
-        except KeyError:
-            # Fallback to cl100k_base encoding if the specific model encoding is not found
-            encoding = tiktoken.get_encoding("cl100k_base")
-        
-        num_tokens = 0
-        for message in messages:
-            # Count tokens in the content
-            num_tokens += len(encoding.encode(message['content']))
-            
-            # Add tokens for role (and potentially name)
-            num_tokens += 4  # Every message follows <im_start>{role/name}\n{content}<im_end>\n
-            if 'name' in message:
-                num_tokens += len(encoding.encode(message['name']))
-        
-        # Add tokens for the messages separator
-        num_tokens += 2  # Every reply is primed with <im_start>assistant
-        
-        return num_tokens
 
-    elif model_name.startswith("claude-"):
-        encoding = tiktoken.get_encoding("cl100k_base")
-        num_tokens = 0
-        
-        for message in messages:
-            if isinstance(message, dict):
-                content = message.get('content', '')
-                role = message.get('role', '')
-            elif isinstance(message, str):
-                content = message
-                role = ''
-            else:
-                continue  # Skip if message is neither dict nor str
-
-            num_tokens += len(encoding.encode(content))
-            
-            if role:
-                num_tokens += len(encoding.encode(role))
-            
-            if role == 'user':
-                num_tokens += len(encoding.encode("Human: "))
-            elif role == 'assistant':
-                num_tokens += len(encoding.encode("Assistant: "))
-            
-            num_tokens += 2  # Each message ends with '\n\n'
-        
-        # Add tokens for the system message if present
-        if messages and isinstance(messages[0], dict) and messages[0].get('role') == 'system':
-            num_tokens += len(encoding.encode("\n\nHuman: "))
-        
-        return num_tokens
-
-    elif model_name.startswith("gemini-"):
-        try:
-            # Get API key from environment
-            api_key = os.getenv('GOOGLE_API_KEY')
-            if not api_key:
-                raise ValueError("GOOGLE_API_KEY environment variable is not set")
-
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-2.0-pro-exp-02-05')
-            
-            num_tokens = 0
-            for message in messages:
-                if isinstance(message, dict):
-                    content = message.get('content', '')
-                elif isinstance(message, str):
-                    content = message
-                else:
-                    continue
-
-                # Use the count_tokens method to get an estimate
-                token_count = model.count_tokens(content)
-                num_tokens += token_count.total_tokens
-
-            return num_tokens
-        except Exception as e:
-            app.logger.error(f"Error counting tokens for Gemini: {e}")
-            # Fallback to a more sophisticated approximation
-            return approximate_gemini_tokens(messages)
-
-    elif model_name.startswith("llama3.1") or model_name == "llama-3.3-70b" or model_name == "deepSeek-r1-distill-llama-70B":
-        # Use cl100k_base encoding for LLaMA models (approximate)
-        encoding = tiktoken.get_encoding("cl100k_base")
-        num_tokens = 0
-        
-        for message in messages:
-            if isinstance(message, dict):
-                content = message.get('content', '')
-                role = message.get('role', '')
-            elif isinstance(message, str):
-                content = message
-                role = ''
-            else:
-                continue
-
-            num_tokens += len(encoding.encode(content))
-            
-            if role:
-                num_tokens += len(encoding.encode(role))
-            
-            # Add tokens for message formatting
-            num_tokens += 4  # Approximate overhead per message
-        
-        return num_tokens
-    
-    else:
-        # Fallback to a generic tokenization method
-        num_tokens = 0
-        for message in messages:
-            num_tokens += len(message['content'].split())  # Fallback to word count
-        return num_tokens
-
-def approximate_gemini_tokens(messages):
-    """
-    Approximate token count for Gemini when API call fails.
-    Uses a more sophisticated approximation than simple word count.
-    """
-    num_tokens = 0
-    for message in messages:
-        if isinstance(message, dict):
-            content = message.get('content', '')
-        elif isinstance(message, str):
-            content = message
-        else:
-            continue
-
-        # Approximate tokens based on characters and words
-        # Gemini typically uses byte-pair encoding, so this is a rough approximation
-        char_count = len(content)
-        word_count = len(content.split())
-        
-        # Approximate formula: 
-        # - Average of character count / 4 (typical for BPE)
-        # - and word count * 1.3 (accounting for common subword tokens)
-        token_estimate = (char_count / 4 + word_count * 1.3) / 2
-        num_tokens += int(token_estimate)
-
-    return num_tokens
 
 
 @app.route('/get_active_conversation', methods=['GET'])
