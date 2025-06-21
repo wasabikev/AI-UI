@@ -118,6 +118,7 @@ vectordb_file_manager = None
 from orchestration.chat_orchestrator import ChatOrchestrator
 chat_orchestrator = None
 
+
 from services.embedding_store import EmbeddingStore
 
 from init_db import init_db
@@ -130,6 +131,10 @@ load_dotenv()
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
 QuartSchema(app)
+
+# Local imports - Conversation Orchestration
+from orchestration.conversation import ConversationOrchestrator
+conversation_orchestrator = ConversationOrchestrator(app.logger)
 
 # Initialize LLMWhisperer client
 from unstract.llmwhisperer.client import LLMWhispererClient
@@ -430,7 +435,7 @@ async def startup():
         base_upload_folder = Path(app.config['BASE_UPLOAD_FOLDER'])
         await app.file_utils.ensure_folder_exists(base_upload_folder)
 
-        # ---- Instatiate ChatOrchestrator ----
+        # ---- Instantiate ChatOrchestrator ----
         global chat_orchestrator
         chat_orchestrator = ChatOrchestrator(
             status_manager=status_manager,
@@ -451,8 +456,7 @@ async def startup():
             file_utils=app.file_utils,
             logger=app.logger,
         )
-        # ------------------------------------------- 
-
+        # ---- Instantiate VectorDBFileManager ----
         vectordb_file_manager = VectorDBFileManager(
             file_processor=file_processor,
             embedding_store=embedding_store,
@@ -1522,18 +1526,12 @@ async def chat_interface(conversation_id):
     conversation = await get_conversation_by_id(conversation_id)
     return await render_template('chat.html', conversation=conversation)
 
-
-# Fetch all conversations from the database and convert them to a list of dictionaries
-async def get_conversations_from_db():
-    async with get_session() as session:
-        result = await session.execute(select(Conversation))
-        conversations = result.scalars().all()
-        return [c.to_dict() for c in conversations]
+#---------------------- Database management 
 
 @app.route('/database')
-def database():
+async def database():
     try:
-        conversations = get_conversations_from_db()
+        conversations = await conversation_orchestrator.get_all_conversations_as_dicts()
         conversations_json = json.dumps(conversations, indent=4) # Convert to JSON and pretty-print
         return render_template('database.html', conversations_json=conversations_json)
     except Exception as e:
@@ -1594,244 +1592,111 @@ def clear_db():
     else:
         print("Database clear operation cancelled.")
 
-@app.route('/folders', methods=['GET'])
-@login_required
-async def get_folders():
-    async with get_session() as session:
-        result = await session.execute(select(Folder))
-        folders = result.scalars().all()
-        return jsonify([folder.title for folder in folders])
 
-@app.route('/folders', methods=['POST'])
-@login_required
-async def create_folder():
-    data = await request.get_json()
-    title = data.get('title')
-    
-    async with get_session() as session:
-        new_folder = Folder(title=title)
-        session.add(new_folder)
-        await session.commit()
-        return jsonify({"message": "Folder created successfully"}), 201
+#----------------- Begining of conversation management
 
-@app.route('/folders/<int:folder_id>/conversations', methods=['GET'])
-@login_required
-async def get_folder_conversations(folder_id):
-    async with get_session() as session:
-        result = await session.execute(
-            select(Conversation).filter_by(folder_id=folder_id)
-        )
-        conversations = result.scalars().all()
-        return jsonify([conversation.title for conversation in conversations])
 
-@app.route('/folders/<int:folder_id>/conversations', methods=['POST'])
-@login_required
-async def create_conversation_in_folder(folder_id):
-    data = await request.get_json()
-    title = data.get('title')
-    
-    async with get_session() as session:
-        # First check if folder exists
-        folder_result = await session.execute(
-            select(Folder).filter_by(id=folder_id)
-        )
-        folder = folder_result.scalar_one_or_none()
-        
-        if not folder:
-            return jsonify({"error": "Folder not found"}), 404
-            
-        new_conversation = Conversation(
-            title=title,
-            folder_id=folder_id,
-            user_id=current_user.id
-        )
-        session.add(new_conversation)
-        await session.commit()
-        return jsonify({"message": "Conversation created successfully"}), 201
 
 # Fetch all conversations from the database for listing in the left sidebar
 @app.route('/api/conversations', methods=['GET'])
 @login_required
 async def get_conversations():
     try:
-        # Get pagination parameters from request
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
-        
-        # Convert current_user.auth_id to integer
         user_id = int(current_user.auth_id)
-        
-        async with get_session() as session:
-            # Get total count using a subquery
-            count_query = select(func.count()).select_from(
-                select(Conversation)
-                .filter(Conversation.user_id == user_id)
-                .subquery()
-            )
-            count_result = await session.execute(count_query)
-            total_count = count_result.scalar()
-            
-            # Build paginated query
-            query = (
-                select(Conversation)
-                .filter(Conversation.user_id == user_id)
-                .order_by(Conversation.updated_at.desc())
-                .offset((page - 1) * per_page)
-                .limit(per_page)
-            )
-            
-            # Execute the query
-            result = await session.execute(query)
-            conversations = result.scalars().all()
-            
-            # Convert to list of dictionaries
-            conversations_dict = [{
-                "id": c.id, 
-                "title": c.title,
-                "model_name": c.model_name,
-                "token_count": c.token_count,
-                "updated_at": c.updated_at.isoformat() if c.updated_at else None,
-                "temperature": c.temperature
-            } for c in conversations]
-            
-            return jsonify({
-                "conversations": conversations_dict,
-                "total": total_count,
-                "page": page,
-                "per_page": per_page,
-                "total_pages": math.ceil(total_count / per_page)
-            })
-            
+        result = await conversation_orchestrator.get_conversations(user_id, page, per_page)
+        return jsonify(result)
     except Exception as e:
         app.logger.error(f"Error fetching conversations: {str(e)}")
         app.logger.exception("Full traceback:")
         return jsonify({'error': 'Error fetching conversations'}), 500
 
+
 # Fetch a specific conversation from the database to display in the chat interface
 @app.route('/conversations/<int:conversation_id>', methods=['GET'])
 @login_required
 async def get_conversation(conversation_id):
-    async with get_session() as session:
-        # Build and execute query
-        result = await session.execute(
-            select(Conversation).filter_by(id=conversation_id)
-        )
-        conversation = result.scalar_one_or_none()
-        
-        if conversation is None:
-            return jsonify({'error': 'Conversation not found'}), 404
+    conversation_dict = await conversation_orchestrator.get_conversation_dict(conversation_id)
+    if conversation_dict is None:
+        return jsonify({'error': 'Conversation not found'}), 404
+    return jsonify(conversation_dict)
 
-        # Convert the Conversation object into a dictionary
-        conversation_dict = {
-            "id": conversation.id,
-            "title": conversation.title,
-            "history": safe_json_loads(conversation.history, default=[]),
-            "token_count": conversation.token_count,
-            "total_tokens": conversation.token_count,
-            "model_name": conversation.model_name,
-            "temperature": conversation.temperature,
-            "vector_search_results": safe_json_loads(conversation.vector_search_results),
-            "generated_search_queries": safe_json_loads(conversation.generated_search_queries),
-            "web_search_results": safe_json_loads(conversation.web_search_results),
-            "created_at": conversation.created_at.isoformat() if conversation.created_at else None,
-            "updated_at": conversation.updated_at.isoformat() if conversation.updated_at else None,
-            "sentiment": conversation.sentiment,
-            "tags": conversation.tags,
-            "language": conversation.language,
-            "status": conversation.status,
-            "rating": conversation.rating,
-            "confidence": conversation.confidence,
-            "intent": conversation.intent,
-            "entities": safe_json_loads(conversation.entities),
-            "prompt_template": conversation.prompt_template
-        }
-        return jsonify(conversation_dict)
 
 @app.route('/c/<int:conversation_id>')
 @login_required
 async def show_conversation(conversation_id):
-    print(f"Attempting to load conversation {conversation_id}")  # Log the attempt
-    
-    async with get_session() as session:
-        # Use an async query (select) instead of .query
-        result = await session.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
-        conversation = result.scalar_one_or_none()
-        
-        if not conversation:
-            print(f"No conversation found for ID {conversation_id}")
-            # You can render 404 or redirect:
-            # return await render_template('404.html'), 404
-            return redirect(url_for('home'))
-        
-        # Render the chat interface passing conversation ID
-        return await render_template('chat.html', conversation_id=conversation.id)
+    conversation = await conversation_orchestrator.get_conversation(conversation_id)
+    if not conversation:
+        print(f"No conversation found for ID {conversation_id}")
+        return redirect(url_for('home'))
+    return await render_template('chat.html', conversation_id=conversation.id)
 
 
 @app.route('/api/conversations/<int:conversation_id>/update_title', methods=['POST'])
 @login_required
 async def update_conversation_title(conversation_id):
     try:
-        async with get_session() as db_session:
-            # Fetch the conversation by ID
-            result = await db_session.execute(
-                select(Conversation).filter_by(id=conversation_id)
-            )
-            conversation = result.scalar_one_or_none()
-            
-            if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
-            
-            # Get the new title from request data
-            request_data = await request.get_json()
-            new_title = request_data.get('title')
-            if not new_title:
-                return jsonify({"error": "New title is required"}), 400
-            
-            # Update title and updated_at with timezone-naive datetime
-            conversation.title = new_title
-            conversation.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-            
-            try:
-                await db_session.commit()
-                return jsonify({
-                    "success": True,
-                    "message": "Title updated successfully",
-                    "title": new_title
-                }), 200
-            except Exception as db_error:
-                await db_session.rollback()
-                app.logger.error(f"Database error updating title: {str(db_error)}")
-                return jsonify({"error": "Failed to update title"}), 500
-
+        request_data = await request.get_json()
+        new_title = request_data.get('title')
+        if not new_title:
+            return jsonify({"error": "New title is required"}), 400
+        conversation = await conversation_orchestrator.update_title(conversation_id, new_title)
+        if not conversation:
+            return jsonify({"error": "Conversation not found"}), 404
+        return jsonify({
+            "success": True,
+            "message": "Title updated successfully",
+            "title": new_title
+        }), 200
     except Exception as e:
         app.logger.error(f"Error in update_conversation_title: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/conversations/<int:conversation_id>', methods=['DELETE'])
 @login_required
 async def delete_conversation(conversation_id):
     try:
-        async with get_session() as session:
-            # Fetch the conversation by ID
-            result = await session.execute(
-                select(Conversation).filter_by(id=conversation_id)
-            )
-            conversation = result.scalar_one_or_none()
-            
-            if not conversation:
-                return jsonify({"error": "Conversation not found"}), 404
-            
-            # Delete the conversation
-            await session.delete(conversation)
-            await session.commit()
-
-            return jsonify({"message": "Conversation deleted successfully"}), 200
-
+        success = await conversation_orchestrator.delete_conversation(conversation_id)
+        if not success:
+            return jsonify({"error": "Conversation not found"}), 404
+        return jsonify({"message": "Conversation deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
 
+@app.route('/folders', methods=['GET'])
+@login_required
+async def get_folders():
+    folders = await conversation_orchestrator.get_folders()
+    return jsonify(folders)
+
+@app.route('/folders', methods=['POST'])
+@login_required
+async def create_folder():
+    data = await request.get_json()
+    title = data.get('title')
+    folder = await conversation_orchestrator.create_folder(title)
+    return jsonify({"message": "Folder created successfully"}), 201
+
+@app.route('/folders/<int:folder_id>/conversations', methods=['GET'])
+@login_required
+async def get_folder_conversations(folder_id):
+    conversations = await conversation_orchestrator.get_folder_conversations(folder_id)
+    return jsonify(conversations)
+
+@app.route('/folders/<int:folder_id>/conversations', methods=['POST'])
+@login_required
+async def create_conversation_in_folder(folder_id):
+    data = await request.get_json()
+    title = data.get('title')
+    conversation = await conversation_orchestrator.create_conversation(title, folder_id, current_user.id)
+    if conversation is None:
+        return jsonify({"error": "Folder not found"}), 404
+    return jsonify({"message": "Conversation created successfully"}), 201
+
+# End of conversation-related routes
 
 @app.route('/')
 @login_required
