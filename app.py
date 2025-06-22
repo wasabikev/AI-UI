@@ -140,7 +140,8 @@ QuartSchema(app)
 from orchestration.conversation import ConversationOrchestrator
 conversation_orchestrator = ConversationOrchestrator(app.logger)
 
-
+from orchestration.system_message_orchestrator import SystemMessageOrchestrator
+system_message_orchestrator = SystemMessageOrchestrator(app.logger)
 
 # Initialize LLMWhisperer client
 from unstract.llmwhisperer.client import LLMWhispererClient
@@ -1091,6 +1092,8 @@ async def get_files(system_message_id):
 def health_check():
     return 'OK', 200
 
+#----------------- Website Scaper Management
+
 @app.route('/get-website/<int:website_id>', methods=['GET'])
 @login_required
 async def get_website(website_id):
@@ -1113,81 +1116,13 @@ async def get_website(website_id):
         app.logger.error(f"Exception occurred: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/test-website', methods=['GET'])
-@login_required
-def test_website():
-    return jsonify({'message': 'Route is working'}), 200
-
-@app.route('/index-website', methods=['POST'])
-@login_required
-def index_website():
-    data = request.get_json()
-    app.logger.debug(f"Received indexing request with data: {data}")
-    url = data.get('url')
-    if not url:
-        app.logger.error("URL is missing from request data")
-        return jsonify({'success': False, 'message': 'URL is required'}), 400
-
-    allowed_domain = data.get('allowed_domain', '')
-    custom_settings = data.get('custom_settings', {})
-
-    # Run Scrapy spider
-    process = subprocess.Popen(
-        ['scrapy', 'runspider', 'webscraper/spiders/flexible_spider.py',
-         '-a', f'url={url}', '-a', f'allowed_domain={allowed_domain}',
-         '-a', f'custom_settings={json.dumps(custom_settings)}'],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    stdout, stderr = process.communicate()
-
-    stdout_decoded = stdout.decode('utf-8', errors='replace')
-    stderr_decoded = stderr.decode('utf-8', errors='replace')
-    app.logger.debug("STDOUT: %s", stdout_decoded)
-    app.logger.debug("STDERR: %s", stderr_decoded)
-
-    if process.returncode != 0:
-        app.logger.error("Scraping failed with error: %s", stderr_decoded)
-        return jsonify({'success': False, 'message': 'Error during scraping', 'error': stderr_decoded}), 500
-
-    if stdout_decoded:
-        try:
-            scraped_content = json.loads(stdout_decoded)
-            if 'content' in scraped_content:
-                return jsonify({'success': True, 'message': 'Website indexed successfully', 'content': scraped_content['content']}), 200
-            else:
-                app.logger.error("Expected key 'content' not found in JSON output")
-                return jsonify({'success': False, 'message': 'Expected data not found in the scraped output'}), 500
-        except json.JSONDecodeError as e:
-            app.logger.error("Error decoding JSON from scraping output: %s", str(e))
-            return jsonify({'success': False, 'message': 'Invalid JSON data received', 'details': stdout_decoded}), 500
-    else:
-        app.logger.error("No data received from spider")
-        return jsonify({'success': False, 'message': 'No data received from spider'}), 500
 
 @app.route('/scrape', methods=['POST'])
 @login_required
-def scrape():
-    data = request.get_json()
-    url = data.get('url')
-    allowed_domain = data.get('allowed_domain', '')
+async def scrape():
+    # Placeholder for future integration with Firecrawl or similar AI-powered extractor
+    return jsonify({"success": False, "message": "Web scraping is not currently implemented. Future versions will support AI-powered content extraction."}), 501
 
-    command = [
-        'scrapy', 'runspider', 'webscraper/spiders/flexible_spider.py',
-        '-a', f'url={url}', '-a', f'allowed_domain={allowed_domain}'
-    ]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-
-    if process.returncode != 0:
-        app.logger.error(f"Spider error: {stderr.decode()}")
-        return jsonify({'error': 'Failed to scrape the website'}), 500
-
-    try:
-        result = json.loads(stdout.decode())
-        return jsonify({'data': result['content']}), 200
-    except json.JSONDecodeError:
-        app.logger.error("Failed to decode JSON from spider output")
-        return jsonify({'error': 'Failed to decode JSON from spider output'}), 500
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 @login_required
@@ -1238,7 +1173,6 @@ async def add_website():
             'website': new_website.to_dict()
         }), 201
 
-
 @app.route('/remove-website/<int:website_id>', methods=['DELETE'])
 @login_required
 async def remove_website(website_id):
@@ -1255,27 +1189,8 @@ async def remove_website(website_id):
         await session.commit()
         return jsonify({'success': True, 'message': 'Website removed successfully'}), 200
 
-@app.route('/reindex-website/<int:website_id>', methods=['POST'])
-@login_required
-async def reindex_website(website_id):
-    async with get_session() as session:
-        result = await session.execute(
-            select(Website).filter_by(id=website_id)
-        )
-        website = result.scalar_one_or_none()
-        
-        if not website:
-            return jsonify({'error': 'Website not found'}), 404
-            
-        website.indexed_at = datetime.now(timezone.utc)
-        website.indexing_status = 'In Progress'
-        await session.commit()
-        await session.refresh(website)
 
-        return jsonify({
-            'message': 'Re-indexing initiated',
-            'website': website.to_dict()
-        }), 200
+#----------------- End Website Scaper Management
 
 @app.route('/generate-image', methods=['POST'])
 @login_required
@@ -1328,40 +1243,6 @@ if anthropic.api_key is None:
     raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
 
-@app.route('/api/system-messages/<int:system_message_id>/add-website', methods=['POST'])
-@login_required
-async def add_website_to_system_message(system_message_id):
-    data = await request.get_json()
-    website_url = data.get('websiteURL')
-    
-    async with get_session() as session:
-        result = await session.execute(
-            select(SystemMessage).filter_by(id=system_message_id)
-        )
-        system_message = result.scalar_one_or_none()
-        
-        if not system_message:
-            return jsonify({'error': 'System message not found'}), 404
-            
-        if not system_message.source_config:
-            system_message.source_config = {'websites': []}
-        
-        system_message.source_config['websites'].append(website_url)
-        await session.commit()
-        
-        return jsonify({
-            'message': 'Website URL added successfully',
-            'source_config': system_message.source_config
-        }), 200
-
-# Default System Message configuration
-DEFAULT_SYSTEM_MESSAGE = {
-    "name": "Default System Message",
-    "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
-    "description": "Default entry for database",
-    "model_name": "gpt-3.5-turbo",
-    "temperature": 0.3
-}
 
 @app.route('/get-current-model', methods=['GET'])
 @login_required
@@ -1377,143 +1258,47 @@ async def get_current_model():
         else:
             return jsonify({'error': 'Default system message not found'}), 404
 
+#------------------ System Messages Management
+
+# Default System Message configuration
+DEFAULT_SYSTEM_MESSAGE = {
+    "name": "Default System Message",
+    "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
+    "description": "Default entry for database",
+    "model_name": "gpt-3.5-turbo",
+    "temperature": 0.3
+}
+
 @app.route('/system-messages', methods=['POST'])
 @login_required
 async def create_system_message():
-    try:
-        if not await current_user.check_admin():
-            return jsonify({'error': 'Unauthorized'}), 401
-
-        data = await request.get_json()
-        
-        async with get_session() as session:
-            # Create naive datetime from UTC time
-            current_time = datetime.now(timezone.utc).replace(tzinfo=None)
-            
-            new_system_message = SystemMessage(
-                name=data['name'],
-                content=data['content'],
-                description=data.get('description', ''),
-                model_name=data.get('model_name', ''),
-                temperature=data.get('temperature', 0.7),
-                created_by=current_user.id,
-                created_at=current_time,  # Use naive datetime
-                updated_at=current_time,  # Use naive datetime
-                enable_web_search=data.get('enable_web_search', False),
-                enable_time_sense=data.get('enable_time_sense', False)
-            )
-            
-            session.add(new_system_message)
-            try:
-                await session.commit()
-                await session.refresh(new_system_message)
-                return jsonify(new_system_message.to_dict()), 201
-            except Exception as db_error:
-                await session.rollback()
-                app.logger.error(f"Database error creating system message: {str(db_error)}")
-                raise
-
-    except Exception as e:
-        app.logger.error(f"Error in create_system_message: {str(e)}")
-        app.logger.exception("Full traceback:")
-        return jsonify({'error': str(e)}), 500
+    if not await current_user.check_admin():
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = await request.get_json()
+    result, status = await system_message_orchestrator.create(data, current_user)
+    return jsonify(result), status
 
 @app.route('/api/system_messages', methods=['GET'])
 @login_required
 async def get_system_messages():
-    try:
-        app.logger.info("Fetching system messages")
-        async with get_session() as session:
-            result = await session.execute(select(SystemMessage))
-            system_messages = result.scalars().all()
-            
-            # Add debug logging
-            app.logger.debug(f"Found {len(list(system_messages))} system messages")
-            
-            messages_list = [{
-                'id': message.id,
-                'name': message.name,
-                'content': message.content,
-                'description': message.description,
-                'model_name': message.model_name,
-                'temperature': message.temperature,
-                'enable_web_search': message.enable_web_search,
-                'enable_deep_search': message.enable_deep_search,
-                'enable_time_sense': message.enable_time_sense
-            } for message in system_messages]
-            
-            app.logger.info(f"Returning {len(messages_list)} system messages")
-            return jsonify(messages_list)
-    except Exception as e:
-        app.logger.error(f"Error in get_system_messages: {str(e)}")
-        app.logger.exception("Full traceback:")
-        return jsonify({'error': str(e)}), 500
-
-
+    result, status = await system_message_orchestrator.get_all()
+    return jsonify(result), status
 
 @app.route('/system-messages/<int:message_id>', methods=['PUT'])
 @login_required
 async def update_system_message(message_id):
-    try:
-        # Check admin status asynchronously
-        is_admin = await current_user.check_admin()
-        if not is_admin:
-            return jsonify({'error': 'Unauthorized'}), 401
-
-        async with get_session() as session:
-            result = await session.execute(
-                select(SystemMessage).filter_by(id=message_id)
-            )
-            system_message = result.scalar_one_or_none()
-            
-            if not system_message:
-                return jsonify({'error': 'System message not found'}), 404
-
-            data = await request.get_json()
-            
-            # Update fields
-            system_message.name = data.get('name', system_message.name)
-            system_message.content = data.get('content', system_message.content)
-            system_message.description = data.get('description', system_message.description)
-            system_message.model_name = data.get('model_name', system_message.model_name)
-            system_message.temperature = data.get('temperature', system_message.temperature)
-            system_message.enable_web_search = data.get('enable_web_search', system_message.enable_web_search)
-            system_message.enable_time_sense = data.get('enable_time_sense', system_message.enable_time_sense)
-            system_message.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-
-            try:
-                await session.commit()
-                app.logger.info(f"System message {message_id} updated successfully")
-                return jsonify(system_message.to_dict())
-            except Exception as db_error:
-                await session.rollback()
-                app.logger.error(f"Database error while updating system message: {str(db_error)}")
-                raise
-
-    except Exception as e:
-        app.logger.error(f"Error updating system message: {str(e)}")
-        app.logger.exception("Full traceback:")
-        return jsonify({'error': str(e)}), 500
+    data = await request.get_json()
+    result, status = await system_message_orchestrator.update(message_id, data, current_user)
+    return jsonify(result), status
 
 @app.route('/system-messages/<int:message_id>', methods=['DELETE'])
 @login_required
 async def delete_system_message(message_id):
-    if not await current_user.check_admin():
-        return jsonify({'error': 'Unauthorized'}), 401
+    result, status = await system_message_orchestrator.delete(message_id, current_user)
+    return jsonify(result), status
 
-    async with get_session() as session:
-        result = await session.execute(
-            select(SystemMessage).filter_by(id=message_id)
-        )
-        system_message = result.scalar_one_or_none()
-        
-        if not system_message:
-            return jsonify({'error': 'System message not found'}), 404
 
-        await session.delete(system_message)
-        await session.commit()
-        return jsonify({'message': 'System message deleted successfully'})
-
+#----------------- End System Messages Management
 
 @app.route('/trigger-flash')
 def trigger_flash():
@@ -1605,7 +1390,6 @@ def clear_db():
 
 
 #----------------- Begining of conversation management
-
 
 
 # Fetch all conversations from the database for listing in the left sidebar

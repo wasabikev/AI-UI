@@ -2428,7 +2428,7 @@ document.getElementById('delete-system-message-btn').addEventListener('click', f
             this.textContent = 'Deleting...';
 
             $.ajax({
-                url: `/api/system-messages/${messageId}`,
+                url: `/system-messages/${messageId}`,
                 method: 'DELETE',
                 // Add CSRF token if needed: headers: { 'X-CSRFToken': getCsrfToken() },
                 success: function(response) {
