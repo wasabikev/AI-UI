@@ -520,7 +520,7 @@ async function uploadContextFile(file, placeholderId) {
         
         // Set up a promise to handle the XHR response
         const uploadPromise = new Promise((resolve, reject) => {
-            xhr.open('POST', '/upload-temp-file');
+            xhr.open('POST', '/api/session-attachments/upload');
             
             xhr.upload.addEventListener('progress', (event) => {
                 if (event.lengthComputable) {
@@ -597,7 +597,7 @@ async function uploadContextFile(file, placeholderId) {
                 placeholderBadge.remove();
                 
                 // Store context file info
-                attachedContextFiles.set(result.fileId, {
+                attachedContextFiles.set(result.attachmentId, {
                     name: result.filename,
                     size: result.size,
                     type: result.mime_type,
@@ -611,7 +611,7 @@ async function uploadContextFile(file, placeholderId) {
         } else {
             console.log('Placeholder badge not found, storing file info directly');
             // If placeholder is gone, just store the file info
-            attachedContextFiles.set(result.fileId, {
+            attachedContextFiles.set(result.attachmentId, {
                 name: result.filename,
                 size: result.size,
                 type: result.mime_type,
@@ -634,9 +634,9 @@ async function uploadContextFile(file, placeholderId) {
     }
 }
 
-async function removeContextFile(fileId) {
+async function removeContextFile(attachmentId) {
     try {
-        const response = await fetch(`/remove-temp-file/${fileId}`, { // Endpoint for temporary context files
+        const response = await fetch(`/api/session-attachments/${attachmentId}/remove`, { // Updated endpoint for session attachments
             method: 'DELETE'
         });
 
@@ -653,7 +653,7 @@ async function removeContextFile(fileId) {
         const result = await response.json();
 
         if (result.success) {
-            attachedContextFiles.delete(fileId);
+            attachedContextFiles.delete(attachmentId);
             updateContextFilesPreview(); // Update preview pills
         } else {
             throw new Error(result.error || 'Removal failed');
@@ -687,15 +687,15 @@ function updateContextFilesPreview() {
     });
 
     // Add all current attached files as permanent badges
-    attachedContextFiles.forEach((fileInfo, fileId) => {
+    attachedContextFiles.forEach((fileInfo, attachmentId) => {
         const pill = document.createElement('span');
-        pill.id = `context-file-${fileId}`;
+        pill.id = `context-file-${attachmentId}`;
         pill.className = 'badge bg-info d-inline-flex align-items-center me-1';
         pill.innerHTML = `
             <i class="fa fa-paperclip me-1"></i>
             ${escapeHtml(fileInfo.name)} (${fileInfo.tokenCount ? fileInfo.tokenCount + ' tokens' : '...'})
             <button type="button" class="btn-close btn-close-white ms-2"
-                    onclick="removeContextFile('${fileId}')"
+                    onclick="removeContextFile('${attachmentId}')"
                     style="font-size: 0.5em;">
             </button>
         `;
@@ -707,7 +707,7 @@ function updateContextFilesPreview() {
 
 function getAttachedContextFilesContent() {
     let content = '';
-    for (const [fileId, fileInfo] of attachedContextFiles) {
+    for (const [attachmentId, fileInfo] of attachedContextFiles) {
         if (fileInfo.content) {
             content += `\n\nContent from attached file "${fileInfo.name}":\n${fileInfo.content}`;
         }
@@ -734,6 +734,7 @@ function setSendButtonState(isEnabled, message = null) {
 
 
 // --- End Context File Attachment Functions ---
+
 
 
 // --- Shared Upload Status/Progress Functions ---

@@ -15,7 +15,7 @@ class ChatOrchestrator:
         status_manager,
         embedding_store,
         file_processor,
-        temp_file_handler,
+        session_attachment_handler,
         get_session,
         Conversation,
         SystemMessage,
@@ -33,7 +33,7 @@ class ChatOrchestrator:
         self.status_manager = status_manager
         self.embedding_store = embedding_store
         self.file_processor = file_processor
-        self.temp_file_handler = temp_file_handler
+        self.session_attachment_handler = session_attachment_handler
         self.get_session = get_session
         self.Conversation = Conversation
         self.SystemMessage = SystemMessage
@@ -108,59 +108,53 @@ class ChatOrchestrator:
 
             system_message = next((msg for msg in messages if msg['role'] == 'system'), None)
 
-            # --- Context File Injection (Before Time Context) ---
+            # --- Session Attachment Injection (Before Time Context) ---
             original_user_query_text = messages[-1]['content']
             user_query_for_semantic_search = original_user_query_text
-            injected_file_content = ""
+            injected_attachment_content = ""
             context_block_regex = r"\n*--- Attached Files Context ---[\s\S]*?--- End Attached Files Context ---\n*"
 
             if file_ids:
-                self.logger.info(f"[{session_id}] Found {len(file_ids)} temporary context file IDs. Processing content.")
+                self.logger.info(f"[{session_id}] Found {len(file_ids)} session attachment IDs. Processing content.")
                 await self.status_manager.update_status(
-                    message="Processing attached files...",
+                    message="Processing session attachments...",
                     session_id=session_id
                 )
                 retrieved_contents = []
                 filenames_processed = []
-                for file_id in file_ids:
-                    self.logger.debug(f"[{session_id}] Attempting to get content for file ID: {file_id}")
-                    content = await self.temp_file_handler.get_temp_file_content(
-                        file_id=file_id,
-                        user_id=current_user.id,
-                        system_message_id=system_message_id,
-                        session_id=session_id
-                    )
+                for attachment_id in file_ids:
+                    self.logger.debug(f"[{session_id}] Attempting to get content for attachment ID: {attachment_id}")
+                    content, filename, _ = await self.session_attachment_handler.get_attachment_content(attachment_id, current_user.id)
                     if content:
-                        filename_placeholder = f"File ID {file_id[:8]}"
-                        try:
-                            temp_subfolder = os.path.join(self.temp_file_handler.temp_folder, file_id)
-                            import aiofiles.os as aio_os
-                            async for entry in aio_os.scandir(temp_subfolder):
-                                if entry.is_file():
-                                    filename_placeholder = entry.name
-                                    break
-                        except Exception:
-                            pass
+                        filename_placeholder = filename or f"Attachment ID {attachment_id[:8]}"
                         filenames_processed.append(filename_placeholder)
-                        retrieved_contents.append(f"\n--- Content from {filename_placeholder} ---\n{content}\n--- End Content from {filename_placeholder} ---")
-                        self.logger.info(f"[{session_id}] Successfully retrieved content for file: {filename_placeholder} (ID: {file_id})")
+                        # If content is bytes, decode as utf-8 with fallback
+                        if isinstance(content, bytes):
+                            try:
+                                content = content.decode('utf-8')
+                            except Exception:
+                                content = content.decode('latin1', errors='replace')
+                        retrieved_contents.append(
+                            f"\n--- Content from {filename_placeholder} ---\n{content}\n--- End Content from {filename_placeholder} ---"
+                        )
+                        self.logger.info(f"[{session_id}] Successfully retrieved content for attachment: {filename_placeholder} (ID: {attachment_id})")
                     else:
-                        self.logger.warning(f"[{session_id}] Could not retrieve content for temporary file ID: {file_id}")
+                        self.logger.warning(f"[{session_id}] Could not retrieve content for session attachment ID: {attachment_id}")
 
                 if retrieved_contents:
-                    injected_file_content = "\n".join(retrieved_contents)
+                    injected_attachment_content = "\n".join(retrieved_contents)
                     user_text_without_block = re.sub(context_block_regex, "", original_user_query_text).strip()
                     self.logger.debug(f"[{session_id}] User text after removing placeholder block: '{user_text_without_block[:100]}...'")
-                    messages[-1]['content'] = (user_text_without_block + "\n\n" + injected_file_content).strip()
-                    self.logger.info(f"[{session_id}] Injected content from {len(retrieved_contents)} files into user message for AI.")
+                    messages[-1]['content'] = (user_text_without_block + "\n\n" + injected_attachment_content).strip()
+                    self.logger.info(f"[{session_id}] Injected content from {len(retrieved_contents)} session attachments into user message for AI.")
                     self.logger.debug(f"[{session_id}] Updated user message content for AI (truncated): {messages[-1]['content'][:200]}...")
                     user_query_for_semantic_search = user_text_without_block
                 else:
-                    self.logger.warning(f"[{session_id}] No content retrieved for provided file IDs. User message unchanged.")
+                    self.logger.warning(f"[{session_id}] No content retrieved for provided attachment IDs. User message unchanged.")
                     user_query_for_semantic_search = re.sub(context_block_regex, "", original_user_query_text).strip()
             else:
                 user_query_for_semantic_search = re.sub(context_block_regex, "", original_user_query_text).strip()
-            # --- End Context File Injection ---
+            # --- End Session Attachment Injection ---
 
             # --- Time Context ---
             time_context_start_time = time.time()

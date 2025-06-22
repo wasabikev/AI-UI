@@ -46,6 +46,12 @@ class FileUtils:
     def get_web_search_results_folder(self, user_id: int, system_message_id: int) -> Path:
         """Get the web search results folder for a specific system message."""
         return self.get_system_message_folder(user_id, system_message_id) / 'web_search_results'
+    
+    @lru_cache(maxsize=256)
+    def get_session_attachment_folder(self, user_id: int) -> Path:
+        base = Path(self.app.config['BASE_UPLOAD_FOLDER']) / str(user_id) / "session_attachments"
+        base.mkdir(parents=True, exist_ok=True)
+        return base
 
     async def ensure_folder_exists(self, folder_path: Union[Path, str]) -> None:
         """Ensure a folder exists, creating it if necessary."""
@@ -169,3 +175,5 @@ ALLOWED_EXTENSIONS = {
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+

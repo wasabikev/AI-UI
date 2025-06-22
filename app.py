@@ -106,7 +106,8 @@ from utils.time_utils import clean_and_update_time_context, generate_time_contex
 
 from orchestration.file_processing import FileProcessor
 from orchestration.status import StatusUpdateManager, SessionStatus
-from orchestration.temp_file_handler import TemporaryFileHandler
+
+from orchestration.session_attachment_handler import SessionAttachmentHandler
 
 # Local imports - Web Search
 from orchestration.web_search_orchestrator import perform_web_search_process
@@ -402,16 +403,7 @@ try:
 except Exception as e:
     app.logger.error(f"Error during upload folder configuration: {str(e)}")
 
-# Needed for file uploads associated with conversations to review total token counts (not semantic search)
-TEMP_UPLOAD_FOLDER = os.path.join(app.root_path, 'temp_uploads')
-app.config['TEMP_UPLOAD_FOLDER'] = TEMP_UPLOAD_FOLDER
-# Ensure the temporary folder exists
-os.makedirs(TEMP_UPLOAD_FOLDER, exist_ok=True)
 
-
-
-# Initialize temporary file handler
-temp_file_handler = None  # Initialize later in startup
 
 # Initialize file processing
 embedding_store = None
@@ -422,38 +414,38 @@ file_processor = None
 
 @app.before_serving
 async def startup():
-    global embedding_store, file_processor, temp_file_handler, vectordb_file_manager
-    
+    global embedding_store, file_processor, session_attachment_handler, vectordb_file_manager, chat_orchestrator
+
     try:
         app.logger.info("Initializing application components")
-        
-        # Initialize database
-        await init_db()
-        
-        # Initialize EmbeddingStore
-        embedding_store = EmbeddingStore(db_url, logger=app.logger)
-        await embedding_store.initialize()
-        
-        # Initialize FileProcessor
-        file_processor = FileProcessor(embedding_store, app)
-        # Initialize TemporaryFileHandler *after* file_processor is ready
-        temp_file_handler = TemporaryFileHandler(
-            temp_folder=app.config['TEMP_UPLOAD_FOLDER'],
-            file_processor=file_processor
-        )
-        
-        # Initialize FileUtils and verify upload folder
+
+        # 1. Initialize FileUtils and verify upload folder FIRST!
         app.file_utils = FileUtils(app)
         base_upload_folder = Path(app.config['BASE_UPLOAD_FOLDER'])
         await app.file_utils.ensure_folder_exists(base_upload_folder)
 
-        # ---- Instantiate ChatOrchestrator ----
-        global chat_orchestrator
+        # 2. Initialize database
+        await init_db()
+
+        # 3. Initialize EmbeddingStore
+        embedding_store = EmbeddingStore(db_url, logger=app.logger)
+        await embedding_store.initialize()
+
+        # 4. Initialize FileProcessor
+        file_processor = FileProcessor(embedding_store, app)
+
+        # 5. Initialize SessionAttachmentHandler (needs file_utils and file_processor)
+        session_attachment_handler = SessionAttachmentHandler(
+            file_utils=app.file_utils,
+            file_processor=file_processor
+        )
+
+        # 6. Instantiate ChatOrchestrator
         chat_orchestrator = ChatOrchestrator(
             status_manager=status_manager,
             embedding_store=embedding_store,
             file_processor=file_processor,
-            temp_file_handler=temp_file_handler,
+            session_attachment_handler=session_attachment_handler,
             get_session=get_session,
             Conversation=Conversation,
             SystemMessage=SystemMessage,
@@ -468,19 +460,21 @@ async def startup():
             file_utils=app.file_utils,
             logger=app.logger,
         )
-        # ---- Instantiate VectorDBFileManager ----
+
+        # 7. Instantiate VectorDBFileManager
         vectordb_file_manager = VectorDBFileManager(
             file_processor=file_processor,
             embedding_store=embedding_store,
             file_utils=app.file_utils,
             logger=app.logger
         )       
-        
+
         app.logger.info("Application initialization completed successfully")
-            
+
     except Exception as e:
         app.logger.error("Application startup failed", exc_info=True)
         raise
+
 
 @app.after_serving
 async def shutdown():
@@ -966,12 +960,17 @@ async def check_directories():
     
     return jsonify(directories)
 
-@app.route('/upload-temp-file', methods=['POST'])
+#------------------------- Session Attachment Management
+
+# Initialize session attachment handler
+session_attachment_handler = None  
+
+@app.route('/api/session-attachments/upload', methods=['POST'])
 @login_required
-async def upload_temp_file():
+async def upload_session_attachment():
     """
-    Handle temporary file uploads for chat context.
-    Process the file immediately and return extracted text and metadata.
+    Handle session attachment uploads for chat context.
+    Process the attachment immediately and return extracted text and metadata.
     """
     try:
         files = await request.files
@@ -985,25 +984,25 @@ async def upload_temp_file():
         if not allowed_file(file.filename):
             return jsonify({'success': False, 'error': 'File type not allowed'}), 400
 
-        # Save the file temporarily using the existing handler
-        save_result = await temp_file_handler.save_temp_file(file)
+        # Save the session attachment using the handler
+        save_result = await session_attachment_handler.save_attachment(file, current_user.id)
         if not save_result.get('success'):
-            return jsonify({'success': False, 'error': 'Failed to save file'}), 500
+            return jsonify({'success': False, 'error': 'Failed to save attachment'}), 500
 
-        file_id = save_result['fileId']
+        attachment_id = save_result['attachmentId']
         filename = save_result['filename']
         file_path = save_result['file_path']
         file_size = save_result['size']
         mime_type = save_result['mime_type']
 
-        # Process the file immediately using FileProcessor
+        # Process the attachment immediately using FileProcessor
         start_time = time.time()
-        # Use the current user and a dummy system_message_id (0) for context files
+        # Use the current user and a dummy system_message_id (0) for session attachments
         extracted_text, _ = await file_processor.llm_whisper.process_file(
             file_path=file_path,
             user_id=current_user.id,
             system_message_id=0,
-            file_id=file_id
+            file_id=attachment_id
         )
         processing_time = time.time() - start_time
 
@@ -1020,7 +1019,7 @@ async def upload_temp_file():
 
         return jsonify({
             'success': True,
-            'fileId': file_id,
+            'attachmentId': attachment_id,
             'filename': filename,
             'size': file_size,
             'mime_type': mime_type,
@@ -1030,25 +1029,27 @@ async def upload_temp_file():
         })
 
     except Exception as e:
-        app.logger.error(f"Error processing file: {str(e)}")
-        return jsonify({'success': False, 'error': f'Error processing file: {str(e)}'}), 500
+        app.logger.error(f"Error processing session attachment: {str(e)}")
+        return jsonify({'success': False, 'error': f'Error processing attachment: {str(e)}'}), 500
 
-@app.route('/remove-temp-file/<file_id>', methods=['DELETE'])
+@app.route('/api/session-attachments/<attachment_id>/remove', methods=['DELETE'])
 @login_required
-async def remove_temp_file(file_id):
-    """Remove a temporary file"""
+async def remove_session_attachment(attachment_id):
+    """Remove a session attachment by its ID."""
     try:
-        success = await temp_file_handler.remove_temp_file(file_id)
+        success = await session_attachment_handler.remove_attachment(attachment_id, current_user.id)
         return jsonify({
             'success': success,
-            'message': 'File removed' if success else 'File not found'
+            'message': 'Attachment removed' if success else 'Attachment not found'
         })
     except Exception as e:
-        app.logger.error(f"Error removing temporary file: {str(e)}")
+        app.logger.error(f"Error removing session attachment: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
+
+#------------------------- End Session Attachment Management
 
 
 
@@ -1621,10 +1622,6 @@ async def chat():
     if isinstance(result, tuple):
         return jsonify(result[0]), result[1]
     return jsonify(result)
-
-
-
-
 
 
 @app.route('/get_active_conversation', methods=['GET'])
