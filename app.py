@@ -121,6 +121,9 @@ from orchestration.vector_search_utils import VectorSearchUtils
 from orchestration.chat_orchestrator import ChatOrchestrator
 chat_orchestrator = None
 
+from orchestration.web_scraper_orchestrator import WebScraperOrchestrator
+
+
 
 from orchestration.llm_router import LLMRouter, count_tokens
 
@@ -414,7 +417,7 @@ file_processor = None
 
 @app.before_serving
 async def startup():
-    global embedding_store, file_processor, session_attachment_handler, vectordb_file_manager, chat_orchestrator
+    global embedding_store, file_processor, session_attachment_handler, vectordb_file_manager, chat_orchestrator, web_scraper_orchestrator
 
     try:
         app.logger.info("Initializing application components")
@@ -467,7 +470,15 @@ async def startup():
             embedding_store=embedding_store,
             file_utils=app.file_utils,
             logger=app.logger
-        )       
+        )
+
+        # 8. Instantiate WebSraperOrchestrator
+        web_scraper_orchestrator = WebScraperOrchestrator(
+            logger=app.logger,
+            get_session=get_session,
+            SystemMessage=SystemMessage,
+            Website=Website
+)     
 
         app.logger.info("Application initialization completed successfully")
 
@@ -1141,54 +1152,14 @@ async def add_website():
     data = await request.get_json()
     url = data.get('url')
     system_message_id = data.get('system_message_id')
-
-    if not url:
-        return jsonify({'success': False, 'message': 'URL is required'}), 400
-
-    if not system_message_id:
-        return jsonify({'success': False, 'message': 'System message ID is required'}), 400
-
-    if not url.startswith('http://') and not url.startswith('https://'):
-        return jsonify({'success': False, 'message': 'Invalid URL format'}), 400
-
-    async with get_session() as session:
-        # Verify system message exists
-        system_message_result = await session.execute(
-            select(SystemMessage).filter_by(id=system_message_id)
-        )
-        if not system_message_result.scalar_one_or_none():
-            return jsonify({'success': False, 'message': 'System message not found'}), 404
-
-        new_website = Website(
-            url=url,
-            system_message_id=system_message_id,
-            indexing_status='pending'
-        )
-        session.add(new_website)
-        await session.commit()
-        await session.refresh(new_website)
-
-        return jsonify({
-            'success': True,
-            'message': 'Website added successfully',
-            'website': new_website.to_dict()
-        }), 201
+    result, status = await web_scraper_orchestrator.add_website(url, system_message_id, current_user)
+    return jsonify(result), status
 
 @app.route('/remove-website/<int:website_id>', methods=['DELETE'])
 @login_required
 async def remove_website(website_id):
-    async with get_session() as session:
-        result = await session.execute(
-            select(Website).filter_by(id=website_id)
-        )
-        website = result.scalar_one_or_none()
-        
-        if not website:
-            return jsonify({'success': False, 'message': 'Website not found'}), 404
-            
-        await session.delete(website)
-        await session.commit()
-        return jsonify({'success': True, 'message': 'Website removed successfully'}), 200
+    result, status = await web_scraper_orchestrator.remove_website(website_id, current_user)
+    return jsonify(result), status
 
 
 #----------------- End Website Scaper Management
