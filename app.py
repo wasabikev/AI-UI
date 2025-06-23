@@ -123,6 +123,7 @@ chat_orchestrator = None
 
 from orchestration.web_scraper_orchestrator import WebScraperOrchestrator
 
+from utils.generate_title_utils import generate_summary_title
 
 
 from orchestration.llm_router import LLMRouter, count_tokens
@@ -452,7 +453,7 @@ async def startup():
             get_session=get_session,
             Conversation=Conversation,
             SystemMessage=SystemMessage,
-            generate_summary=generate_summary,
+            generate_summary_title=generate_summary_title,
             count_tokens=count_tokens,
             get_response_from_model=llm_router.get_response_from_model,
             perform_web_search_process=perform_web_search_process,
@@ -1215,7 +1216,6 @@ if anthropic.api_key is None:
     raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
 
-
 @app.route('/get-current-model', methods=['GET'])
 @login_required
 async def get_current_model():
@@ -1229,6 +1229,11 @@ async def get_current_model():
             return jsonify({'model_name': default_message.model_name})
         else:
             return jsonify({'error': 'Default system message not found'}), 404
+        
+@app.route('/trigger-flash')
+def trigger_flash():
+    flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
+    return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
 
 #------------------ System Messages Management
 
@@ -1272,27 +1277,6 @@ async def delete_system_message(message_id):
 
 #----------------- End System Messages Management
 
-@app.route('/trigger-flash')
-def trigger_flash():
-    flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
-    return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
-
-async def get_conversation_by_id(conversation_id):
-    async with get_session() as session:
-        result = await session.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
-        conversation = result.scalar_one_or_none()
-        if conversation is None:
-            # mimic "get_or_404"
-            abort(404, description="Conversation not found")
-        return conversation
-    
-@app.route('/chat/<int:conversation_id>')
-@login_required
-async def chat_interface(conversation_id):
-    conversation = await get_conversation_by_id(conversation_id)
-    return await render_template('chat.html', conversation=conversation)
 
 #---------------------- Database management 
 
@@ -1360,10 +1344,33 @@ def clear_db():
     else:
         print("Database clear operation cancelled.")
 
+#----------------- End Database management
+
 
 #----------------- Begining of conversation management
 
+@app.route('/get_active_conversation', methods=['GET'])
+def get_active_conversation():
+    conversation_id = session.get('conversation_id')
+    return jsonify({'conversationId': conversation_id})
 
+@app.route('/chat/<int:conversation_id>')
+@login_required
+async def chat_interface(conversation_id):
+    conversation = await get_conversation_by_id(conversation_id)
+    return await render_template('chat.html', conversation=conversation)
+
+async def get_conversation_by_id(conversation_id):
+    async with get_session() as session:
+        result = await session.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        )
+        conversation = result.scalar_one_or_none()
+        if conversation is None:
+            # mimic "get_or_404"
+            abort(404, description="Conversation not found")
+        return conversation
+    
 # Fetch all conversations from the database for listing in the left sidebar
 @app.route('/api/conversations', methods=['GET'])
 @login_required
@@ -1472,6 +1479,9 @@ def reset_conversation():
 
 #-------------------------- End of conversation-related routes
 
+
+#-------------------------- Home route
+
 @app.route('/')
 @login_required
 async def home():
@@ -1494,45 +1504,13 @@ async def home():
         app.logger.error(f"Error in home route: {str(e)}")
         app.logger.exception("Full traceback:")
         return await render_template('error.html', error=str(e))
+    
+
 
 @app.route('/clear-session', methods=['POST'])
 def clear_session():
     session.clear()
     return jsonify({"message": "Session cleared"}), 200
-
-def estimate_token_count(text):
-    # Simplistic estimation. You may need a more accurate method.
-    return len(text.split())
-
-def generate_summary(messages):
-    # Use only the most recent messages or truncate to reduce token count
-    conversation_history = ' '.join([message['content'] for message in messages[-5:]])
-    
-    if estimate_token_count(conversation_history) > 4000:  # Adjust the limit as needed
-        conversation_history = conversation_history[:4000]  # Truncate to fit the token limit
-        app.logger.info("Conversation history truncated for summary generation")
-
-    summary_request_payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "Please create a very short (2-4 words) summary title for the following text:\n" + conversation_history}
-        ],
-        "max_tokens": 10,
-        "temperature": 0.5  # Adjust the temperature if needed
-    }
-
-    app.logger.info(f"Sending summary request to OpenAI for conversation title: {str(summary_request_payload)[:100]}")
-
-    try:
-        response = client.chat.completions.create(**summary_request_payload)
-        summary = response.choices[0].message.content.strip()
-        app.logger.info(f"Response from OpenAI for summary: {response}")
-        app.logger.info(f"Generated conversation summary: {summary}")
-    except Exception as e:
-        app.logger.error(f"Error in generate_summary: {e}")
-        summary = "Conversation Summary"  # Fallback title
-
-    return summary
 
 
 #-------------------------- Start of vector search-related routes
@@ -1595,14 +1573,10 @@ async def chat():
     return jsonify(result)
 
 
-@app.route('/get_active_conversation', methods=['GET'])
-def get_active_conversation():
-    conversation_id = session.get('conversation_id')
-    return jsonify({'conversationId': conversation_id})
+#-------------------------- End of chat-related routes
 
 
-
-# This has to be at the bottom of the file
+# This has to be at the bottom of the file!
 if __name__ == '__main__':
     import asyncio
     import platform

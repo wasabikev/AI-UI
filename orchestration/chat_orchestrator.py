@@ -19,7 +19,7 @@ class ChatOrchestrator:
         get_session,
         Conversation,
         SystemMessage,
-        generate_summary,
+        generate_summary_title,
         count_tokens,
         get_response_from_model,
         perform_web_search_process,
@@ -37,7 +37,7 @@ class ChatOrchestrator:
         self.get_session = get_session
         self.Conversation = Conversation
         self.SystemMessage = SystemMessage
-        self.generate_summary = generate_summary
+        self.generate_summary_title = generate_summary_title
         self.count_tokens = count_tokens
         self.get_response_from_model = get_response_from_model
         self.perform_web_search_process = perform_web_search_process
@@ -391,8 +391,9 @@ class ChatOrchestrator:
                             model_name=model_name
                         )
                         # Generate summary title (assume synchronous for now)
-                        conversation_title = self.generate_summary(messages)
+                        conversation_title = await self.generate_summary_title(messages, openai_client=self.client, logger=self.logger)
                         conversation.title = conversation_title
+
                         db_session.add(conversation)
                         self.logger.info(f'[{session_id}] Added new conversation with title: {conversation_title}')
                     else:
