@@ -1,3 +1,5 @@
+# orchestration/session_attachment_handler.py
+
 import os
 import uuid
 import aiofiles
@@ -101,28 +103,30 @@ class SessionAttachmentHandler:
             self.logger.error(f"Error removing session attachment {attachment_id} for user {user_id}: {e}")
             return False
 
-    async def get_attachment_content(self, attachment_id: str, user_id: int):
-        """
-        Retrieve the content of a session attachment for a specific user.
-
-        Args:
-            attachment_id (str): The UUID of the attachment.
-            user_id (int): The user's ID.
-
-        Returns:
-            tuple: (content, filename, mime_type) or (None, None, None) if not found.
-        """
+    async def get_attachment_content(self, attachment_id: str, user_id: int, system_message_id: int):
         try:
             folder = self.file_utils.get_session_attachment_folder(user_id)
             for file_path in folder.glob(f"{attachment_id}_*"):
                 filename = file_path.name.split("_", 1)[1]
                 mime_type, _ = mimetypes.guess_type(str(file_path))
-                async with aiofiles.open(file_path, 'rb') as f:
-                    content = await f.read()
-                self.logger.info(f"Retrieved content for session attachment: {file_path} for user {user_id}")
-                return content, filename, mime_type or 'application/octet-stream'
-            self.logger.warning(f"Session attachment not found for content retrieval: {attachment_id} (user {user_id})")
+
+                extracted_text = await self.file_processor.extract_text_from_file(
+                    str(file_path),
+                    user_id,
+                    system_message_id,
+                    attachment_id
+                )
+
+                if extracted_text:
+                    self.logger.info(f"Extracted text for session attachment: {file_path} for user {user_id}")
+                    return extracted_text, filename, mime_type
+                else:
+                    self.logger.error(f"Failed to extract text from {file_path}")
+                    return None, filename, mime_type
+
+            self.logger.warning(f"Session attachment not found: {attachment_id} (user {user_id})")
             return None, None, None
         except Exception as e:
             self.logger.error(f"Error retrieving session attachment {attachment_id} for user {user_id}: {e}")
             return None, None, None
+

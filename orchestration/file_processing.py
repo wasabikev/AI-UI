@@ -43,9 +43,21 @@ async def process_pdf(
     extracted_text, full_response = await llm_whisper.process_file(
         file_path, user_id, system_message_id, file_id
     )
+    llm_whisper.app.logger.error(f"Extracted text repr: {repr(extracted_text)}")
+    llm_whisper.app.logger.error(f"Extracted text length: {len(extracted_text) if extracted_text else 0}")
     if extracted_text is None:
-        raise ValueError("Failed to extract text from PDF")
+        llm_whisper.app.logger.error(f"LLMWhisperer full response: {full_response}")
+        # For attachments, allow empty string, but not None
+        extracted_text = ""
+    elif not extracted_text.strip():
+        llm_whisper.app.logger.warning(
+            f"Extracted text is empty or whitespace only for file {file_path}. "
+            f"repr: {repr(extracted_text)}"
+        )
+        # Allow empty/whitespace for session attachments
     return [Document(text=extracted_text, metadata={'file_id': str(file_id)})]
+
+
 
 async def process_text_file(
     executor: ThreadPoolExecutor,
@@ -248,6 +260,36 @@ class FileProcessor:
             self.app.logger.exception("Full traceback:")
             raise
 
+    async def extract_text_from_file(
+        self, 
+        file_path: str, 
+        user_id: int, 
+        system_message_id: int,
+        file_id: str
+    ) -> Optional[str]:
+        try:
+            self.app.logger.info(f"Extracting text from file: {file_path}")
+            
+            if file_path.lower().endswith('.pdf'):
+                self.app.logger.info("Processing PDF file")
+                documents = await process_pdf(
+                    self.llm_whisper, file_path, user_id, system_message_id, file_id
+                )
+            else:
+                self.app.logger.info("Processing non-PDF file")
+                documents = await process_text_file(self.executor, file_path, file_id)
+            
+            if documents and len(documents) > 0:
+                return documents[0].text
+            else:
+                self.app.logger.warning(f"No text extracted from file: {file_path}")
+                return None
+            
+        except Exception as e:
+            self.app.logger.error(f"Error extracting text from file: {str(e)}")
+            self.app.logger.exception("Full traceback:")
+            return None
+        
     async def query_index(
         self, 
         query_text: str, 

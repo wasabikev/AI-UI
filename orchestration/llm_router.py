@@ -16,6 +16,10 @@ class LLMRouter:
         self, client, model, messages, temperature,
         reasoning_effort=None, extended_thinking=None, thinking_budget=None,
     ):
+        """
+        Routes the request to the correct LLM API based on the model name.
+        No fallback between providers: errors are logged and returned directly.
+        """
         self.logger.info(f"Getting response from model: {model}")
         self.logger.info(f"Temperature: {temperature}")
         self.logger.info(f"Number of messages: {len(messages)}")
@@ -186,34 +190,8 @@ class LLMRouter:
         except Exception as e:
             self.logger.error(f"Error getting response from model {model}: {str(e)}")
             self.logger.exception("Full traceback:")
-
-            try:
-                if model.startswith("claude-") and 'OPENAI_API_KEY' in os.environ:
-                    self.logger.info("Attempting to fall back to GPT-4 after error")
-                    return await self.get_response_from_model(client, "gpt-4", messages, temperature)
-                elif model.startswith("gpt-") and 'ANTHROPIC_API_KEY' in os.environ:
-                    self.logger.info("Attempting to fall back to Claude after error")
-                    return await self.get_response_from_model(client, "claude-3-5-sonnet-20240620", messages, temperature)
-            except Exception as fallback_error:
-                self.logger.error(f"Fallback attempt failed: {str(fallback_error)}")
-
             return None, None, None
 
-    async def get_response_from_model_sync(self, client, model, messages, temperature, reasoning_effort=None, extended_thinking=False, thinking_budget=None):
-        try:
-            chat_output, model_name, thinking_process = await self.get_response_from_model(
-                client,
-                model,
-                messages,
-                temperature,
-                reasoning_effort=reasoning_effort,
-                extended_thinking=extended_thinking,
-                thinking_budget=thinking_budget
-            )
-            return chat_output, model_name, thinking_process
-        except Exception as e:
-            self.logger.error(f"Error in get_response_from_model_sync: {str(e)}")
-            raise
 
 # --------------------- Count Tokens for Different Models ---------------------
 

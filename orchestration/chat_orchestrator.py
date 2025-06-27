@@ -124,7 +124,7 @@ class ChatOrchestrator:
                 filenames_processed = []
                 for attachment_id in file_ids:
                     self.logger.debug(f"[{session_id}] Attempting to get content for attachment ID: {attachment_id}")
-                    content, filename, _ = await self.session_attachment_handler.get_attachment_content(attachment_id, current_user.id)
+                    content, filename, _ = await self.session_attachment_handler.get_attachment_content(attachment_id, current_user.id, system_message_id)
                     if content:
                         filename_placeholder = filename or f"Attachment ID {attachment_id[:8]}"
                         filenames_processed.append(filename_placeholder)
