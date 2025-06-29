@@ -133,7 +133,7 @@ from services.embedding_store import EmbeddingStore
 from init_db import init_db
 
 from utils.logging_utils import setup_logging 
-
+from utils.debug_routes import DebugRoutes
 
 
 # Load environment variables
@@ -322,7 +322,11 @@ async def startup():
             file_processor=file_processor
         )
 
-        # 6. Instantiate ChatOrchestrator
+        # 6. Initialize and register debug routes
+        debug_routes = DebugRoutes(app, status_manager)
+        debug_routes.register_routes(app)
+
+        # 7. Instantiate ChatOrchestrator
         chat_orchestrator = ChatOrchestrator(
             status_manager=status_manager,
             embedding_store=embedding_store,
@@ -343,7 +347,7 @@ async def startup():
             logger=app.logger,
         )
 
-        # 7. Instantiate VectorDBFileManager
+        # 8. Instantiate VectorDBFileManager
         vectordb_file_manager = VectorDBFileManager(
             file_processor=file_processor,
             embedding_store=embedding_store,
@@ -351,19 +355,20 @@ async def startup():
             logger=app.logger
         )
 
-        # 8. Instantiate WebSraperOrchestrator
+        # 9. Instantiate WebSraperOrchestrator
         web_scraper_orchestrator = WebScraperOrchestrator(
             logger=app.logger,
             get_session=get_session,
             SystemMessage=SystemMessage,
             Website=Website
-)     
+        )     
 
         app.logger.info("Application initialization completed successfully")
 
     except Exception as e:
         app.logger.error("Application startup failed", exc_info=True)
         raise
+
 
 
 @app.after_serving
@@ -403,46 +408,7 @@ status_manager = StatusUpdateManager()
 
 
 
-@app.route('/ws/diagnostic')
-async def websocket_diagnostic():
-    """
-    Endpoint to check WebSocket configuration and connectivity
-    """
-    try:
-        # Gather environment information
-        env_info = {
-            'WEBSOCKET_ENABLED': os.getenv('WEBSOCKET_ENABLED'),
-            'WEBSOCKET_PATH': os.getenv('WEBSOCKET_PATH'),
-            'REQUEST_HEADERS': dict(request.headers),
-            'SERVER_SOFTWARE': os.getenv('SERVER_SOFTWARE'),
-            'FORWARDED_ALLOW_IPS': os.getenv('FORWARDED_ALLOW_IPS'),
-            'PROXY_PROTOCOL': os.getenv('PROXY_PROTOCOL'),
-        }
-        
-        # Check if running behind proxy
-        is_proxied = any(h in request.headers for h in [
-            'X-Forwarded-For',
-            'X-Real-IP',
-            'X-Forwarded-Proto'
-        ])
-        
-        diagnostic_info = {
-            'environment': env_info,
-            'is_proxied': is_proxied,
-            'websocket_config': {
-                'ping_interval': app.config.get('WEBSOCKET_PING_INTERVAL'),
-                'ping_timeout': app.config.get('WEBSOCKET_PING_TIMEOUT'),
-                'max_message_size': app.config.get('WEBSOCKET_MAX_MESSAGE_SIZE')
-            }
-        }
-        
-        return jsonify(diagnostic_info)
-        
-    except Exception as e:
-        return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
+
 
 @app.websocket('/ws/chat/status')
 @login_required
@@ -570,108 +536,8 @@ async def chat_status_health():
     
     return jsonify(response_data)
 
-@app.route('/debug/config')
-async def debug_config():
-    """Debug endpoint to verify configuration"""
-    return jsonify({
-        'env_vars': {
-            'DEBUG_CONFIG': os.getenv('DEBUG_CONFIG'),
-            'WEBSOCKET_PATH': os.getenv('WEBSOCKET_PATH'),
-            'PORT': os.getenv('PORT'),
-        },
-        'routes': {
-            'websocket': '/ws/chat/status',
-            'health': '/chat/status/health'
-        },
-        'server_info': {
-            'worker_class': 'uvicorn.workers.UvicornWorker',
-            'gunicorn_config_path': os.path.exists('gunicorn.conf.py'),
-            'app_yaml_path': os.path.exists('.do/app.yaml')
-        }
-    })
 
-@app.route('/debug/config/full')
-@login_required
-async def debug_config_full():
-    """Detailed debug endpoint to verify configuration (login required)"""
-    import os
-    
-    def mask_sensitive_value(key: str, value: str) -> str:
-        """Mask sensitive values in environment variables"""
-        sensitive_keys = {'API_KEY', 'SECRET', 'PASSWORD', 'TOKEN', 'DATABASE_URL'}
-        if any(sensitive_word in key.upper() for sensitive_word in sensitive_keys):
-            if len(str(value)) > 8:
-                return f"{value[:4]}...{value[-4:]}"
-            return "****"
-        return value
 
-    try:
-        # Get all files in the current directory
-        files = os.listdir('.')
-        do_files = os.listdir('.do') if os.path.exists('.do') else []
-        
-        # Read the contents of the config files
-        gunicorn_config = ''
-        if os.path.exists('gunicorn.conf.py'):
-            with open('gunicorn.conf.py', 'r') as f:
-                gunicorn_config = f.read()
-        
-        app_yaml = ''
-        if os.path.exists('.do/app.yaml'):
-            with open('.do/app.yaml', 'r') as f:
-                app_yaml = f.read()
-        
-        # Mask sensitive environment variables
-        masked_env_vars = {
-            key: mask_sensitive_value(key, value)
-            for key, value in os.environ.items()
-        }
-            
-        response_data = {
-            'env_vars': masked_env_vars,
-            'files': {
-                'root': files,
-                'do_directory': do_files
-            },
-            'configs': {
-                'gunicorn': gunicorn_config,
-                'app_yaml': app_yaml
-            },
-            'routes': {
-                'websocket': '/ws/chat/status',
-                'health': '/chat/status/health'
-            },
-            'server_info': {
-                'worker_class': 'uvicorn.workers.UvicornWorker',
-                'gunicorn_config_path': os.path.exists('gunicorn.conf.py'),
-                'app_yaml_path': os.path.exists('.do/app.yaml'),
-                'current_directory': os.getcwd()
-            },
-            'user_info': {
-                'is_authenticated': current_user.is_authenticated
-            }
-        }
-        
-        app.logger.info("Debug configuration accessed by authenticated user")
-        return jsonify(response_data)
-        
-    except Exception as e:
-        app.logger.error("Error in debug configuration endpoint: %s", str(e))
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/debug/websocket-config')
-@login_required
-async def debug_websocket_config():
-    """Debug endpoint to check WebSocket configuration"""
-    return jsonify({
-        'websocket_enabled': True,
-        'websocket_path': '/ws/chat/status',
-        'current_connections': status_manager.connection_count,
-        'server_info': {
-            'worker_class': 'uvicorn.workers.UvicornWorker',
-            'websocket_timeout': 300
-        }
-    })
 
 
 # Toggle web search settings for system messages
@@ -826,29 +692,7 @@ async def remove_file(file_id):
 
 #------------------------ End vector database file management
 
-@app.route('/debug/check-directories')
-@login_required
-async def check_directories():
-    base_dir = Path(app.config['BASE_UPLOAD_FOLDER'])
-    
-    def scan_directory(path):
-        try:
-            return {
-                'path': str(path),
-                'exists': path.exists(),
-                'is_dir': path.is_dir() if path.exists() else False,
-                'contents': [str(p) for p in path.glob('**/*')] if path.exists() and path.is_dir() else [],
-                'permissions': oct(os.stat(path).st_mode)[-3:] if path.exists() else None
-            }
-        except Exception as e:
-            return {'path': str(path), 'error': str(e)}
 
-    directories = {
-        'base_upload_folder': scan_directory(base_dir),
-        'current_user_folder': scan_directory(base_dir / str(current_user.id)),
-    }
-    
-    return jsonify(directories)
 
 #------------------------- Session Attachment Management
 
@@ -1064,18 +908,6 @@ def generate_image():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/view-logs')
-@login_required
-def view_logs():
-    logs_content = "<link rel='stylesheet' type='text/css' href='/static/css/styles.css'><div class='logs-container'>"
-    try:
-        with open('app.log', 'r') as log_file:
-            logs_content += f"<div class='log-entry'><div class='log-title'>--- app.log ---</div><pre>"
-            logs_content += log_file.read() + "</pre></div>\n"
-    except FileNotFoundError:
-        logs_content += "<div class='log-entry'><div class='log-title'>No log file found.</div></div>"
-    logs_content += "</div>"
-    return logs_content
 
 
 # Configure basic auth settings
