@@ -132,6 +132,9 @@ from services.embedding_store import EmbeddingStore
 
 from init_db import init_db
 
+from utils.logging_utils import setup_logging 
+
+
 
 # Load environment variables
 load_dotenv()
@@ -245,131 +248,6 @@ async def internal_error(error):
 async def static_files(filename):
     return await send_from_directory('static', filename)
 
-# Define the UnicodeFormatter class for logging
-class UnicodeFormatter(logging.Formatter):
-    """Custom formatter that properly handles Unicode characters in log messages."""
-    def format(self, record):
-        if isinstance(record.msg, bytes):
-            record.msg = record.msg.decode('utf-8', errors='replace')
-        elif not isinstance(record.msg, str):
-            record.msg = str(record.msg)
-            
-        if record.args:
-            record.args = tuple(
-                arg.decode('utf-8', errors='replace') if isinstance(arg, bytes)
-                else str(arg) if not isinstance(arg, str)
-                else arg
-                for arg in record.args
-            )
-            
-        return super().format(record)
-
-def setup_logging(app, debug_mode):
-    # Remove any existing handlers
-    logging.getLogger().handlers.clear()
-    app.logger.handlers.clear()
-    
-    # Configure root logger
-    logging.basicConfig(
-        level=logging.DEBUG if debug_mode else logging.INFO,
-        format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',  #milliseconds included
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    
-    # Custom Unicode formatter
-    unicode_formatter = UnicodeFormatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s")
-
-    # Set up file handler with rotation
-    file_handler = RotatingFileHandler(
-        "app.log",
-        maxBytes=100000,
-        backupCount=3,
-        encoding='utf-8'
-    )
-    file_handler.setFormatter(unicode_formatter)
-    file_handler.setLevel(logging.DEBUG if debug_mode else logging.INFO)
-
-    # Set up console handler with color formatting
-    class ColorFormatter(logging.Formatter):
-        """Add colors to log levels"""
-        grey = "\x1b[38;21m"
-        blue = "\x1b[34;21m"
-        yellow = "\x1b[33;21m"
-        red = "\x1b[31;21m"
-        bold_red = "\x1b[31;1m"
-        reset = "\x1b[0m"
-        
-        FORMATS = {
-            logging.DEBUG: blue + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
-            logging.INFO: grey + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
-            logging.WARNING: yellow + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
-            logging.ERROR: red + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
-            logging.CRITICAL: bold_red + "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s" + reset,
-        }
-        
-        def format(self, record):
-            log_fmt = self.FORMATS.get(record.levelno)
-            formatter = logging.Formatter(log_fmt, datefmt='%Y-%m-%d %H:%M:%S')
-            return formatter.format(record)
-
-    # Console handler with color formatting
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(ColorFormatter())
-    console_handler.setLevel(logging.DEBUG if debug_mode else logging.INFO)  # Show all levels in console
-
-    # Configure app logger
-    app.logger.addHandler(file_handler)
-    app.logger.addHandler(console_handler)
-    app.logger.propagate = False
-    app.logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
-
-    # Add console handler to root logger as well
-    root_logger = logging.getLogger()
-    root_logger.addHandler(console_handler)
-    root_logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
-
-    # Completely silence SQLAlchemy logging
-    logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.ERROR)
-    logging.getLogger('sqlalchemy.engine.base.Engine').setLevel(logging.ERROR)
-    logging.getLogger('sqlalchemy.dialects').setLevel(logging.ERROR)
-    logging.getLogger('sqlalchemy.pool').setLevel(logging.ERROR)
-    logging.getLogger('sqlalchemy.orm').setLevel(logging.ERROR)
-    
-    # Additional SQLAlchemy logging suppression
-    logging.getLogger('sqlalchemy.engine.base').setLevel(logging.ERROR)
-    logging.getLogger('sqlalchemy.engine.impl').setLevel(logging.ERROR)
-    logging.getLogger('sqlalchemy.engine.logger').setLevel(logging.ERROR)
-
-    # Reduce noise from other loggers but show their warnings and errors
-    noisy_loggers = [
-        'httpcore',
-        'hypercorn.error',
-        'hypercorn.access',
-        'pinecone',
-        'unstract',
-        'asyncio',
-        'httpx',
-        'urllib3',
-        'requests',
-        'pinecone_plugin_interface.logging'
-    ]
-
-    for logger_name in noisy_loggers:
-        logger = logging.getLogger(logger_name)
-        logger.setLevel(logging.WARNING)
-        logger.addHandler(console_handler)
-        logger.propagate = False
-
-    # Disable SQL statement logging explicitly
-    logging.getLogger('sqlalchemy.engine.Engine.logger').disabled = True
-
-    # Log startup message
-    app.logger.info("Application logging initialized")
-
-    if debug_mode:
-        app.logger.debug("Debug mode enabled")
-        app.logger.debug("Console logging enabled with colors")
 
 # Initialize Cerebras
 from cerebras.cloud.sdk import Client as CerebrasClient
