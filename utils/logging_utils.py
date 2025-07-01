@@ -1,10 +1,11 @@
+# utils/logging_utils.py
+
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
 
 class UnicodeFormatter(logging.Formatter):
     """Custom formatter that properly handles Unicode characters in log messages."""
-    
     def format(self, record):
         try:
             # Handle bytes and non-string messages
@@ -12,7 +13,7 @@ class UnicodeFormatter(logging.Formatter):
                 record.msg = record.msg.decode('utf-8', errors='replace')
             elif not isinstance(record.msg, str):
                 record.msg = str(record.msg)
-                
+
             # Handle bytes in args
             if record.args:
                 safe_args = []
@@ -20,19 +21,24 @@ class UnicodeFormatter(logging.Formatter):
                     if isinstance(arg, bytes):
                         safe_args.append(arg.decode('utf-8', errors='replace'))
                     else:
-                        # Truncate very long strings to prevent log spam
                         arg_str = str(arg)
                         if len(arg_str) > 1000:
                             arg_str = arg_str[:500] + "...[truncated]..." + arg_str[-100:]
                         safe_args.append(arg_str)
                 record.args = tuple(safe_args)
-                
+
+            try:
+                return super().format(record)
+            except TypeError:
+                # Fallback for argument mismatch (e.g., 3rd-party SDKs)
+                record.msg = str(record.msg)
+                record.args = ()
+                return super().format(record)
         except Exception:
-            # If anything goes wrong, create a safe fallback
             record.msg = f"LOGGING ERROR: Could not format message safely"
             record.args = ()
-            
-        return super().format(record)
+            return super().format(record)
+
 
 class ColorFormatter(logging.Formatter):
     """Add colors to log levels with safe message handling"""
@@ -53,15 +59,18 @@ class ColorFormatter(logging.Formatter):
     
     def format(self, record):
         try:
-            # Truncate very long messages to prevent terminal spam
             if hasattr(record, 'msg') and isinstance(record.msg, str) and len(record.msg) > 2000:
                 record.msg = record.msg[:1000] + "...[truncated]..." + record.msg[-500:]
-            
             log_fmt = self.FORMATS.get(record.levelno, self.FORMATS[logging.INFO])
             formatter = logging.Formatter(log_fmt, datefmt='%Y-%m-%d %H:%M:%S')
-            return formatter.format(record)
+            try:
+                return formatter.format(record)
+            except TypeError:
+                # Fallback for argument mismatch (e.g., 3rd-party SDKs)
+                record.msg = str(record.msg)
+                record.args = ()
+                return formatter.format(record)
         except Exception:
-            # Fallback for any formatting errors
             return f"{self.grey}{self.formatTime(record)} - ERROR - LOGGING FORMAT ERROR{self.reset}"
 
 def setup_logging(app, debug_mode):

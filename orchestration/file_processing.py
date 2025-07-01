@@ -43,8 +43,11 @@ async def process_pdf(
     extracted_text, full_response = await llm_whisper.process_file(
         file_path, user_id, system_message_id, file_id
     )
-    llm_whisper.app.logger.error(f"Extracted text repr: {repr(extracted_text)}")
-    llm_whisper.app.logger.error(f"Extracted text length: {len(extracted_text) if extracted_text else 0}")
+
+    if extracted_text is not None:
+        llm_whisper.app.logger.info(f"Extracted text length: {len(extracted_text)}")
+        llm_whisper.app.logger.debug(f"Extracted text (first 200 chars): {repr(extracted_text[:200])}")
+
     if extracted_text is None:
         llm_whisper.app.logger.error(f"LLMWhisperer full response: {full_response}")
         # For attachments, allow empty string, but not None
@@ -55,7 +58,9 @@ async def process_pdf(
             f"repr: {repr(extracted_text)}"
         )
         # Allow empty/whitespace for session attachments
+
     return [Document(text=extracted_text, metadata={'file_id': str(file_id)})]
+
 
 
 

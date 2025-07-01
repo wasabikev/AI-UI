@@ -3,26 +3,16 @@
 # Standard library imports
 import asyncio
 import json
-import logging
 import os
 import platform
-import socket
-import subprocess
 import sys
-import threading
-import uuid 
 import time
-import math
-import re
-from uuid import uuid4
-from concurrent.futures import ThreadPoolExecutor
+
+import openai
+
 from datetime import datetime, timezone, timedelta
-from functools import lru_cache, partial
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from queue import Queue, Empty, Full
-from typing import List, Dict, Optional
-from dataclasses import dataclass
+
 
 def safe_json_loads(json_string, default=None):
     """Safely load JSON string, return default on error or if input is None."""
@@ -48,45 +38,19 @@ from quart_auth import (
     logout_user, Unauthorized
 )
 import pkg_resources
-import traceback
+
 
 # Third-party imports - Database and ORM
 from sqlalchemy import select, func
-from alembic import command
 from alembic.config import Config as AlembicConfig
 from dotenv import load_dotenv
 
-# Third-party imports - AI/ML Services
-import openai
-import anthropic
-import tiktoken
-import google.generativeai as genai
-from google.generativeai import GenerativeModel
-from openai import OpenAI
 
-# Third-party imports - Vector Storage
-from pinecone import Pinecone
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext
-from llama_index.vector_stores.pinecone import PineconeVectorStore
-from llama_index.embeddings.openai import OpenAIEmbedding
 
 # Third-party imports - Async HTTP and Network
-import aiohttp
-from aiohttp import ClientSession, AsyncResolver, ClientTimeout
-from aiolimiter import AsyncLimiter
-import aiofiles
 import aiofiles.os as aio_os
-from async_timeout import timeout
-from tenacity import retry, stop_after_attempt, wait_exponential
-import dns.resolver
 
-# Third-party imports - Web Scraping and Processing
-from bs4 import BeautifulSoup
-from werkzeug.utils import secure_filename
 
-# Import LLMWhisperer client and exception if needed for type hinting or specific checks
-from unstract.llmwhisperer.client import LLMWhispererClient, LLMWhispererClientException
-import sqlalchemy as sa
 
 # Local imports - Auth and Models
 from auth import auth_bp, UserWrapper, login_required
@@ -116,6 +80,12 @@ from orchestration.web_search_orchestrator import perform_web_search_process
 from orchestration.vectordb_file_manager import VectorDBFileManager
 vectordb_file_manager = None
 from orchestration.vector_search_utils import VectorSearchUtils
+vector_search_utils = None
+# Define the approximate token limit for your embedding model
+# text-embedding-ada-002 and text-embedding-3-small have 8191/8192 limits
+EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Use a slightly lower buffer
+
+
 
 # Local imports - Chat Orchestration
 from orchestration.chat_orchestrator import ChatOrchestrator
@@ -127,6 +97,7 @@ from utils.generate_title_utils import generate_summary_title
 
 
 from orchestration.llm_router import LLMRouter, count_tokens
+llm_router= None
 
 from services.embedding_store import EmbeddingStore
 
@@ -134,6 +105,8 @@ from init_db import init_db
 
 from utils.logging_utils import setup_logging 
 from utils.debug_routes import DebugRoutes
+
+from services.client_manager import ClientManager
 
 
 # Load environment variables
@@ -151,39 +124,16 @@ conversation_orchestrator = ConversationOrchestrator(app.logger)
 from orchestration.system_message_orchestrator import SystemMessageOrchestrator
 system_message_orchestrator = SystemMessageOrchestrator(app.logger)
 
-# Initialize LLMWhisperer client
-from unstract.llmwhisperer.client import LLMWhispererClient
 
-llm_whisper_client = None
-llmwhisperer_api_key = os.getenv("LLMWHISPERER_API_KEY")
-if llmwhisperer_api_key:
-    try:
-        llm_whisper_client = LLMWhispererClient(api_key=llmwhisperer_api_key)
-        app.logger.info("LLMWhisperer client initialized successfully")
-    except Exception as e:
-        app.logger.error(f"Failed to initialize LLMWhisperer client: {str(e)}")
-        app.logger.exception("Full traceback:")
-else:
-    app.logger.warning("LLMWHISPERER_API_KEY environment variable not set")
+# Initialize client manager and all external service clients
+client_manager = ClientManager()
 
-# Initialize OpenAI
-from openai import OpenAI
-client = OpenAI()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-if openai.api_key is None:
-    raise ValueError("OPENAI_API_KEY environment variable not set")
 
-# Initialize Pinecone
-pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 db_url = os.getenv('DATABASE_URL')
-BRAVE_SEARCH_API_KEY = os.getenv('BRAVE_SEARCH_API_KEY')
 
-# Initiatlize LLMWhisperer client
-llmwhisperer_client: LLMWhispererClient | None = None
 
 # Debug configuration
 debug_mode = True
-
 
 
 # Application configuration
@@ -249,24 +199,7 @@ async def static_files(filename):
     return await send_from_directory('static', filename)
 
 
-# Initialize Cerebras
-from cerebras.cloud.sdk import Client as CerebrasClient
-cerebras_client = None
-cerebras_api_key = os.getenv("CEREBRAS_API_KEY")
-if cerebras_api_key:
-    try:
-        cerebras_client = CerebrasClient(api_key=cerebras_api_key)
-        app.logger.info("Cerebras client initialized successfully")
-    except Exception as e:
-        app.logger.error(f"Failed to initialize Cerebras client: {str(e)}")
-        app.logger.exception("Full traceback:")
-else:
-    app.logger.warning("CEREBRAS_API_KEY environment variable not set")
 
-llm_router = LLMRouter(
-    cerebras_client=cerebras_client,
-    logger=app.logger,
-)
 
 # Usage in app.py
 setup_logging(app, debug_mode)
@@ -296,37 +229,64 @@ file_processor = None
 
 @app.before_serving
 async def startup():
-    global embedding_store, file_processor, session_attachment_handler, vectordb_file_manager, chat_orchestrator, web_scraper_orchestrator
+    global embedding_store, file_processor, session_attachment_handler
+    global vectordb_file_manager, chat_orchestrator, web_scraper_orchestrator
+    global llm_router, vector_search_utils
 
     try:
         app.logger.info("Initializing application components")
 
-        # 1. Initialize FileUtils and verify upload folder FIRST!
+        # 1. Initialize all external service clients
+        clients = client_manager.initialize_all_clients()
+        
+        # Extract commonly used clients for backward compatibility
+        client = clients['openai']
+        pc = clients['pinecone']
+        cerebras_client = clients['cerebras']
+        llm_whisper_client = clients['llmwhisperer']
+
+        # Get API keys
+        BRAVE_SEARCH_API_KEY = client_manager.get_api_key('brave_search')
+
+        # 2. Initialize FileUtils and verify upload folder
         app.file_utils = FileUtils(app)
         base_upload_folder = Path(app.config['BASE_UPLOAD_FOLDER'])
         await app.file_utils.ensure_folder_exists(base_upload_folder)
 
-        # 2. Initialize database
+        # 3. Initialize database
         await init_db()
 
-        # 3. Initialize EmbeddingStore
+        # 4. Initialize EmbeddingStore
         embedding_store = EmbeddingStore(db_url, logger=app.logger)
         await embedding_store.initialize()
 
-        # 4. Initialize FileProcessor
+        # 5. Initialize FileProcessor
         file_processor = FileProcessor(embedding_store, app)
 
-        # 5. Initialize SessionAttachmentHandler (needs file_utils and file_processor)
+        # 6. Initialize SessionAttachmentHandler (needs file_utils and file_processor)
         session_attachment_handler = SessionAttachmentHandler(
             file_utils=app.file_utils,
             file_processor=file_processor
         )
 
-        # 6. Initialize and register debug routes
+        # 7. Initialize and register debug routes
         debug_routes = DebugRoutes(app, status_manager)
         debug_routes.register_routes(app)
 
-        # 7. Instantiate ChatOrchestrator
+        # 8. Initialize LLMRouter with clients
+        llm_router = LLMRouter(
+            cerebras_client=cerebras_client,
+            logger=app.logger,
+        )
+
+        # 9. Initialize vector_search_utils (depends on llm_router)
+        vector_search_utils = VectorSearchUtils(
+            get_response_from_model=llm_router.get_response_from_model,
+            logger=app.logger,
+            embedding_model_token_limit=EMBEDDING_MODEL_TOKEN_LIMIT
+        )
+
+        # 10. Instantiate ChatOrchestrator (depends on llm_router and vector_search_utils)
         chat_orchestrator = ChatOrchestrator(
             status_manager=status_manager,
             embedding_store=embedding_store,
@@ -347,7 +307,7 @@ async def startup():
             logger=app.logger,
         )
 
-        # 8. Instantiate VectorDBFileManager
+        # 11. Instantiate VectorDBFileManager
         vectordb_file_manager = VectorDBFileManager(
             file_processor=file_processor,
             embedding_store=embedding_store,
@@ -355,13 +315,13 @@ async def startup():
             logger=app.logger
         )
 
-        # 9. Instantiate WebSraperOrchestrator
+        # 12. Instantiate WebScraperOrchestrator
         web_scraper_orchestrator = WebScraperOrchestrator(
             logger=app.logger,
             get_session=get_session,
             SystemMessage=SystemMessage,
             Website=Website
-        )     
+        )
 
         app.logger.info("Application initialization completed successfully")
 
@@ -371,41 +331,8 @@ async def startup():
 
 
 
-@app.after_serving
-async def shutdown():
-    try:
-        # Close database connection
-        await engine.dispose()
-        app.logger.info("Database connection closed")
-
-        # Add explicit cleanup of any active connections
-        if hasattr(app, '_connection_pool'):
-            await app._connection_pool.close()
-            app.logger.info("Connection pool closed")
-
-        # Clear FileUtils cache if it exists
-        if hasattr(app, 'file_utils'):
-            app.file_utils.get_user_folder.cache_clear()
-            app.file_utils.get_system_message_folder.cache_clear()
-            app.file_utils.get_uploads_folder.cache_clear()
-            app.file_utils.get_processed_texts_folder.cache_clear()
-            app.file_utils.get_llmwhisperer_output_folder.cache_clear()
-            app.file_utils.get_web_search_results_folder.cache_clear()
-            app.logger.info("FileUtils caches cleared")
-
-            delattr(app, 'file_utils')
-            app.logger.info("FileUtils cleanup completed")
-
-    except Exception as e:
-        app.logger.error(f"Error during shutdown: {str(e)}")
-        app.logger.exception("Full shutdown error traceback:")
-        raise
-
-
 # Initialize the status update manager
 status_manager = StatusUpdateManager()
-
-
 
 
 
@@ -918,12 +845,7 @@ app.config["QUART_AUTH_COOKIE_PATH"] = "/"
 app.config["QUART_AUTH_COOKIE_SAMESITE"] = "Lax"
 app.config["QUART_AUTH_DURATION"] = timedelta(days=30)  # Set session duration
 
-# Configure authentication using your API key
-genai.configure(api_key=os.environ['GOOGLE_API_KEY'])
 
-anthropic.api_key = os.environ.get('ANTHROPIC_API_KEY')
-if anthropic.api_key is None:
-    raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
 
 @app.route('/get-current-model', methods=['GET'])
@@ -1223,22 +1145,7 @@ def clear_session():
     return jsonify({"message": "Session cleared"}), 200
 
 
-#-------------------------- Start of vector search-related routes
 
-from orchestration.vector_search_utils import VectorSearchUtils
-
-# Define the approximate token limit for your embedding model
-# text-embedding-ada-002 and text-embedding-3-small have 8191/8192 limits
-EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Use a slightly lower buffer
-
-vector_search_utils = VectorSearchUtils(
-    get_response_from_model=llm_router.get_response_from_model,  
-    logger=app.logger,
-    embedding_model_token_limit=EMBEDDING_MODEL_TOKEN_LIMIT
-)
-
-
-#-------------------------- End of vector search-related routes
 
 #-------------------------- Start of chat-related routes
 
