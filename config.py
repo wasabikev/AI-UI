@@ -27,7 +27,7 @@ class BaseConfig:
     QUART_AUTH_SALT = 'cookie-session-aiui'
 
     # Uploads
-    BASE_UPLOAD_FOLDER = str(Path(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'user_files'))).resolve())
+    BASE_UPLOAD_FOLDER = str(Path(os.path.abspath(os.path.join(os.path.dirname(__file__), 'user_files'))).resolve())
 
     # Database
     DATABASE_URL = os.getenv('DATABASE_URL')
