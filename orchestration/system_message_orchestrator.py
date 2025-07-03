@@ -2,7 +2,8 @@
 
 from datetime import datetime, timezone
 from sqlalchemy import select
-from models import SystemMessage, get_session
+from models import SystemMessage, get_session, User
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, Dict, List, Tuple, Optional
 
 class SystemMessageOrchestrator:
@@ -163,7 +164,7 @@ class SystemMessageOrchestrator:
 
                 # Get current user from database
                 user_result = await session.execute(
-                    select(current_user.__class__).filter_by(id=int(current_user.auth_id))
+                    select(User).filter_by(id=int(current_user.auth_id))
                 )
                 current_user_obj = user_result.scalar_one_or_none()
 

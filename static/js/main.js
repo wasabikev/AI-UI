@@ -998,16 +998,22 @@ window.addEventListener('beforeunload', function() {
 
 function updateSearchSettings() {
     // Only send an update if the temporary state differs from the current system message state
-    if (tempWebSearchState !== currentSystemMessage.enable_web_search || tempDeepSearchState !== false) {
+    // (You may want to compare deep search only if web search is on)
+    const payload = {
+        enableWebSearch: tempWebSearchState,
+        enableDeepSearch: tempWebSearchState ? tempDeepSearchState : false
+    };
+
+    if (
+        tempWebSearchState !== currentSystemMessage.enable_web_search ||
+        payload.enableDeepSearch !== currentSystemMessage.enable_deep_search
+    ) {
         fetch(`/api/system-messages/${activeSystemMessageId}/toggle-search`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                enableWebSearch: tempWebSearchState,
-                enableDeepSearch: tempDeepSearchState
-            }),
+            body: JSON.stringify(payload),
         })
         .then(response => response.json())
         .then(data => {
@@ -1024,9 +1030,10 @@ function updateSearchSettings() {
     }
 }
 
+
 function initializeSearchToggles(systemMessage) {
     console.log('initializeSearchToggles called with:', systemMessage.name, 'web_search:', systemMessage.enable_web_search);
-    
+
     const enableWebSearchToggle = document.getElementById('enableWebSearch');
     const enableDeepSearchToggle = document.getElementById('enableDeepSearch');
 
@@ -1034,19 +1041,19 @@ function initializeSearchToggles(systemMessage) {
     enableWebSearchToggle.checked = !!systemMessage.enable_web_search;
     tempWebSearchState = !!systemMessage.enable_web_search;
 
-    // Set deep search toggle from system message
-    enableDeepSearchToggle.checked = !!systemMessage.enable_deep_search;
-    tempDeepSearchState = !!systemMessage.enable_deep_search;
+    // If web search is off, deep search must be off
+    if (!systemMessage.enable_web_search) {
+        enableDeepSearchToggle.checked = false;
+        tempDeepSearchState = false;
+        enableDeepSearchToggle.disabled = true;
+    } else {
+        enableDeepSearchToggle.checked = !!systemMessage.enable_deep_search;
+        tempDeepSearchState = !!systemMessage.enable_deep_search;
+        enableDeepSearchToggle.disabled = false;
+    }
 
-    // CHANGE: Don't disable deep search toggle - let it be clickable always
-    // enableDeepSearchToggle.disabled = !systemMessage.enable_web_search;
-    enableDeepSearchToggle.disabled = false;
-    
     console.log('Toggle states set - web:', enableWebSearchToggle.checked, 'deep:', enableDeepSearchToggle.checked, 'disabled:', enableDeepSearchToggle.disabled);
 }
-
-
-
 
 
 
