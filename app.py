@@ -95,6 +95,9 @@ from orchestration.web_scraper_orchestrator import WebScraperOrchestrator
 
 from utils.generate_title_utils import generate_summary_title
 
+from orchestration.image_generation import ImageGenerationOrchestrator
+image_generation_orchestrator = None
+
 
 from orchestration.llm_router import LLMRouter, count_tokens
 llm_router= None
@@ -212,7 +215,7 @@ file_processor = None
 async def startup():
     global embedding_store, file_processor, session_attachment_handler
     global vectordb_file_manager, chat_orchestrator, web_scraper_orchestrator
-    global llm_router, vector_search_utils
+    global llm_router, vector_search_utils, image_generation_orchestrator
 
     try:
         app.logger.info("Initializing application components")
@@ -303,6 +306,12 @@ async def startup():
             SystemMessage=SystemMessage,
             Website=Website
         )
+        
+        # 13. Instantiate ImageGenerationOrchestrator
+        image_generation_orchestrator = ImageGenerationOrchestrator(
+        openai_client=clients['openai'],
+        logger=app.logger
+        )
 
         app.logger.info("Application initialization completed successfully")
 
@@ -311,7 +320,7 @@ async def startup():
         raise
 
 
-# Define the WebSocket route for chat status updates
+#---------- Define the WebSocket route for chat status updates
 @app.websocket('/ws/chat/status')
 @login_required
 async def ws_chat_status():
@@ -319,7 +328,7 @@ async def ws_chat_status():
 
 
 
-# Health check endpoint for WebSocket connections
+#----------- Health check endpoint for WebSocket connections
 @app.route('/chat/status/health')
 @login_required
 async def chat_status_health():
@@ -345,7 +354,7 @@ async def chat_status_health():
 
 
 
-# Toggle web search settings for system messages
+#-------- Toggle web search settings for system messages
 
 @app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
 @login_required
@@ -379,15 +388,6 @@ async def toggle_search(system_message_id):
             'details': str(e)
         }), 500
 
-
-
-@app.route('/query_documents', methods=['POST'])
-@login_required
-def query_documents():
-    query = request.json.get('query')
-    file_processor = FileProcessor(embedding_store, app)
-    results = file_processor.query_index(query)
-    return jsonify({'results': results})
 
 from flask import make_response, send_file, abort
 
@@ -651,47 +651,26 @@ async def remove_website(website_id):
 
 #----------------- End Website Scaper Management
 
+
+#----------------- Image Generation Management
+
 @app.route('/generate-image', methods=['POST'])
 @login_required
-def generate_image():
-    data = request.json
-    prompt = data.get('prompt', '')
+async def generate_image():
+    data = await request.get_json()
+    prompt = data.get('prompt', '').strip()
+    size = data.get('size', '256x256')
 
     if not prompt:
         return jsonify({"error": "Prompt is required"}), 400
 
-    try:
-        response = openai.Image.create(
-            prompt=prompt,
-            n=1,
-            size="256x256"
-        )
-        image_url = response['data'][0]['url']
-        return jsonify({"image_url": image_url})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    result, status = await image_generation_orchestrator.generate_image(prompt, n=1, size=size)
+    return jsonify(result), status
 
 
+#----------------- End Image Generation Management
 
 
-
-
-
-
-@app.route('/get-current-model', methods=['GET'])
-@login_required
-async def get_current_model():
-    async with get_session() as session:
-        result = await session.execute(
-            select(SystemMessage).filter_by(name=DEFAULT_SYSTEM_MESSAGE["name"])
-        )
-        default_message = result.scalar_one_or_none()
-        
-        if default_message:
-            return jsonify({'model_name': default_message.model_name})
-        else:
-            return jsonify({'error': 'Default system message not found'}), 404
         
 @app.route('/trigger-flash')
 def trigger_flash():
@@ -708,6 +687,13 @@ DEFAULT_SYSTEM_MESSAGE = {
     "model_name": "gpt-3.5-turbo",
     "temperature": 0.3
 }
+
+@app.route('/api/system-messages/default-model', methods=['GET'])
+@login_required
+async def get_current_model():
+    result, status = await system_message_orchestrator.get_default_model_name(DEFAULT_SYSTEM_MESSAGE["name"])
+    return jsonify(result), status
+
 
 @app.route('/system-messages', methods=['POST'])
 @login_required

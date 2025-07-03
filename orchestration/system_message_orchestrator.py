@@ -200,3 +200,13 @@ class SystemMessageOrchestrator:
                 'details': str(e)
             }, 500
 
+    async def get_default_model_name(self, default_message_name):
+        async with get_session() as session:
+            result = await session.execute(
+                select(SystemMessage).filter_by(name=default_message_name)
+            )
+            default_message = result.scalar_one_or_none()
+            if default_message:
+                return {'model_name': default_message.model_name}, 200
+            else:
+                return {'error': 'Default system message not found'}, 404
