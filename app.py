@@ -108,7 +108,7 @@ from utils.debug_routes import DebugRoutes
 
 from services.client_manager import ClientManager
 
-
+from config import get_config
 
 
 # Load environment variables
@@ -118,6 +118,8 @@ load_dotenv()
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
 QuartSchema(app)
+
+app.config.from_object(get_config())
 
 # Local imports - Conversation Orchestration
 from orchestration.conversation import ConversationOrchestrator
@@ -144,33 +146,6 @@ db_url = os.getenv('DATABASE_URL')
 debug_mode = True
 
 
-# Application configuration
-app.config.update(
-    ASYNC_MODE=True,
-    PROPAGATE_EXCEPTIONS=True,
-    SSE_RETRY_TIMEOUT=30000,
-    SECRET_KEY=os.getenv('SECRET_KEY'),
-    TEMPLATES_AUTO_RELOAD=True,
-    MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16 MB max-body-size
-    MAX_FORM_MEMORY_SIZE=16 * 1024 * 1024,  # 16 MB max-form-size
-    RESPONSE_TIMEOUT=300,  # 5 minutes in seconds
-    KEEP_ALIVE_TIMEOUT=300,  # 5 minutes in seconds
-    WEBSOCKET_PING_INTERVAL=20,  # Seconds between pings
-    WEBSOCKET_PING_TIMEOUT=120,  # Seconds to wait for pong response
-)
-
-
-# Configure auth settings - do this BEFORE initializing QuartAuth
-app.config.update(
-    QUART_AUTH_COOKIE_SECURE=False if app.debug else True,
-    QUART_AUTH_COOKIE_DOMAIN=None,
-    QUART_AUTH_COOKIE_NAME="auth_token",
-    QUART_AUTH_COOKIE_PATH="/",
-    QUART_AUTH_COOKIE_SAMESITE="Lax",
-    # Convert duration to seconds instead of using timedelta
-    QUART_AUTH_DURATION=60 * 60 * 24 * 30,  # 30 days in seconds
-    QUART_AUTH_SALT='cookie-session-aiui'
-)
 
 # Initialize QuartAuth
 auth_manager = QuartAuth(app)
@@ -212,9 +187,7 @@ async def static_files(filename):
 # Usage in app.py
 setup_logging(app, debug_mode)
 
-# File upload configuration
-BASE_UPLOAD_FOLDER = Path(os.path.abspath(os.path.join(os.path.dirname(__file__), 'user_files'))).resolve()
-app.config['BASE_UPLOAD_FOLDER'] = str(BASE_UPLOAD_FOLDER)
+
 
 
 # Create the upload folder if it doesn't exist
@@ -338,7 +311,7 @@ async def startup():
         raise
 
 
-
+# Define the WebSocket route for chat status updates
 @app.websocket('/ws/chat/status')
 @login_required
 async def ws_chat_status():
@@ -743,13 +716,7 @@ def generate_image():
 
 
 
-# Configure basic auth settings
-app.config["QUART_AUTH_COOKIE_SECURE"] = False if app.debug else True
-app.config["QUART_AUTH_COOKIE_DOMAIN"] = None  # Set to your domain in production
-app.config["QUART_AUTH_COOKIE_NAME"] = "auth_token"
-app.config["QUART_AUTH_COOKIE_PATH"] = "/"
-app.config["QUART_AUTH_COOKIE_SAMESITE"] = "Lax"
-app.config["QUART_AUTH_DURATION"] = timedelta(days=30)  # Set session duration
+
 
 
 
