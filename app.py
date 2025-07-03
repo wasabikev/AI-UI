@@ -319,7 +319,7 @@ async def ws_chat_status():
 
 
 
-
+# Health check endpoint for WebSocket connections
 @app.route('/chat/status/health')
 @login_required
 async def chat_status_health():
@@ -345,7 +345,6 @@ async def chat_status_health():
 
 
 
-
 # Toggle web search settings for system messages
 
 @app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
@@ -353,67 +352,26 @@ async def chat_status_health():
 async def toggle_search(system_message_id):
     """
     Toggle web search settings for a system message.
-    
-    Args:
-        system_message_id (int): The ID of the system message to update
-        
-    Returns:
-        JSON response with updated search settings
     """
     try:
         data = await request.get_json()
         enable_web_search = data.get('enableWebSearch')
         enable_deep_search = data.get('enableDeepSearch')
-        
+
         # Input validation
         if enable_web_search is None:
             return jsonify({'error': 'enableWebSearch parameter is required'}), 400
-        
         if not isinstance(enable_web_search, bool):
             return jsonify({'error': 'enableWebSearch must be a boolean value'}), 400
-            
-        async with get_session() as session:
-            # Get the system message
-            result = await session.execute(
-                select(SystemMessage).filter_by(id=system_message_id)
-            )
-            system_message = result.scalar_one_or_none()
-            
-            if not system_message:
-                return jsonify({'error': 'System message not found'}), 404
-            
-            # Get current user from database
-            user_result = await session.execute(
-                select(User).filter_by(id=int(current_user.auth_id))
-            )
-            current_user_obj = user_result.scalar_one_or_none()
-            
-            if not current_user_obj:
-                return jsonify({'error': 'User not found'}), 404
-            
-            # Check permissions
-            if not current_user_obj.is_admin and system_message.created_by != current_user_obj.id:
-                return jsonify({'error': 'Unauthorized to modify this system message'}), 403
-            
-            # Update the search settings
-            system_message.enable_web_search = enable_web_search
-            system_message.enable_deep_search = enable_deep_search
-            
-            # Add timestamp for tracking
-            system_message.updated_at = datetime.now(timezone.utc)
-            
-            # Commit the changes
-            await session.commit()
-            
-            app.logger.info(f"Search settings updated for system message {system_message_id} by user {current_user_obj.id}")
-            
-            return jsonify({
-                'message': 'Search settings updated successfully',
-                'enableWebSearch': system_message.enable_web_search,
-                'enableDeepSearch': system_message.enable_deep_search,
-                'updatedAt': system_message.updated_at.isoformat()
-            }), 200
-            
+
+        result, status = await system_message_orchestrator.toggle_search(
+            system_message_id=system_message_id,
+            enable_web_search=enable_web_search,
+            enable_deep_search=enable_deep_search,
+            current_user=current_user,
+        )
+        return jsonify(result), status
+
     except Exception as e:
         app.logger.error(f"Error in toggle_search: {str(e)}")
         return jsonify({
@@ -421,7 +379,7 @@ async def toggle_search(system_message_id):
             'details': str(e)
         }), 500
 
-# End web search
+
 
 @app.route('/query_documents', methods=['POST'])
 @login_required

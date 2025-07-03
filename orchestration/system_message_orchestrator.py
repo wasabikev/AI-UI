@@ -139,3 +139,63 @@ class SystemMessageOrchestrator:
         except Exception as e:
             self.logger.error(f"Error fetching system message by id: {str(e)}")
             return {'error': str(e)}, 500
+    
+    async def toggle_search(
+        self,
+        system_message_id: int,
+        enable_web_search: bool,
+        enable_deep_search: bool,
+        current_user,
+    ) -> Tuple[dict, int]:
+        """
+        Toggle web search settings for a system message.
+        """
+        try:
+            async with get_session() as session:
+                # Get the system message
+                result = await session.execute(
+                    select(SystemMessage).filter_by(id=system_message_id)
+                )
+                system_message = result.scalar_one_or_none()
+
+                if not system_message:
+                    return {'error': 'System message not found'}, 404
+
+                # Get current user from database
+                user_result = await session.execute(
+                    select(current_user.__class__).filter_by(id=int(current_user.auth_id))
+                )
+                current_user_obj = user_result.scalar_one_or_none()
+
+                if not current_user_obj:
+                    return {'error': 'User not found'}, 404
+
+                # Check permissions
+                if not current_user_obj.is_admin and system_message.created_by != current_user_obj.id:
+                    return {'error': 'Unauthorized to modify this system message'}, 403
+
+                # Update the search settings
+                system_message.enable_web_search = enable_web_search
+                system_message.enable_deep_search = enable_deep_search
+                system_message.updated_at = datetime.now(timezone.utc)
+
+                await session.commit()
+
+                self.logger.info(
+                    f"Search settings updated for system message {system_message_id} by user {current_user_obj.id}"
+                )
+
+                return {
+                    'message': 'Search settings updated successfully',
+                    'enableWebSearch': system_message.enable_web_search,
+                    'enableDeepSearch': system_message.enable_deep_search,
+                    'updatedAt': system_message.updated_at.isoformat()
+                }, 200
+
+        except Exception as e:
+            self.logger.error(f"Error in toggle_search: {str(e)}")
+            return {
+                'error': 'Failed to update search settings',
+                'details': str(e)
+            }, 500
+
