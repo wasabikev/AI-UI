@@ -1,31 +1,19 @@
-# app.py
-
-# Standard library imports
+# =========================
+# 1. Standard Library Imports
+# =========================
 import asyncio
 import json
 import os
 import platform
 import sys
 import time
-
-import openai
-
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-
-def safe_json_loads(json_string, default=None):
-    """Safely load JSON string, return default on error or if input is None."""
-    if json_string is None:
-        return default
-    try:
-        return json.loads(json_string)
-    except (json.JSONDecodeError, TypeError) as e:
-        app.logger.warning(f"Failed to load JSON: {e}. Input: '{str(json_string)[:50]}...'. Returning default: {default}")
-        return default
-
-
-# Third-party imports - Core Web Framework
+# =========================
+# 2. Third-Party Imports
+# =========================
+# -- Core Web Framework
 from quart import (
     Quart, request, jsonify, render_template, url_for, redirect, 
     session, abort, Response, send_file, make_response, request,
@@ -39,161 +27,92 @@ from quart_auth import (
 )
 import pkg_resources
 
-
-# Third-party imports - Database and ORM
+# -- Database/ORM
 from sqlalchemy import select, func
 from alembic.config import Config as AlembicConfig
 from dotenv import load_dotenv
 
-
-
-# Third-party imports - Async HTTP and Network
+# -- Async/Network
 import aiofiles.os as aio_os
 
-
-
-# Local imports - Auth and Models
+# =========================
+# 3. Local Imports
+# =========================
+# -- Auth/Models
 from auth import auth_bp, UserWrapper, login_required
 from models import (
     get_session, engine, Base,
     Folder, Conversation, User, SystemMessage, Website, UploadedFile
 )
 
-# Local imports - Utils and Processing
-
+# -- Utilities
 from utils.file_utils import (
     get_user_folder, get_system_message_folder, get_uploads_folder,
     get_processed_texts_folder, get_llmwhisperer_output_folder, 
     ensure_folder_exists, get_file_path, FileUtils, allowed_file, ALLOWED_EXTENSIONS
 )
 from utils.time_utils import clean_and_update_time_context, generate_time_context
-
-from orchestration.file_processing import FileProcessor
-from orchestration.status import StatusUpdateManager, SessionStatus
-
-from orchestration.session_attachment_handler import SessionAttachmentHandler
-
-# Local imports - Web Search
-from orchestration.web_search_orchestrator import perform_web_search_process
-
-# Local imports - Vector DB Management
-from orchestration.vectordb_file_manager import VectorDBFileManager
-vectordb_file_manager = None
-from orchestration.vector_search_utils import VectorSearchUtils
-vector_search_utils = None
-# Define the approximate token limit for your embedding model
-# text-embedding-ada-002 and text-embedding-3-small have 8191/8192 limits
-EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Use a slightly lower buffer
-
-
-
-# Local imports - Chat Orchestration
-from orchestration.chat_orchestrator import ChatOrchestrator
-chat_orchestrator = None
-
-from orchestration.web_scraper_orchestrator import WebScraperOrchestrator
-
 from utils.generate_title_utils import generate_summary_title
-
-from orchestration.image_generation import ImageGenerationOrchestrator
-image_generation_orchestrator = None
-
-
-from orchestration.llm_router import LLMRouter, count_tokens
-llm_router= None
-
-from services.embedding_store import EmbeddingStore
-
-from init_db import init_db
-
 from utils.logging_utils import setup_logging 
 from utils.debug_routes import DebugRoutes
 
+# -- Orchestration Modules
+from orchestration.file_processing import FileProcessor
+from orchestration.status import StatusUpdateManager, SessionStatus
+from orchestration.session_attachment_handler import SessionAttachmentHandler
+from orchestration.web_search_orchestrator import perform_web_search_process
+from orchestration.vectordb_file_manager import VectorDBFileManager
+from orchestration.vector_search_utils import VectorSearchUtils
+from orchestration.chat_orchestrator import ChatOrchestrator
+from orchestration.web_scraper_orchestrator import WebScraperOrchestrator
+from orchestration.image_generation import ImageGenerationOrchestrator
+from orchestration.llm_router import LLMRouter, count_tokens
+from orchestration.conversation import ConversationOrchestrator
+from orchestration.system_message_orchestrator import SystemMessageOrchestrator
+from orchestration.websocket_manager import WebSocketManager
+
+# -- Services
+from services.embedding_store import EmbeddingStore
 from services.client_manager import ClientManager
 
+# -- Config/Init
 from config import get_config
+from init_db import init_db
 
-
-# Load environment variables
+# =========================
+# 4. Global Constants & Config
+# =========================
 load_dotenv()
+EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Use a slightly lower buffer
+db_url = os.getenv('DATABASE_URL')
+debug_mode = True
 
-# Initialize application
+# Default System Message configuration
+DEFAULT_SYSTEM_MESSAGE = {
+    "name": "Default System Message",
+    "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
+    "description": "Default entry for database",
+    "model_name": "gpt-3.5-turbo",
+    "temperature": 0.3
+}
+
+# =========================
+# 5. App Initialization
+# =========================
 app = Quart(__name__)
 app = cors(app, allow_origin="*")
 QuartSchema(app)
-
 app.config.from_object(get_config())
 
-# Local imports - Conversation Orchestration
-from orchestration.conversation import ConversationOrchestrator
-conversation_orchestrator = ConversationOrchestrator(app.logger)
-
-from orchestration.system_message_orchestrator import SystemMessageOrchestrator
-system_message_orchestrator = SystemMessageOrchestrator(app.logger)
-
-from orchestration.websocket_manager import WebSocketManager
-# Initialize the status update manager
-status_manager = StatusUpdateManager()
-
-
-websocket_manager = WebSocketManager(status_manager, app.logger)
-
-# Initialize client manager and all external service clients
-client_manager = ClientManager()
-
-
-db_url = os.getenv('DATABASE_URL')
-
-
-# Debug configuration
-debug_mode = True
-
-
-
-# Initialize QuartAuth
+# Auth
 auth_manager = QuartAuth(app)
 auth_manager.user_class = UserWrapper
-
-
-# Register the blueprint
 app.register_blueprint(auth_bp)  
 
-@app.errorhandler(Unauthorized)
-async def unauthorized_handler(error):
-    await flash('Please log in to access this page.', 'warning')
-    return redirect(url_for('auth.login'))
-
-@app.errorhandler(Exception)
-async def handle_exception(error):
-    app.logger.error(f"Unhandled exception: {str(error)}")
-    app.logger.exception("Full error traceback:")
-    return await render_template('error.html', error=str(error))
-
-@app.errorhandler(404)
-async def not_found_error(error):
-    app.logger.error(f"404 Not Found: Path={request.path} | Args={dict(request.args)} | Method={request.method}")
-    return await render_template('error.html', error="Page not found"), 404
-
-@app.errorhandler(500)
-async def internal_error(error):
-    app.logger.error(f"500 Error: {error}")
-    return await render_template('error.html', error="Internal server error"), 500
-
-
-@app.route('/static/<path:filename>')
-async def static_files(filename):
-    return await send_from_directory('static', filename)
-
-
-
-
-# Usage in app.py
+# Logging
 setup_logging(app, debug_mode)
 
-
-
-
-# Create the upload folder if it doesn't exist
+# Upload folder
 try:
     upload_folder = Path(app.config['BASE_UPLOAD_FOLDER'])
     upload_folder.mkdir(parents=True, exist_ok=True)
@@ -202,15 +121,48 @@ try:
 except Exception as e:
     app.logger.error(f"Error during upload folder configuration: {str(e)}")
 
-
-
-# Initialize file processing
+# =========================
+# 6. Orchestrator/Manager Instantiation
+# =========================
+vectordb_file_manager = None
+vector_search_utils = None
+chat_orchestrator = None
+image_generation_orchestrator = None
+llm_router = None
 embedding_store = None
 file_processor = None
+session_attachment_handler = None
+web_scraper_orchestrator = None
+conversation_orchestrator = ConversationOrchestrator(app.logger)
+system_message_orchestrator = SystemMessageOrchestrator(app.logger)
+status_manager = StatusUpdateManager()
+websocket_manager = WebSocketManager(status_manager, app.logger)
+client_manager = ClientManager()
 
+# =========================
+# 7. Helper Functions
+# =========================
+def safe_json_loads(json_string, default=None):
+    """Safely load JSON string, return default on error or if input is None."""
+    if json_string is None:
+        return default
+    try:
+        return json.loads(json_string)
+    except (json.JSONDecodeError, TypeError) as e:
+        app.logger.warning(f"Failed to load JSON: {e}. Input: '{str(json_string)[:50]}...'. Returning default: {default}")
+        return default
 
+async def async_file_exists(file_path: str) -> bool:
+    """Async wrapper for checking if a file exists."""
+    try:
+        await aio_os.stat(file_path)
+        return True
+    except (OSError, FileNotFoundError):
+        return False
 
-
+# =========================
+# 8. App Startup
+# =========================
 @app.before_serving
 async def startup():
     global embedding_store, file_processor, session_attachment_handler
@@ -309,8 +261,8 @@ async def startup():
         
         # 13. Instantiate ImageGenerationOrchestrator
         image_generation_orchestrator = ImageGenerationOrchestrator(
-        openai_client=clients['openai'],
-        logger=app.logger
+            openai_client=clients['openai'],
+            logger=app.logger
         )
 
         app.logger.info("Application initialization completed successfully")
@@ -319,16 +271,54 @@ async def startup():
         app.logger.error("Application startup failed", exc_info=True)
         raise
 
+# =========================
+# 9. Error Handlers
+# =========================
+@app.errorhandler(Unauthorized)
+async def unauthorized_handler(error):
+    await flash('Please log in to access this page.', 'warning')
+    return redirect(url_for('auth.login'))
 
-#---------- Define the WebSocket route for chat status updates
+@app.errorhandler(Exception)
+async def handle_exception(error):
+    app.logger.error(f"Unhandled exception: {str(error)}")
+    app.logger.exception("Full error traceback:")
+    return await render_template('error.html', error=str(error))
+
+@app.errorhandler(404)
+async def not_found_error(error):
+    app.logger.error(f"404 Not Found: Path={request.path} | Args={dict(request.args)} | Method={request.method}")
+    return await render_template('error.html', error="Page not found"), 404
+
+@app.errorhandler(500)
+async def internal_error(error):
+    app.logger.error(f"500 Error: {error}")
+    return await render_template('error.html', error="Internal server error"), 500
+
+# =========================
+# 10. Static/Utility Routes
+# =========================
+@app.route('/static/<path:filename>')
+async def static_files(filename):
+    return await send_from_directory('static', filename)
+
+@app.route('/health')
+def health_check():
+    return 'OK', 200
+
+@app.route('/trigger-flash')
+def trigger_flash():
+    flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
+    return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
+
+# =========================
+# 11. WebSocket Routes
+# =========================
 @app.websocket('/ws/chat/status')
 @login_required
 async def ws_chat_status():
     return await websocket_manager.handle_ws_chat_status()
 
-
-
-#----------- Health check endpoint for WebSocket connections
 @app.route('/chat/status/health')
 @login_required
 async def chat_status_health():
@@ -348,52 +338,11 @@ async def chat_status_health():
             'quart_version': quart_version
         }
     }
-    
     return jsonify(response_data)
 
-
-
-
-#-------- Toggle web search settings for system messages
-
-@app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
-@login_required
-async def toggle_search(system_message_id):
-    """
-    Toggle web search settings for a system message.
-    """
-    try:
-        data = await request.get_json()
-        enable_web_search = data.get('enableWebSearch')
-        enable_deep_search = data.get('enableDeepSearch')
-
-        # Input validation
-        if enable_web_search is None:
-            return jsonify({'error': 'enableWebSearch parameter is required'}), 400
-        if not isinstance(enable_web_search, bool):
-            return jsonify({'error': 'enableWebSearch must be a boolean value'}), 400
-
-        result, status = await system_message_orchestrator.toggle_search(
-            system_message_id=system_message_id,
-            enable_web_search=enable_web_search,
-            enable_deep_search=enable_deep_search,
-            current_user=current_user,
-        )
-        return jsonify(result), status
-
-    except Exception as e:
-        app.logger.error(f"Error in toggle_search: {str(e)}")
-        return jsonify({
-            'error': 'Failed to update search settings',
-            'details': str(e)
-        }), 500
-
-
-from flask import make_response, send_file, abort
-
-
-#----------------- Vector database file management
-
+# =========================
+# 12. Vector DB/File Management Routes
+# =========================
 @app.route('/upload_file', methods=['POST'])
 @login_required
 async def upload_file():
@@ -454,15 +403,33 @@ async def remove_file(file_id):
     response_data, status = await vectordb_file_manager.remove_file(file_id, current_user.id)
     return jsonify(response_data), status
 
-#------------------------ End vector database file management
+@app.route('/get_files/<int:system_message_id>')
+@login_required
+async def get_files(system_message_id):
+    try:
+        async with get_session() as session:
+            result = await session.execute(
+                select(UploadedFile).filter_by(system_message_id=system_message_id)
+            )
+            files = result.scalars().all()
+            
+            file_list = [{
+                'id': file.id,
+                'name': file.original_filename,
+                'path': file.file_path,
+                'size': file.file_size,
+                'type': file.mime_type,
+                'upload_date': file.upload_timestamp.isoformat() if file.upload_timestamp else None
+            } for file in files]
+            
+            return jsonify(file_list)
+    except Exception as e:
+        app.logger.error(f"Error fetching files: {str(e)}")
+        return jsonify({'error': 'Error fetching files'}), 500
 
-
-
-#------------------------- Session Attachment Management
-
-# Initialize session attachment handler
-session_attachment_handler = None  
-
+# =========================
+# 13. Session Attachment Management Routes
+# =========================
 @app.route('/api/session-attachments/upload', methods=['POST'])
 @login_required
 async def upload_session_attachment():
@@ -547,81 +514,33 @@ async def remove_session_attachment(attachment_id):
             'error': str(e)
         }), 500
 
-#------------------------- End Session Attachment Management
-
-
-
-# Helper functions for async file operations
-async def async_file_exists(file_path: str) -> bool:
-    """Async wrapper for checking if a file exists."""
-    try:
-        await aio_os.stat(file_path)
-        return True
-    except (OSError, FileNotFoundError):
-        return False
-
-
-@app.route('/get_files/<int:system_message_id>')
-@login_required
-async def get_files(system_message_id):
-    try:
-        async with get_session() as session:
-            result = await session.execute(
-                select(UploadedFile).filter_by(system_message_id=system_message_id)
-            )
-            files = result.scalars().all()
-            
-            file_list = [{
-                'id': file.id,
-                'name': file.original_filename,
-                'path': file.file_path,
-                'size': file.file_size,
-                'type': file.mime_type,
-                'upload_date': file.upload_timestamp.isoformat() if file.upload_timestamp else None
-            } for file in files]
-            
-            return jsonify(file_list)
-    except Exception as e:
-        app.logger.error(f"Error fetching files: {str(e)}")
-        return jsonify({'error': 'Error fetching files'}), 500
-
-
-
-@app.route('/health')
-def health_check():
-    return 'OK', 200
-
-#----------------- Website Scaper Management
-
+# =========================
+# 14. Website Scraper Management Routes
+# =========================
 @app.route('/get-website/<int:website_id>', methods=['GET'])
 @login_required
 async def get_website(website_id):
     app.logger.debug(f"Attempting to fetch website with ID: {website_id}")
-    
     try:
         async with get_session() as session:
             result = await session.execute(
                 select(Website).filter_by(id=website_id)
             )
             website = result.scalar_one_or_none()
-            
             if not website:
                 app.logger.warning(f"No website found with ID: {website_id}")
                 return jsonify({'error': 'Website not found'}), 404
-                
             app.logger.debug(f"Website data: {website.to_dict()}")
             return jsonify({'website': website.to_dict()}), 200
     except Exception as e:
         app.logger.error(f"Exception occurred: {e}")
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/scrape', methods=['POST'])
 @login_required
 async def scrape():
     # Placeholder for future integration with Firecrawl or similar AI-powered extractor
     return jsonify({"success": False, "message": "Web scraping is not currently implemented. Future versions will support AI-powered content extraction."}), 501
-
 
 @app.route('/get-websites/<int:system_message_id>', methods=['GET'])
 @login_required
@@ -648,12 +567,9 @@ async def remove_website(website_id):
     result, status = await web_scraper_orchestrator.remove_website(website_id, current_user)
     return jsonify(result), status
 
-
-#----------------- End Website Scaper Management
-
-
-#----------------- Image Generation Management
-
+# =========================
+# 15. Image Generation Management Routes
+# =========================
 @app.route('/generate-image', methods=['POST'])
 @login_required
 async def generate_image():
@@ -667,33 +583,14 @@ async def generate_image():
     result, status = await image_generation_orchestrator.generate_image(prompt, n=1, size=size)
     return jsonify(result), status
 
-
-#----------------- End Image Generation Management
-
-
-        
-@app.route('/trigger-flash')
-def trigger_flash():
-    flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
-    return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
-
-#------------------ System Messages Management
-
-# Default System Message configuration
-DEFAULT_SYSTEM_MESSAGE = {
-    "name": "Default System Message",
-    "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
-    "description": "Default entry for database",
-    "model_name": "gpt-3.5-turbo",
-    "temperature": 0.3
-}
-
+# =========================
+# 16. System Messages Management Routes
+# =========================
 @app.route('/api/system-messages/default-model', methods=['GET'])
 @login_required
 async def get_current_model():
     result, status = await system_message_orchestrator.get_default_model_name(DEFAULT_SYSTEM_MESSAGE["name"])
     return jsonify(result), status
-
 
 @app.route('/system-messages', methods=['POST'])
 @login_required
@@ -723,12 +620,41 @@ async def delete_system_message(message_id):
     result, status = await system_message_orchestrator.delete(message_id, current_user)
     return jsonify(result), status
 
+@app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
+@login_required
+async def toggle_search(system_message_id):
+    """
+    Toggle web search settings for a system message.
+    """
+    try:
+        data = await request.get_json()
+        enable_web_search = data.get('enableWebSearch')
+        enable_deep_search = data.get('enableDeepSearch')
 
-#----------------- End System Messages Management
+        # Input validation
+        if enable_web_search is None:
+            return jsonify({'error': 'enableWebSearch parameter is required'}), 400
+        if not isinstance(enable_web_search, bool):
+            return jsonify({'error': 'enableWebSearch must be a boolean value'}), 400
 
+        result, status = await system_message_orchestrator.toggle_search(
+            system_message_id=system_message_id,
+            enable_web_search=enable_web_search,
+            enable_deep_search=enable_deep_search,
+            current_user=current_user,
+        )
+        return jsonify(result), status
 
-#---------------------- Database management 
+    except Exception as e:
+        app.logger.error(f"Error in toggle_search: {str(e)}")
+        return jsonify({
+            'error': 'Failed to update search settings',
+            'details': str(e)
+        }), 500
 
+# =========================
+# 17. Database Management Routes
+# =========================
 @app.route('/database')
 async def database():
     try:
@@ -793,11 +719,9 @@ def clear_db():
     else:
         print("Database clear operation cancelled.")
 
-#----------------- End Database management
-
-
-#----------------- Begining of conversation management
-
+# =========================
+# 18. Conversation Management Routes
+# =========================
 @app.route('/get_active_conversation', methods=['GET'])
 def get_active_conversation():
     conversation_id = session.get('conversation_id')
@@ -819,8 +743,7 @@ async def get_conversation_by_id(conversation_id):
             # mimic "get_or_404"
             abort(404, description="Conversation not found")
         return conversation
-    
-# Fetch all conversations from the database for listing in the left sidebar
+
 @app.route('/api/conversations', methods=['GET'])
 @login_required
 async def get_conversations():
@@ -835,8 +758,6 @@ async def get_conversations():
         app.logger.exception("Full traceback:")
         return jsonify({'error': 'Error fetching conversations'}), 500
 
-
-# Fetch a specific conversation from the database to display in the chat interface
 @app.route('/conversations/<int:conversation_id>', methods=['GET'])
 @login_required
 async def get_conversation(conversation_id):
@@ -844,7 +765,6 @@ async def get_conversation(conversation_id):
     if conversation_dict is None:
         return jsonify({'error': 'Conversation not found'}), 404
     return jsonify(conversation_dict)
-
 
 @app.route('/c/<int:conversation_id>')
 @login_required
@@ -854,7 +774,6 @@ async def show_conversation(conversation_id):
         print(f"No conversation found for ID {conversation_id}")
         return redirect(url_for('home'))
     return await render_template('chat.html', conversation_id=conversation.id)
-
 
 @app.route('/api/conversations/<int:conversation_id>/update_title', methods=['POST'])
 @login_required
@@ -876,7 +795,6 @@ async def update_conversation_title(conversation_id):
         app.logger.error(f"Error in update_conversation_title: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/api/conversations/<int:conversation_id>', methods=['DELETE'])
 @login_required
 async def delete_conversation(conversation_id):
@@ -887,7 +805,6 @@ async def delete_conversation(conversation_id):
         return jsonify({"message": "Conversation deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
 
 @app.route('/folders', methods=['GET'])
 @login_required
@@ -926,11 +843,9 @@ def reset_conversation():
         del session['conversation_id']
     return jsonify({"message": "Conversation reset successful"})
 
-#-------------------------- End of conversation-related routes
-
-
-#-------------------------- Home route
-
+# =========================
+# 19. Home and Session Routes
+# =========================
 @app.route('/')
 @login_required
 async def home():
@@ -953,20 +868,15 @@ async def home():
         app.logger.error(f"Error in home route: {str(e)}")
         app.logger.exception("Full traceback:")
         return await render_template('error.html', error=str(e))
-    
-
 
 @app.route('/clear-session', methods=['POST'])
 def clear_session():
     session.clear()
     return jsonify({"message": "Session cleared"}), 200
 
-
-
-
-#-------------------------- Start of chat-related routes
-
-
+# =========================
+# 20. Chat Routes
+# =========================
 @app.route('/chat', methods=['POST'])
 @login_required
 async def chat():
@@ -1006,11 +916,9 @@ async def chat():
         return jsonify(result[0]), result[1]
     return jsonify(result)
 
-
-#-------------------------- End of chat-related routes
-
-
-# This has to be at the bottom of the file!
+# =========================
+# 21. Main Entrypoint
+# =========================
 if __name__ == '__main__':
     import asyncio
     import platform
