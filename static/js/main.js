@@ -3929,14 +3929,14 @@ $('#chat-form').on('submit', async function (e) {
         }
 
 
-        console.log('Sending request to /chat with payload:', {
+        console.log('Sending request to /api/v1/chat with payload:', {
             ...requestPayload,
             messages: requestPayload.messages.map(m => ({ role: m.role, content: m.content.substring(0, 100) + '...' })) // Log truncated messages
         });
         console.log('Attached context file IDs being sent:', requestPayload.file_ids);
 
 
-        const response = await fetch('/chat', {
+        const response = await fetch('/api/v1/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3946,7 +3946,7 @@ $('#chat-form').on('submit', async function (e) {
             body: JSON.stringify(requestPayload)
         });
 
-        console.log('Received response from /chat endpoint. Status:', response.status);
+        console.log('Received response from /api/v1/chat endpoint. Status:', response.status);
         document.getElementById('loading').style.display = 'none'; // Hide loading indicator
 
         if (!response.ok) {
