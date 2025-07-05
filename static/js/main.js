@@ -1492,7 +1492,7 @@ document.getElementById('submitWebsiteButton').addEventListener('click', functio
 
 function addWebsite(url, systemMessageId) {
     console.log("Adding website with URL:", url, "and system message ID:", systemMessageId);
-    return fetch('/add-website', {
+    return fetch('/api/v1/websites/add', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -1522,7 +1522,7 @@ function loadWebsitesForSystemMessage(systemMessageId) {
     sidebar.innerHTML = '<div class="text-center p-2">Loading websites...</div>';
 
     $.ajax({
-        url: `/get-websites/${systemMessageId}`,
+        url: `/api/v1/websites/list/${systemMessageId}`,
         type: 'GET',
         dataType: 'json',
         success: function(response) {
@@ -1644,7 +1644,7 @@ function removeWebsite(websiteId) {
 
     // AJAX call to the server to remove the website
     $.ajax({
-        url: '/remove-website/' + websiteId,
+        url: '/api/v1/websites/remove/' + websiteId,
         type: 'DELETE',
         // Add CSRF token if needed: headers: { 'X-CSRFToken': getCsrfToken() },
         success: function(response) {
