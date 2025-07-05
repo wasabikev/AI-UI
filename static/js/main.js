@@ -520,7 +520,7 @@ async function uploadContextFile(file, placeholderId) {
         
         // Set up a promise to handle the XHR response
         const uploadPromise = new Promise((resolve, reject) => {
-            xhr.open('POST', '/api/session-attachments/upload');
+            xhr.open('POST', '/api/v1/session-attachments/upload');
             
             xhr.upload.addEventListener('progress', (event) => {
                 if (event.lengthComputable) {
@@ -636,7 +636,7 @@ async function uploadContextFile(file, placeholderId) {
 
 async function removeContextFile(attachmentId) {
     try {
-        const response = await fetch(`/api/session-attachments/${attachmentId}/remove`, { // Updated endpoint for session attachments
+        const response = await fetch(`/api/v1/session-attachments/${attachmentId}/remove`, {
             method: 'DELETE'
         });
 
@@ -1137,7 +1137,6 @@ function removeVectorFile(fileId) {
     const fileListError = document.getElementById('fileListError');
     const fileUploadStatus = document.getElementById('fileUploadStatus');
 
-    // UPDATED ENDPOINT
     fetch(`/api/v1/vector-files/${cleanFileId}`, {
         method: 'DELETE',
         headers: {
@@ -1199,7 +1198,6 @@ function triggerVectorFileUpload() {
             fileUploadStatus.style.display = 'inline';
             fileListError.style.display = 'none';
 
-            // UPDATED ENDPOINT
             fetch('/api/v1/vector-files/upload', {
                 method: 'POST',
                 body: formData
@@ -1274,7 +1272,7 @@ function fetchVectorFileList(systemMessageId) {
     fileListError.style.display = 'none';
     moreFilesIndicator.style.display = 'none';
 
-    // UPDATED ENDPOINT
+
     fetch(`/api/v1/vector-files/list/${systemMessageId}`)
     .then(response => {
         if (!response.ok) {
@@ -1325,13 +1323,11 @@ function fetchVectorFileList(systemMessageId) {
 }
 
 function viewOriginalVectorFile(fileId) {
-    // UPDATED ENDPOINT
     const url = `/api/v1/vector-files/${fileId}/original`;
     window.open(url, '_blank');
 }
 
 function viewProcessedVectorFileText(fileId) {
-    // UPDATED ENDPOINT
     fetch(`/api/v1/vector-files/${fileId}/processed`)
         .then(response => {
             if (!response.ok) {
@@ -2086,11 +2082,6 @@ function fetchAndProcessSystemMessages(forceActiveId = null) {
 }
 
 
-
-
-
-
-// Add this code to the beginning of your script
 document.querySelectorAll('input[name="temperatureOptions"]').forEach(radio => {
     radio.addEventListener('change', function() {
         // Update selectedTemperature when a radio button is changed *by the user*

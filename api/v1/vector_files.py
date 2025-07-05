@@ -22,7 +22,6 @@ def create_vector_files_blueprint(
     @bp.route('/upload', methods=['POST'])
     @login_required
     async def upload_file():
-        # pylint: disable=unused-function
         files = await request.files
         if 'file' not in files:
             return jsonify({'success': False, 'error': 'No file part'}), 400
