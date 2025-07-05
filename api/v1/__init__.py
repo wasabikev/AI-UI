@@ -2,6 +2,7 @@ from .chat import create_chat_blueprint
 from .vector_files import create_vector_files_blueprint
 from .session_attachments import create_session_attachments_blueprint
 from .websites import create_websites_blueprint
+from .image_generation import create_image_generation_blueprint
 
 def register_api_blueprints(app):
     app.register_blueprint(create_chat_blueprint(
@@ -27,6 +28,9 @@ def register_api_blueprints(app):
         app.Website,
         app.web_scraper_orchestrator,
         app.logger
+    ))
+    app.register_blueprint(create_image_generation_blueprint(
+    app.image_generation_orchestrator
     ))
 
 

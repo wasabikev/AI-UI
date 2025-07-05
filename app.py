@@ -289,7 +289,11 @@ async def startup():
         app.select = select
         app.Website = Website
         app.web_scraper_orchestrator = web_scraper_orchestrator
-        
+
+        # 18. Attach endpoints for image generation
+        app.image_generation_orchestrator = image_generation_orchestrator
+
+
         # 16. Register API blueprints
         from api.v1 import register_api_blueprints
         register_api_blueprints(app)
@@ -369,22 +373,6 @@ async def chat_status_health():
     }
     return jsonify(response_data)
 
-
-# =========================
-# 15. Image Generation Management Routes
-# =========================
-@app.route('/generate-image', methods=['POST'])
-@login_required
-async def generate_image():
-    data = await request.get_json()
-    prompt = data.get('prompt', '').strip()
-    size = data.get('size', '256x256')
-
-    if not prompt:
-        return jsonify({"error": "Prompt is required"}), 400
-
-    result, status = await image_generation_orchestrator.generate_image(prompt, n=1, size=size)
-    return jsonify(result), status
 
 # =========================
 # 16. System Messages Management Routes
