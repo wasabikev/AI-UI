@@ -85,7 +85,7 @@ from init_db import init_db
 # 4. Global Constants & Config
 # =========================
 load_dotenv()
-EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Use a slightly lower buffer
+EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Default token limit for embedding models
 db_url = os.getenv('DATABASE_URL')
 debug_mode = True
 
@@ -268,9 +268,16 @@ async def startup():
             logger=app.logger
         )
 
-        # 14. Attach orchestrators to app for blueprint use
+        # 14. Attach chat orchestrator and status manager to the app
         app.chat_orchestrator = chat_orchestrator
         app.status_manager = status_manager
+
+        # Attach endpoints for vector file management
+        app.vectordb_file_manager = vectordb_file_manager
+        app.get_session = get_session
+        app.UploadedFile = UploadedFile
+        app.select = select
+        app.allowed_file = allowed_file
 
         # 15. Register API blueprints
         from api.v1 import register_api_blueprints
@@ -351,92 +358,6 @@ async def chat_status_health():
     }
     return jsonify(response_data)
 
-# =========================
-# 12. Vector DB/File Management Routes
-# =========================
-@app.route('/upload_file', methods=['POST'])
-@login_required
-async def upload_file():
-    files = await request.files
-    if 'file' not in files:
-        return jsonify({'success': False, 'error': 'No file part'}), 400
-
-    file = files['file']
-    form = await request.form
-    try:
-        system_message_id = int(form.get('system_message_id'))
-    except (TypeError, ValueError):
-        return jsonify({'success': False, 'error': 'Invalid system message ID'}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({'success': False, 'error': 'File type not allowed'}), 400
-
-    result, status = await vectordb_file_manager.upload_file(
-        file=file,
-        user_id=current_user.id,
-        system_message_id=system_message_id
-    )
-    return jsonify(result), status
-
-@app.route('/view_original_file/<file_id>')
-@login_required
-async def view_original_file(file_id):
-    html_content, status, message = await vectordb_file_manager.get_original_file_html(file_id, current_user.id)
-    if status != 200:
-        return Response(json.dumps({'error': message}), status=status, mimetype='application/json')
-    return Response(html_content, mimetype='text/html')
-
-@app.route('/serve_file/<file_id>')
-@login_required
-async def serve_file(file_id):
-    data, status, mimetype, headers = await vectordb_file_manager.get_file_bytes(file_id, current_user.id)
-    if status != 200:
-        return Response(json.dumps({'error': mimetype}), status=status, mimetype='application/json')
-    response = Response(data, mimetype=mimetype)
-    for k, v in headers.items():
-        response.headers[k] = v
-    return response
-
-@app.route('/view_processed_text/<file_id>')
-@login_required
-async def view_processed_text(file_id):
-    content, status, mimetype, headers = await vectordb_file_manager.get_processed_text(file_id, current_user.id)
-    if status != 200:
-        return Response(json.dumps({'error': mimetype}), status=status, mimetype='application/json')
-    response = Response(content, mimetype=mimetype)
-    for k, v in headers.items():
-        response.headers[k] = v
-    return response
-
-@app.route('/remove_file/<file_id>', methods=['DELETE'])
-@login_required
-async def remove_file(file_id):
-    response_data, status = await vectordb_file_manager.remove_file(file_id, current_user.id)
-    return jsonify(response_data), status
-
-@app.route('/get_files/<int:system_message_id>')
-@login_required
-async def get_files(system_message_id):
-    try:
-        async with get_session() as session:
-            result = await session.execute(
-                select(UploadedFile).filter_by(system_message_id=system_message_id)
-            )
-            files = result.scalars().all()
-            
-            file_list = [{
-                'id': file.id,
-                'name': file.original_filename,
-                'path': file.file_path,
-                'size': file.file_size,
-                'type': file.mime_type,
-                'upload_date': file.upload_timestamp.isoformat() if file.upload_timestamp else None
-            } for file in files]
-            
-            return jsonify(file_list)
-    except Exception as e:
-        app.logger.error(f"Error fetching files: {str(e)}")
-        return jsonify({'error': 'Error fetching files'}), 500
 
 # =========================
 # 13. Session Attachment Management Routes

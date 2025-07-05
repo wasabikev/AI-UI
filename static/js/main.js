@@ -1127,22 +1127,22 @@ function getCsrfToken() {
 
 function removeVectorFile(fileId) {
     console.log('removeVectorFile called with fileId:', fileId, 'Type:', typeof fileId);
-    
-    // Clean up the file ID using regex to remove leading non-alphanumeric chars (except hyphen) and trim
+
     let cleanFileId = String(fileId).replace(/^[^a-zA-Z0-9-]+/, '').trim();
     console.log('Cleaned fileId:', cleanFileId);
-    
+
     if (!confirm('Are you sure you want to remove this vector file?')) {
         return;
     }
-    const fileListError = document.getElementById('fileListError'); // Error display for vector files
-    const fileUploadStatus = document.getElementById('fileUploadStatus'); // Status display for vector files
+    const fileListError = document.getElementById('fileListError');
+    const fileUploadStatus = document.getElementById('fileUploadStatus');
 
-    fetch(`/remove_file/${cleanFileId}`, { // Use cleaned ID
+    // UPDATED ENDPOINT
+    fetch(`/api/v1/vector-files/${cleanFileId}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'
-            // 'X-CSRFToken': getCsrfToken() // Add CSRF if needed
+            // 'X-CSRFToken': getCsrfToken()
         },
     })
     .then(response => {
@@ -1158,7 +1158,7 @@ function removeVectorFile(fileId) {
             setTimeout(() => {
                 fileUploadStatus.style.display = 'none';
             }, 3000);
-            fetchVectorFileList(activeSystemMessageId); // Refresh the vector file list
+            fetchVectorFileList(activeSystemMessageId);
         } else {
             throw new Error(data.error || 'Failed to remove vector file');
         }
@@ -1176,10 +1176,10 @@ function removeVectorFile(fileId) {
 function triggerVectorFileUpload() {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = '.txt,.pdf,.docx'; // Accepted types for vectorization
+    fileInput.accept = '.txt,.pdf,.docx';
 
-    const fileUploadStatus = document.getElementById('fileUploadStatus'); // Status display for vector files
-    const fileListError = document.getElementById('fileListError'); // Error display for vector files
+    const fileUploadStatus = document.getElementById('fileUploadStatus');
+    const fileListError = document.getElementById('fileListError');
 
     fileInput.onchange = function(e) {
         const file = e.target.files[0];
@@ -1199,10 +1199,11 @@ function triggerVectorFileUpload() {
             fileUploadStatus.style.display = 'inline';
             fileListError.style.display = 'none';
 
-            fetch('/upload_file', { // Endpoint for vector search files
+            // UPDATED ENDPOINT
+            fetch('/api/v1/vector-files/upload', {
                 method: 'POST',
                 body: formData
-                // headers: { 'X-CSRFToken': getCsrfToken() } // Add CSRF if needed
+                // headers: { 'X-CSRFToken': getCsrfToken() }
             })
             .then(response => {
                 if (!response.ok) {
@@ -1216,7 +1217,7 @@ function triggerVectorFileUpload() {
                     setTimeout(() => {
                         fileUploadStatus.style.display = 'none';
                     }, 3000);
-                    fetchVectorFileList(activeSystemMessageId); // Refresh list
+                    fetchVectorFileList(activeSystemMessageId);
                     updateVectorFileMoreIndicator();
                 } else {
                     throw new Error(data.error || 'Unknown error occurred during vector file upload');
@@ -1237,13 +1238,13 @@ function triggerVectorFileUpload() {
         }
     };
 
-    fileInput.click(); // Trigger the file selection dialog
+    fileInput.click();
 }
 
 function initializeAndUpdateVectorFileList(systemMessageId) {
     console.log('Initializing and updating vector file list for system message ID:', systemMessageId);
 
-    const fileList = document.getElementById('fileList'); // Element displaying vector files
+    const fileList = document.getElementById('fileList');
     if (fileList) {
         fileList.innerHTML = '';
     }
@@ -1253,28 +1254,28 @@ function initializeAndUpdateVectorFileList(systemMessageId) {
 }
 
 function fetchVectorFileList(systemMessageId) {
-    const fileList = document.getElementById('fileList'); // Element for vector files
-    const noFilesMessage = document.getElementById('noFilesMessage'); // Element for vector files
-    const fileListError = document.getElementById('fileListError'); // Element for vector files
-    const fileListContainer = document.getElementById('fileListContainer'); // Container for vector files
+    const fileList = document.getElementById('fileList');
+    const noFilesMessage = document.getElementById('noFilesMessage');
+    const fileListError = document.getElementById('fileListError');
+    const fileListContainer = document.getElementById('fileListContainer');
     if (!fileListContainer || !fileList || !noFilesMessage || !fileListError) {
         console.error('One or more vector file list elements not found in the DOM');
         return;
     }
-    const moreFilesIndicator = document.getElementById('moreFilesIndicator'); // Indicator for vector files
+    const moreFilesIndicator = document.getElementById('moreFilesIndicator');
     if (!moreFilesIndicator) {
         console.error('More vector files indicator not found');
         return;
     }
 
-    // Reset displays
     fileList.innerHTML = '';
     fileList.style.display = 'none';
     noFilesMessage.style.display = 'none';
     fileListError.style.display = 'none';
     moreFilesIndicator.style.display = 'none';
 
-    fetch(`/get_files/${systemMessageId}`) // Endpoint to get vector files
+    // UPDATED ENDPOINT
+    fetch(`/api/v1/vector-files/list/${systemMessageId}`)
     .then(response => {
         if (!response.ok) {
             throw new Error(`Network response was not ok: ${response.status}`);
@@ -1288,17 +1289,10 @@ function fetchVectorFileList(systemMessageId) {
                 console.log('Processing file object:', file);
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item d-flex justify-content-between align-items-center';
-                
-                // Log the raw ID and type
-                console.log('Raw file ID:', file.id, 'Type:', typeof file.id);
-                
-                // Clean and escape the ID
+
                 const cleanFileId = String(file.id).trim();
                 const fileIdEscaped = CSS.escape(cleanFileId);
-                
-                console.log('Cleaned file ID:', cleanFileId);
-                console.log('Escaped file ID:', fileIdEscaped);
-                
+
                 fileItem.innerHTML = `
                     <span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
                     <div class="file-actions">
@@ -1326,18 +1320,19 @@ function fetchVectorFileList(systemMessageId) {
         updateVectorFileMoreIndicator();
     });
 
-    // Add scroll listener for the vector file list
     fileListContainer.removeEventListener('scroll', updateVectorFileMoreIndicator);
     fileListContainer.addEventListener('scroll', updateVectorFileMoreIndicator);
 }
 
 function viewOriginalVectorFile(fileId) {
-    const url = `/view_original_file/${fileId}`; // Endpoint for original vector file
+    // UPDATED ENDPOINT
+    const url = `/api/v1/vector-files/${fileId}/original`;
     window.open(url, '_blank');
 }
 
 function viewProcessedVectorFileText(fileId) {
-    fetch(`/view_processed_text/${fileId}`) // Endpoint for processed vector file text
+    // UPDATED ENDPOINT
+    fetch(`/api/v1/vector-files/${fileId}/processed`)
         .then(response => {
             if (!response.ok) {
                 if (response.status === 404) {
@@ -1363,8 +1358,8 @@ function viewProcessedVectorFileText(fileId) {
 }
 
 function updateVectorFileMoreIndicator() {
-    const fileListContainer = document.getElementById('fileListContainer'); // Container for vector files
-    const moreFilesIndicator = document.getElementById('moreFilesIndicator'); // Indicator for vector files
+    const fileListContainer = document.getElementById('fileListContainer');
+    const moreFilesIndicator = document.getElementById('moreFilesIndicator');
 
     if (fileListContainer && moreFilesIndicator) {
         const isScrollable = fileListContainer.scrollHeight > fileListContainer.clientHeight;
@@ -1381,11 +1376,11 @@ function updateVectorFileMoreIndicator() {
 }
 
 function handleAddVectorFileButtonClick() {
-    // Button click handler in the modal's file group (for vector files)
-    triggerVectorFileUpload(); // Use the renamed function
+    triggerVectorFileUpload();
 }
 
 // --- End Vector File Functions ---
+
 
 
 // --- General Utility Functions ---
