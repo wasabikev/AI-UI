@@ -38,6 +38,8 @@ services:
         value: "true"
       - key: WEBSOCKET_PATH
         value: "/ws/chat/status"
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
 
     # Optional: health check endpoint (Quart route or an existing endpoint)
     health_check:
