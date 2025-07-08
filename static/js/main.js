@@ -1,6 +1,6 @@
 // main.js
 
-let messages = []; // An array that stores the converstation messages
+let messages = []; // An array that stores the conversation messages
 
 window.systemMessages = [];  // Make it explicitly global
 let systemMessages = []; // An array that stores the system message
@@ -36,7 +36,7 @@ let statusWebSocket = null;
 let statusUpdateContainer = null;
 let healthCheckInterval = null;
 
-// variables to manage pagination of converstation list
+// variables to manage pagination of conversation list
 let isLoadingConversations = false;
 let currentPage = 1;
 let hasMoreConversations = true;
@@ -3223,7 +3223,7 @@ function updateConversationList(page = 1, append = false) {
     }
 
 
-    fetch(`/api/conversations?page=${page}&per_page=20`) // Adjust per_page as needed
+    fetch(`/api/v1/conversations?page=${page}&per_page=20`) // Adjust per_page as needed
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -3369,7 +3369,7 @@ $('#edit-title-btn').click(function() {
         }
 
         $.ajax({
-            url: `/api/conversations/${activeConversationId}/update_title`,
+            url: `/api/v1/conversations/${activeConversationId}/update_title`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ title: newTitle.trim() }),
@@ -3414,7 +3414,7 @@ $('#delete-conversation-btn').click(function() {
     const confirmation = confirm('Are you sure you want to delete this conversation? This action cannot be undone.');
     if (confirmation) {
         $.ajax({
-            url: `/api/conversations/${activeConversationId}`,
+            url: `/api/v1/conversations/${activeConversationId}`,
             method: 'DELETE',
             // Add CSRF token if needed: headers: { 'X-CSRFToken': getCsrfToken() },
             success: function(response) {
@@ -3467,7 +3467,7 @@ function loadConversation(conversationId) {
     $('#chat').html('<div class="text-center p-4">Loading conversation...</div>');
     $("#conversation-title, #edit-title-btn, #delete-conversation-btn, #token-display").hide();
 
-    fetch(`/conversations/${conversationId}`)
+    fetch(`/api/v1/conversations/${conversationId}`)
         .then(response => {
             console.log('Response status for conversation fetch:', response.status);
             if (!response.ok) {
