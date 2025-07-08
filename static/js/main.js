@@ -3230,7 +3230,7 @@ function updateConversationList(page = 1, append = false) {
         loadingIndicator.html('Loading more...').show();
     }
 
-    const url = `/api/v1/conversations?page=${page}&per_page=20`;
+    const url = `/api/v1/conversations/?page=${page}&per_page=20`;
     console.log(`[UCL] About to fetch: ${url}`);
 
     fetch(url)

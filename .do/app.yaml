@@ -40,6 +40,8 @@ services:
         value: "/ws/chat/status"
       - key: FORWARDED_ALLOW_IPS
         value: "*"
+      - key: PREFERRED_URL_SCHEME
+        value: "https"
 
     # Optional: health check endpoint (Quart route or an existing endpoint)
     health_check:
