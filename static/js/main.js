@@ -3196,10 +3196,18 @@ function renderOpenAI(content) {
 
 // --- Conversation List & Loading ---
 
-function updateConversationList(page = 1, append = false) {
-    if (isLoadingConversations && append) return; // Prevent multiple simultaneous appends
+// Listen for page unload/reload/navigation events for debugging
+window.addEventListener('beforeunload', function(e) {
+    console.warn('[UCL] Page is unloading (reload/navigation detected).');
+});
 
-    console.log(`Updating conversation list - Page: ${page}, Append: ${append}`);
+function updateConversationList(page = 1, append = false) {
+    if (isLoadingConversations && append) {
+        console.log(`[UCL] Skipped: isLoadingConversations && append is true`);
+        return; // Prevent multiple simultaneous appends
+    }
+
+    console.log(`[UCL] Called. Page: ${page}, Append: ${append}`);
     isLoadingConversations = true;
 
     const conversationListContainer = $('#conversation-list');
@@ -3216,22 +3224,25 @@ function updateConversationList(page = 1, append = false) {
     } else {
         // For append, show loading at the bottom
         if (loadingIndicator.length === 0) {
-             loadingIndicator = $('<div id="conversation-loading" class="text-center p-2">Loading more...</div>');
-             conversationListContainer.after(loadingIndicator);
+            loadingIndicator = $('<div id="conversation-loading" class="text-center p-2">Loading more...</div>');
+            conversationListContainer.after(loadingIndicator);
         }
-         loadingIndicator.html('Loading more...').show();
+        loadingIndicator.html('Loading more...').show();
     }
 
+    const url = `/api/v1/conversations?page=${page}&per_page=20`;
+    console.log(`[UCL] About to fetch: ${url}`);
 
-    fetch(`/api/v1/conversations?page=${page}&per_page=20`) // Adjust per_page as needed
+    fetch(url)
         .then(response => {
+            console.log(`[UCL] Fetch returned. Response:`, response);
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log(`Received ${data.conversations.length} conversations. Total pages: ${data.total_pages}, Current page: ${page}`);
+            console.log(`[UCL] Data received:`, data);
 
             // Remove loading indicator
             loadingIndicator.hide();
@@ -3244,10 +3255,9 @@ function updateConversationList(page = 1, append = false) {
             let newContent = '';
             data.conversations.forEach(conversation => {
                 const temperatureInfo = (typeof conversation.temperature !== 'undefined' && conversation.temperature !== null)
-                    ? `${conversation.temperature.toFixed(1)}°` // Format temp
+                    ? `${conversation.temperature.toFixed(1)}°`
                     : 'N/A°';
 
-                // Use modelNameMapping for display
                 const modelDisplay = modelNameMapping(conversation.model_name || 'Unknown');
                 const title = escapeHtml(conversation.title || 'Untitled Conversation');
 
@@ -3275,40 +3285,37 @@ function updateConversationList(page = 1, append = false) {
 
             // Re-attach click handlers to *all* conversation items after update
             conversationListContainer.find('.conversation-item').off('click').on('click', function() {
-                // Remove active class from previously selected item
                 conversationListContainer.find('.conversation-item.active').removeClass('active');
-                // Add active class to the clicked item
                 $(this).addClass('active');
 
                 const conversationId = $(this).data('id');
-                console.log(`Loading conversation with id: ${conversationId}`);
-                // Update URL without reloading page
+                console.log(`[UCL] Loading conversation with id: ${conversationId}`);
                 window.history.pushState({ conversationId: conversationId }, '', `/c/${conversationId}`);
                 loadConversation(conversationId);
             });
 
             // Highlight the currently active conversation if it exists in the list
             if (activeConversationId) {
-                 conversationListContainer.find(`.conversation-item[data-id="${activeConversationId}"]`).addClass('active');
+                conversationListContainer.find(`.conversation-item[data-id="${activeConversationId}"]`).addClass('active');
             }
 
-
             // Setup infinite scroll if there are more conversations
-            // Ensure observer is detached before potentially adding a new one
-            detachInfiniteScrollObserver(); // Detach previous observer if any
+            detachInfiniteScrollObserver();
             if (hasMoreConversations) {
                 setupInfiniteScroll();
             }
-
         })
         .catch(error => {
-            console.error(`Error updating conversation list: ${error}`);
+            // Log fetch errors and display message to user
+            console.error(`[UCL] Fetch failed/caught:`, error);
             loadingIndicator.html('<span class="text-danger">Error loading conversations.</span> <a href="#" onclick="updateConversationList(1, false); return false;">Retry</a>').show();
         })
         .finally(() => {
+            console.log(`[UCL] Finally reached (success or error).`);
             isLoadingConversations = false;
         });
 }
+
 
 // Global observer variable
 let conversationListObserver = null;

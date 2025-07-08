@@ -5,7 +5,7 @@ from quart_auth import current_user
 from auth import login_required
 
 def create_conversations_blueprint(conversation_orchestrator, get_session, select, Conversation, logger):
-    bp = Blueprint('conversations', __name__, url_prefix='/api/v1/conversations')
+    bp = Blueprint('conversations', __name__, url_prefix='/api/v1/conversations/')
 
     @bp.route('/active', methods=['GET'])
     def get_active_conversation():
