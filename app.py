@@ -105,6 +105,9 @@ app = Quart(__name__)
 app = cors(app, allow_origin="*")
 QuartSchema(app)
 app.config.from_object(get_config())
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+
+
 
 # Auth
 auth_manager = QuartAuth(app)
