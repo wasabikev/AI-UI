@@ -14,7 +14,7 @@ class SystemMessageOrchestrator:
     def __init__(self, logger):
         self.logger = logger
 
-    async def create(self, data: Dict[str, Any], current_user) -> Tuple[Dict[str, Any], int]:
+    async def create(self, data: Dict[str, Any], current_user: User) -> Tuple[Dict[str, Any], int]:
         """
         Create a new SystemMessage.
         """
@@ -63,7 +63,7 @@ class SystemMessageOrchestrator:
             self.logger.error(f"Error fetching system messages: {str(e)}")
             return [{'error': str(e)}], 500
 
-    async def update(self, message_id: int, data: Dict[str, Any], current_user) -> Tuple[Dict[str, Any], int]:
+    async def update(self, message_id: int, data: Dict[str, Any], current_user: User) -> Tuple[Dict[str, Any], int]:
         """
         Update an existing system message.
         """
@@ -78,7 +78,7 @@ class SystemMessageOrchestrator:
                     return {'error': 'System message not found'}, 404
 
                 # Only allow admins to update
-                if not await current_user.check_admin():
+                if not current_user.is_admin:
                     return {'error': 'Unauthorized'}, 401
 
                 # Update fields
@@ -99,7 +99,7 @@ class SystemMessageOrchestrator:
             self.logger.error(f"Error updating system message: {str(e)}")
             return {'error': str(e)}, 500
 
-    async def delete(self, message_id: int, current_user) -> Tuple[Dict[str, Any], int]:
+    async def delete(self, message_id: int, current_user: User) -> Tuple[Dict[str, Any], int]:
         """
         Delete a system message.
         """
@@ -113,7 +113,7 @@ class SystemMessageOrchestrator:
                 if not system_message:
                     return {'error': 'System message not found'}, 404
 
-                if not await current_user.check_admin():
+                if not current_user.is_admin:
                     return {'error': 'Unauthorized'}, 401
 
                 await session.delete(system_message)
@@ -146,7 +146,7 @@ class SystemMessageOrchestrator:
         system_message_id: int,
         enable_web_search: bool,
         enable_deep_search: bool,
-        current_user,
+        current_user: User,
     ) -> Tuple[dict, int]:
         """
         Toggle web search settings for a system message.
@@ -162,28 +162,19 @@ class SystemMessageOrchestrator:
                 if not system_message:
                     return {'error': 'System message not found'}, 404
 
-                # Get current user from database
-                user_result = await session.execute(
-                    select(User).filter_by(id=int(current_user.auth_id))
-                )
-                current_user_obj = user_result.scalar_one_or_none()
-
-                if not current_user_obj:
-                    return {'error': 'User not found'}, 404
-
-                # Check permissions
-                if not current_user_obj.is_admin and system_message.created_by != current_user_obj.id:
+                # Check permissions - user must be admin or owner
+                if not current_user.is_admin and system_message.created_by != current_user.id:
                     return {'error': 'Unauthorized to modify this system message'}, 403
 
                 # Update the search settings
                 system_message.enable_web_search = enable_web_search
                 system_message.enable_deep_search = enable_deep_search
-                system_message.updated_at = datetime.now(timezone.utc)
+                system_message.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
                 await session.commit()
 
                 self.logger.info(
-                    f"Search settings updated for system message {system_message_id} by user {current_user_obj.id}"
+                    f"Search settings updated for system message {system_message_id} by user {current_user.id}"
                 )
 
                 return {
@@ -200,13 +191,20 @@ class SystemMessageOrchestrator:
                 'details': str(e)
             }, 500
 
-    async def get_default_model_name(self, default_message_name):
-        async with get_session() as session:
-            result = await session.execute(
-                select(SystemMessage).filter_by(name=default_message_name)
-            )
-            default_message = result.scalar_one_or_none()
-            if default_message:
-                return {'model_name': default_message.model_name}, 200
-            else:
-                return {'error': 'Default system message not found'}, 404
+    async def get_default_model_name(self, default_message_name: str) -> Tuple[Dict[str, Any], int]:
+        """
+        Get the model name from the default system message.
+        """
+        try:
+            async with get_session() as session:
+                result = await session.execute(
+                    select(SystemMessage).filter_by(name=default_message_name)
+                )
+                default_message = result.scalar_one_or_none()
+                if default_message:
+                    return {'model_name': default_message.model_name}, 200
+                else:
+                    return {'error': 'Default system message not found'}, 404
+        except Exception as e:
+            self.logger.error(f"Error getting default model name: {str(e)}")
+            return {'error': str(e)}, 500

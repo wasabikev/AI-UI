@@ -1008,7 +1008,7 @@ function updateSearchSettings() {
         tempWebSearchState !== currentSystemMessage.enable_web_search ||
         payload.enableDeepSearch !== currentSystemMessage.enable_deep_search
     ) {
-        fetch(`/api/system-messages/${activeSystemMessageId}/toggle-search`, {
+        fetch(`/api/v1/system_messages/${activeSystemMessageId}/toggle-search`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2035,7 +2035,7 @@ function populateSystemMessageModal() {
 
 function fetchAndProcessSystemMessages(forceActiveId = null) {
     return new Promise((resolve, reject) => {
-        fetch('/api/system_messages')
+        fetch('/api/v1/system_messages')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -2190,8 +2190,9 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         enable_web_search: enableWebSearch,
         enable_time_sense: enableTimeSense
     };
-    const url = messageId ? `/system-messages/${messageId}` : '/system-messages';
+    const url = messageId ? `/api/v1/system_messages/${messageId}` : '/api/v1/system_messages';
     const method = messageId ? 'PUT' : 'POST';
+
 
     saveButton.disabled = true;
     saveButton.textContent = 'Saving...';
@@ -2422,7 +2423,7 @@ document.getElementById('delete-system-message-btn').addEventListener('click', f
             this.textContent = 'Deleting...';
 
             $.ajax({
-                url: `/system-messages/${messageId}`,
+                url: `/api/v1/system_messages/${messageId}`,
                 method: 'DELETE',
                 // Add CSRF token if needed: headers: { 'X-CSRFToken': getCsrfToken() },
                 success: function(response) {

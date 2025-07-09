@@ -1,3 +1,5 @@
+# api\v1\__init__.py
+
 """
 API v1 Blueprint Registration
 
@@ -12,6 +14,7 @@ from .session_attachments import create_session_attachments_blueprint
 from .websites import create_websites_blueprint
 from .image_generation import create_image_generation_blueprint
 from .conversations import create_conversations_blueprint
+from .system_messages import create_system_message_blueprint
 
 def register_api_blueprints(app):
     """
@@ -64,5 +67,13 @@ def register_api_blueprints(app):
         app.Conversation,
         app.logger
     ))
+
+    # System message endpoints
+    # DEFAULT_SYSTEM_MESSAGE is available from config.py
+    app.register_blueprint(create_system_message_blueprint(
+    app.system_message_orchestrator,
+    app.config['DEFAULT_SYSTEM_MESSAGE']
+    ))
+
 
     # Register other blueprints as needed

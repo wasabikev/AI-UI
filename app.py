@@ -89,14 +89,6 @@ EMBEDDING_MODEL_TOKEN_LIMIT = 8190 # Default token limit for embedding models
 db_url = os.getenv('DATABASE_URL')
 debug_mode = True
 
-# Default System Message configuration
-DEFAULT_SYSTEM_MESSAGE = {
-    "name": "Default System Message",
-    "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
-    "description": "Default entry for database",
-    "model_name": "gpt-3.5-turbo",
-    "temperature": 0.3
-}
 
 # =========================
 # 5. App Initialization
@@ -302,10 +294,21 @@ async def startup():
         app.select = select
         app.Conversation = Conversation
 
+        # 20. Attach endpoints for system message management
+        app.system_message_orchestrator = system_message_orchestrator
+        app.get_session = get_session
+        app.select = select
+        app.SystemMessage = SystemMessage
 
         # 16. Register API blueprints
         from api.v1 import register_api_blueprints
         register_api_blueprints(app)
+
+        # Print registered routes for debugging
+        # print("Registered routes:")
+        # for rule in app.url_map.iter_rules():
+        #    print(rule)
+
 
         app.logger.info("Application initialization completed successfully")
 
@@ -382,75 +385,6 @@ async def chat_status_health():
     }
     return jsonify(response_data)
 
-
-# =========================
-# 16. System Messages Management Routes
-# =========================
-@app.route('/api/system-messages/default-model', methods=['GET'])
-@login_required
-async def get_current_model():
-    result, status = await system_message_orchestrator.get_default_model_name(DEFAULT_SYSTEM_MESSAGE["name"])
-    return jsonify(result), status
-
-@app.route('/system-messages', methods=['POST'])
-@login_required
-async def create_system_message():
-    if not await current_user.check_admin():
-        return jsonify({'error': 'Unauthorized'}), 401
-    data = await request.get_json()
-    result, status = await system_message_orchestrator.create(data, current_user)
-    return jsonify(result), status
-
-@app.route('/api/system_messages', methods=['GET'])
-@login_required
-async def get_system_messages():
-    result, status = await system_message_orchestrator.get_all()
-    return jsonify(result), status
-
-@app.route('/system-messages/<int:message_id>', methods=['PUT'])
-@login_required
-async def update_system_message(message_id):
-    data = await request.get_json()
-    result, status = await system_message_orchestrator.update(message_id, data, current_user)
-    return jsonify(result), status
-
-@app.route('/system-messages/<int:message_id>', methods=['DELETE'])
-@login_required
-async def delete_system_message(message_id):
-    result, status = await system_message_orchestrator.delete(message_id, current_user)
-    return jsonify(result), status
-
-@app.route('/api/system-messages/<int:system_message_id>/toggle-search', methods=['POST'])
-@login_required
-async def toggle_search(system_message_id):
-    """
-    Toggle web search settings for a system message.
-    """
-    try:
-        data = await request.get_json()
-        enable_web_search = data.get('enableWebSearch')
-        enable_deep_search = data.get('enableDeepSearch')
-
-        # Input validation
-        if enable_web_search is None:
-            return jsonify({'error': 'enableWebSearch parameter is required'}), 400
-        if not isinstance(enable_web_search, bool):
-            return jsonify({'error': 'enableWebSearch must be a boolean value'}), 400
-
-        result, status = await system_message_orchestrator.toggle_search(
-            system_message_id=system_message_id,
-            enable_web_search=enable_web_search,
-            enable_deep_search=enable_deep_search,
-            current_user=current_user,
-        )
-        return jsonify(result), status
-
-    except Exception as e:
-        app.logger.error(f"Error in toggle_search: {str(e)}")
-        return jsonify({
-            'error': 'Failed to update search settings',
-            'details': str(e)
-        }), 500
 
 # =========================
 # 17. Database Management Routes

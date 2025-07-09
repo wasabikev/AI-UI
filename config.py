@@ -1,4 +1,4 @@
-# orchestration/config.py
+# config.py
 
 import os
 from pathlib import Path
@@ -33,6 +33,15 @@ class BaseConfig:
     DATABASE_URL = os.getenv('DATABASE_URL')
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL environment variable is required but not set.")
+
+    # Default System Message configuration
+    DEFAULT_SYSTEM_MESSAGE = {
+        "name": "Default System Message",
+        "content": "You are a knowledgeable assistant that specializes in critical thinking and analysis.",
+        "description": "Default entry for database",
+        "model_name": "gpt-3.5-turbo",
+        "temperature": 0.3
+    } 
 
 
     # Add other global config here as needed
