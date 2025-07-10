@@ -387,7 +387,7 @@ async def chat_status_health():
 
 
 # =========================
-# 17. Database Management Routes
+# 12. Database Management Routes
 # =========================
 @app.route('/database')
 async def database():
@@ -455,7 +455,7 @@ def clear_db():
 
 
 # =========================
-# 19. Home and Session Routes
+# 13. Home and Session Routes
 # =========================
 @app.route('/')
 @login_required
@@ -487,7 +487,7 @@ def clear_session():
 
 
 # =========================
-# 20. Main Entrypoint
+# 14. Main Entrypoint
 # =========================
 if __name__ == '__main__':
     import asyncio

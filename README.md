@@ -1,129 +1,170 @@
 # AI ∞ UI Technical Documentation
 
 ## Overview
-AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordination and integration of multiple AI models, tools, and data sources while maintaining a fluid, intuitive user experience. Built on an asynchronous architecture using Quart (async Flask), the system provides responsive, non-blocking orchestration of AI services, ensuring smooth interaction even during complex operations.
+
+**AI ∞ UI** is a modular, API-first platform for orchestrating advanced AI workflows.  
+It enables seamless interaction with multiple AI models and tools through a unified, responsive web interface.
+
+- **Backend:**  
+  Built on Quart (async Flask) with a fully asynchronous architecture.  
+  All business logic is exposed via versioned API endpoints and organized using blueprint factories and orchestrator modules for clear separation of concerns.
+
+- **Frontend:**  
+  Features a modern, modal-based UI for managing conversations, system messages, file uploads, and more.  
+  Real-time status updates are delivered via WebSockets for a fluid user experience.
+
+- **Extensibility:**  
+  The system is designed for easy integration of new AI models, data sources, and orchestration logic, supporting both rapid prototyping and production deployment.
+
+---
 
 ## Features
-- **Asynchronous Processing**: Leverages Quart's async capabilities for responsive, non-blocking orchestration
-- **Multi-Model Support**: Seamless integration with OpenAI, Anthropic, Google, and other AI providers
-- **Conversation Management**: Create, read, update, and delete conversations with full history
-- **System Message Templates**: Customizable templates for different AI interaction scenarios
-- **Vector Search**: Document retrieval using semantic search via Pinecone integration
-- **Web Search**: Real-time web information retrieval during conversations
-- **Website Indexing**: Crawl and index websites for context-aware responses
-- **File Processing & Vectorization**: Upload and process files for semantic search and retrieval-augmented generation (RAG) via permanent vector storage
-- **Session Context File Upload**: Attach files directly to chat sessions; their full content is extracted and injected into the current conversation context.
-- **Temperature Control**: Adjust AI response variability with temperature settings
-- **WebSocket Status Updates**: Real-time status updates during processing
-- **Modal-Based Interface**: Comprehensive UI for system configuration and management
-- **Authentication System**: User registration, login, and admin management
-- **Rich Text Rendering**: Markdown, code highlighting, and LaTeX support
-- **Responsive Design**: Mobile-friendly interface with Bootstrap 4.5.2
-- **Time Sense**: Context-aware responses with current date, time, and timezone information
+- **Asynchronous Processing**: Fully async backend using Quart for responsive, non-blocking orchestration of all AI and file operations.
+- **Multi-Model Support**: Seamless integration with OpenAI (GPT-3.5, GPT-4, GPT-4o, etc.), Anthropic (Claude 3.5, 3.7, 4), Google Gemini, and Cerebras models.
+- **Conversation Management**: Create, view, update, and delete conversations with full message history, model, and metadata.
+- **System Message Templates**: Customizable system message templates for different AI interaction scenarios, including model, temperature, and web search settings.
+- **Vector Search (Semantic Search)**: Upload and process files for semantic search and retrieval-augmented generation (RAG) using Pinecone vector storage.
+- **Web Search (Standard & Deep)**: Real-time web information retrieval using Brave Search API, with both standard and deep search orchestration, including summarization and citation.
+- **Website Indexing**: Add, remove, and manage websites for context-aware responses (future support for AI-powered content extraction).
+- **File Processing & Vectorization**: Upload and process files (PDF, DOCX, TXT, etc.) for permanent vector storage and semantic search.
+- **Session Context File Upload**: Attach files directly to chat sessions; their content is extracted and injected into the current conversation context (ephemeral, not indexed).
+- **Temperature Control**: Adjust AI response variability with temperature settings, including use-case explanations.
+- **WebSocket Status Updates**: Real-time status updates and progress indicators during long-running operations via WebSocket.
+- **Modal-Based Interface**: Modular, modal-based UI for system message editing, website management, file uploads, and admin actions.
+- **Authentication System**: User registration, login, logout, and admin management with custom async authentication and status checks.
+- **Admin Dashboard**: Manage users, update status, toggle admin privileges, reset passwords, and delete users via a dedicated admin interface.
+- **Rich Text Rendering**: Markdown support, code syntax highlighting (Prism.js), and LaTeX rendering (MathJax).
+- **Responsive Design**: Mobile-friendly, accessible interface using Bootstrap 4.5.2 and custom CSS.
+- **Time Sense**: Context-aware responses with current date, time, and timezone information injected into system messages.
+- **Infinite Scrolling**: Efficient conversation list loading with infinite scroll and pagination.
+- **Flash Messages & Error Handling**: User feedback via flash messages, error templates, and real-time status updates.
+- **Role-Based Access Control**: Admin-only routes and actions, with clear permission boundaries.
+- **Extensible Orchestration Layer**: Modular orchestrators for chat, file processing, web search, system messages, and more.
+- **Comprehensive Logging**: Structured, colorized, and Unicode-safe logging with log rotation and debug endpoints.
 
 ## Global Variables
 
 ### Frontend (main.js)
+
 - `messages`: Array storing conversation messages
-- `systemMessages`: Array storing system message templates
+- `systemMessages`: Array storing system message templates (also available as `window.systemMessages`)
 - `model`: Current selected model name
 - `activeConversationId`: ID of currently selected conversation
-- `currentSystemMessage`: Currently selected system message
+- `currentSystemMessage`: Currently selected system message object
 - `currentSystemMessageDescription`: Description of current system message
 - `initialTemperature`: Initial temperature setting
 - `isSaved`: Flag tracking if system message changes are saved
 - `activeSystemMessageId`: Currently active system message ID
 - `showTemperature`: Visibility state of temperature settings
 - `selectedTemperature`: Current temperature value
-- `activeWebsiteId`: Currently active website ID
-- `tempWebSearchState`: Temporary web search state
-- `tempIntelligentSearchState`: Temporary intelligent search state
+- `activeWebsiteId`: Currently active website ID (for modal website management)
+- `tempWebSearchState`: Temporary web search toggle state (for modal)
+- `tempDeepSearchState`: Temporary deep search toggle state (for modal)
 - `maintainWebSocketConnection`: Flag for WebSocket connection management
 - `statusWebSocket`: WebSocket connection for status updates
 - `currentSessionId`: Current WebSocket session ID
-- `isLoadingConversations`: Flag indicating if conversations are being loaded
+- `isLoadingConversations`: Flag indicating if conversations are being loaded (for infinite scroll)
 - `currentPage`: Current page number for conversation pagination
 - `hasMoreConversations`: Flag indicating if more conversations are available
+- `attachedContextFiles`: Map of temporary file attachments for chat context (`Map<fileId, {name, size, type, tokenCount, content}>`)
+- `isAdmin`: Boolean indicating if the current user is an admin (from `APP_DATA`)
+- `APP_DATA`: Object containing initial session, conversation, and admin state from the backend
 
-### Backend (app.py)
-- `app`: Main Quart application instance
-- `client`: OpenAI client instance
-- `embedding_store`: Pinecone embedding store instance
-- `file_processor`: File processing utility instance
-- `status_manager`: WebSocket status update manager
-- `db_url`: Database connection string
-- `BASE_UPLOAD_FOLDER`: Base directory for file uploads
-- `debug_mode`: Application debug state
-- `auth_manager`: Authentication manager instance
-- `ALLOWED_EXTENSIONS`: Set of allowed file extensions for upload
+### Backend Functions (app.py)
+
+- `startup()`: Initializes all orchestrators, services, and registers API blueprints.
+- `setup_logging()`: Configures application logging.
+- `unauthorized_handler()`: Handles unauthorized access (401).
+- `handle_exception()`: Global exception handler.
+- `not_found_error()`: Handles 404 errors.
+- `internal_error()`: Handles 500 errors.
+- `static_files()`: Serves static files.
+- `health_check()`: Simple health check endpoint.
+- `trigger_flash()`: Triggers a flash message for permission errors.
+- `ws_chat_status()`: WebSocket endpoint for real-time status updates (delegates to `websocket_manager`).
+- `chat_status_health()`: Health check for WebSocket connections.
+- `home()`: Main chat interface route (requires login).
+- `clear_session()`: Clears the user session.
+- `database()`: (Admin/debug) View all conversations as JSON.
+- `clear_db()`: (Admin/debug) CLI command to clear and reinitialize the database.
+
+> **Note:** All business logic endpoints (chat, file upload, system message management, web search, etc.) are now handled via API blueprints and orchestrators, not as direct app.py route functions.
 
 ## Key Components
 
 ### Backend Components
-1. **Quart Application (app.py)**
+
+1. **Configuration (`config.py`)**
+   - Centralized environment and application settings
+   - Environment variable loading
+   - Upload folder and database URL configuration
+   - Default system message definition
+   - Environment-specific config classes (development, production, DigitalOcean, Azure)
+
+2. **Quart Application (`app.py`)**
    - Asynchronous request handling
    - Route definitions
    - Middleware configuration
    - Error handling
    - WebSocket management
 
-2. **Authentication System (auth.py)**
+3. **Authentication System (`auth.py`)**
    - User authentication
    - Session management
    - Admin authorization
    - Login/logout handling
    - User registration
 
-3. **Database Models (models.py)**
+4. **Database Models (`models.py`)**
    - SQLAlchemy ORM definitions
    - Database schema
    - Relationship mappings
    - Data validation
    - Session management
 
-4. **File Processing (file_processing.py)**
+5. **File Processing (`orchestration/file_processing.py`)**
    - Asynchronous file operations
    - Document parsing
    - Vector indexing
    - Semantic search
    - PDF processing
 
-5. **Embedding Store (embedding_store.py)**
+6. **Embedding Store (`services/embedding_store.py`)**
    - Pinecone integration
    - Vector storage management
    - Namespace organization
    - Query processing
    - Embedding generation
 
-6. **File Utilities (file_utils.py)**
+7. **File Utilities (`utils/file_utils.py`)**
    - File path management
    - Directory structure
    - Asynchronous file operations
    - Path resolution
    - File existence checking
 
-7. **LLM Whisper Processor (llm_whisper_processor.py)**
+8. **LLM Whisper Processor (`services/llm_whisper_processor.py`)**
    - PDF text extraction
    - Document processing
    - Text highlighting
    - Metadata extraction
    - API integration
 
-8. **Status Update Manager**
+9. **Status Update Manager (`orchestration/status.py`)**
    - WebSocket connection management
    - Real-time status updates
    - Session tracking
    - Connection health monitoring
    - Reconnection handling
 
-9. **Web Search Process**
-   - Query understanding
-   - Search execution
-   - Result summarization
-   - Source citation
-   - Intelligent search
+10. **Web Search Process (`orchestration/web_search_orchestrator.py`)**
+    - Query understanding
+    - Search execution
+    - Result summarization
+    - Source citation
+    - Intelligent search
 
-10. **Web Scraper (webscraper/spiders/flexible_spider.py)**
+11. **Web Scraper (`orchestration/web_scraper_orchestrator.py`)**
     - Website crawling
     - Content extraction
     - Metadata collection
@@ -131,309 +172,360 @@ AI ∞ UI is a comprehensive orchestration interface that enables dynamic coordi
     - Data formatting
 
 ### Frontend Components
-1. **Main JavaScript (main.js)**
+
+1. **Main JavaScript (`static/js/main.js`)**
    - UI event handling
    - AJAX requests
-   - WebSocket communication
+   - WebSocket communication for status updates
    - DOM manipulation
    - Conversation management
+   - Modal logic and infinite scrolling
 
-2. **Modal System**
+2. **File Attachment Handler (`static/js/file_handlers.js`)**
+   - Handles file selection, upload, removal, and preview for chat context attachments
+
+3. **Markdown & Code Rendering**
+   - **Marked.js (`static/js/marked.min.js`)**: Markdown parsing and rendering
+   - **Prism.js (`static/js/prism.js`, `static/css/prism.css`)**: Code syntax highlighting
+
+4. **Modal System**
    - System message configuration
    - Website management
    - File upload interface
    - Model selection
    - Temperature adjustment
+   - All modals implemented with Bootstrap 4.5.2
 
-3. **Chat Interface**
-   - Message rendering
-   - Markdown processing
-   - Code syntax highlighting
-   - LaTeX rendering
-   - Status updates
+5. **Chat Interface**
+   - Message rendering (user, assistant, system)
+   - Markdown and code block support
+   - LaTeX rendering (MathJax)
+   - Infinite scrolling for conversation list
+   - Status updates via WebSocket
+   - Context file attachment preview
 
-4. **Authentication Interface**
-   - Login form
-   - Registration form
+6. **Authentication Interface**
+   - Login and registration forms
    - Admin dashboard
    - User management
    - Password handling
+   - Flash messages and error handling
 
-5. **CSS Styling (styles.css)**
+7. **CSS Styling (`static/css/styles.css`)**
    - Responsive layout
    - Theme definition
-   - Component styling
+   - Component styling (chat, admin, modals, file upload, etc.)
    - Animation effects
    - Modal customization
+   - File upload progress and preview
+   - Infinite scroll and sidebar styles
 
-## Files & Their Roles
+8. **Templates (`templates/`)**
+   - `chat.html`: Main chat interface
+   - `admin.html`: Admin dashboard
+   - `login.html`: Login form
+   - `error.html`: Error display
 
-### Core Application Files
-- **app.py**: Main application entry point with route definitions, middleware configuration, and core functionality
-- **models.py**: Database models and ORM definitions for data persistence
-- **auth.py**: Authentication system with login, registration, and admin functionality
-- **file_processing.py**: Utilities for file operations, document processing, vector search and RAG functionality
-- **file_utils.py**: File path management and directory structure utilities
-- **embedding_store.py**: Pinecone integration for vector storage and retrieval
-- **llm_whisper_processor.py**: PDF processing and text extraction utilities
-- **run.py**: Application runner with configuration for development and production
+9. **Image Assets (`static/images/`)**
+   - `BraveIcon.png`, `PineconeIcon.png`, `SearchIcon.png`, `favicon.ico`: Used for context blocks, branding, and browser tab icon
 
-### File Management Components
-- **TemporaryFileHandler**: Manages temporary file uploads for chat context
-- **FileProcessor**: Handles permanent file processing and vector indexing
-- **FileUtils**: Manages file paths and directory structures
-- **UploadedFile Model**: Tracks both temporary and permanent file uploads
+### Files & Their Roles
 
-### File Upload Features
-- **Temporary Context Files**: Files attached to chat messages
-  - Stored in temp directory
-  - Automatically processed and removed
-  - Content injected into chat context
-  - Token count estimation
-  - Supports multiple simultaneous uploads
+#### Core Application Files
 
-- **Permanent Vector Files**: Files for semantic search
-  - Stored in user/system directories
-  - Processed for vector indexing
-  - Linked to system messages
-  - Full content preservation
-  - Original and processed text views
+- **app.py**: Main Quart application entry point. Handles app initialization, orchestrator/service instantiation, blueprint registration, error handling, static/utility routes, WebSocket endpoints, and admin/debug routes.
+- **run.py**: Application runner for development/production (Hypercorn entrypoint).
+- **models.py**: SQLAlchemy ORM models and async session management for all database tables (User, Conversation, Folder, SystemMessage, Website, UploadedFile, UserUsage).
+- **auth.py**: Custom authentication system (login, registration, admin, decorators) built on top of quart_auth.
+- **config.py**: Centralized configuration for environment-specific settings, secrets, upload folder, and default system message. Provides `get_config()` for environment selection.
 
-### File Processing Capabilities
-- PDF text extraction via LLMWhisperer
-- Document chunking and vectorization
-- Token count estimation
-- MIME type detection
-- Asynchronous processing
-- Error handling and recovery
-- Progress tracking
-- File cleanup management
+#### Orchestration Layer
 
-### File Storage Structure
-```user_files/
-├── [user_id]/
-│   └── [system_message_id]/
-│       ├── uploads/           # Original files
-│       ├── processed_texts/   # Extracted text
-│       ├── llmwhisperer_output/  # PDF processing
-│       └── web_search_results/   # Search data
-```
+- **orchestration/chat_orchestrator.py**: Main business logic for chat processing, context management, model routing, semantic search, web search, and conversation persistence.
+- **orchestration/conversation.py**: CRUD operations and orchestration for conversations and folders.
+- **orchestration/file_processing.py**: File upload, processing, text extraction, vectorization, and semantic search orchestration.
+- **orchestration/image_generation.py**: AI image generation orchestration.
+- **orchestration/llm_router.py**: Routes requests to the correct LLM API (OpenAI, Anthropic, Gemini, Cerebras) and handles token counting.
+- **orchestration/session_attachment_handler.py**: Handles temporary file attachments for chat context injection.
+- **orchestration/status.py**: Manages WebSocket status sessions and real-time updates.
+- **orchestration/system_message_orchestrator.py**: CRUD and business logic for system messages.
+- **orchestration/vector_search_utils.py**: Utilities for vector search and concise query generation.
+- **orchestration/vectordb_file_manager.py**: Manages file upload, download, deletion, and vector DB cleanup.
+- **orchestration/web_scraper_orchestrator.py**: Coordinates website scraping and content extraction.
+- **orchestration/web_search_orchestrator.py**: Orchestrates web search (standard and deep) and integrates results.
 
-### File-Related API Endpoints
-- `/upload-temp-file`: Upload temporary chat context files
-- `/remove-temp-file/<file_id>`: Remove temporary files
-- `/upload_file`: Upload permanent vector files
-- `/remove_file/<file_id>`: Remove permanent files
-- `/view_original_file/<file_id>`: View original file
-- `/view_processed_text/<file_id>`: View processed text
-- `/serve_file/<file_id>`: Serve file content
+#### Service Layer
 
-### Frontend Files
-- **static/js/main.js**: Primary JavaScript for UI interactions, AJAX calls, and WebSocket handling
-- **static/js/marked.min.js**: Markdown parsing and rendering library
-- **static/js/prism.js**: Code syntax highlighting library
-- **static/css/styles.css**: CSS styling for the entire application
+- **services/client_manager.py**: Centralized initialization and management of all external API clients (OpenAI, Anthropic, Pinecone, Google, Cerebras, LLMWhisperer, Brave Search).
+- **services/embedding_store.py**: Handles vector embedding storage and retrieval (Pinecone, LlamaIndex).
 
-### Template Files
-- **templates/chat.html**: Main chat interface template
-- **templates/admin.html**: Admin dashboard template
-- **templates/login.html**: User login template
-- **templates/error.html**: Error display template
+#### Utilities
 
-### Web Scraping
-- **webscraper/spiders/flexible_spider.py**: Scrapy spider for website crawling
-- **webscraper/items.py**: Scrapy item definitions for web crawling
-- **webscraper/pipelines.py**: Processing pipeline for scraped website data
+- **utils/file_utils.py**: File path management, directory structure, async file operations, and allowed file type checking.
+- **utils/time_utils.py**: Time context generation and system message time context management.
+- **utils/generate_title_utils.py**: Conversation title generation and summarization utilities.
+- **utils/logging_utils.py**: Logging configuration, Unicode/color formatting, and log handler setup.
+- **utils/debug_routes.py**: Debug and diagnostic endpoints for configuration, WebSocket, and directory checks.
+
+#### API Layer
+
+- **api/v1/chat.py**: Factory function for the `/api/v1/chat` endpoint blueprint, using dependency injection for orchestrators and status manager.
+- **api/v1/__init__.py**: Blueprint registration for API v1 endpoints.
+
+#### File Management Components
+
+- **orchestration/session_attachment_handler.py**: Manages temporary file uploads for chat context (ephemeral, not indexed).
+- **orchestration/file_processing.py**: Handles permanent file processing, text extraction, and vector indexing.
+- **utils/file_utils.py**: Manages file paths and directory structures.
+- **models.py (UploadedFile model)**: Tracks both temporary and permanent file uploads and their metadata.
+
+#### Frontend Files
+
+- **static/js/main.js**: Primary JavaScript for UI interactions, AJAX calls, and WebSocket handling.
+- **static/js/marked.min.js**: Markdown parsing and rendering library.
+- **static/js/prism.js**: Code syntax highlighting library.
+- **static/css/styles.css**: CSS styling for the entire application.
+
+#### Template Files
+
+- **templates/chat.html**: Main chat interface template.
+- **templates/admin.html**: Admin dashboard template.
+- **templates/login.html**: User login template.
+- **templates/error.html**: Error display template.
+
+#### Web Scraping
+
+- **orchestration/web_scraper_orchestrator.py**: Orchestrates website crawling and content extraction.
+- **webscraper/spiders/flexible_spider.py**: (Legacy) Scrapy spider for website crawling (if still used).
+- **webscraper/items.py**: Scrapy item definitions.
+- **webscraper/pipelines.py**: Processing pipeline for scraped website data.
 
 ## Function Names & What They Do
 
-### Authentication Functions (auth.py)
-- `init_auth()`: Initializes the authentication system
-- `login_required()`: Decorator to protect routes requiring authentication
-- `async_login_required()`: Async version of login_required decorator
-- `login()`: Handles user login requests
-- `logout()`: Handles user logout requests
-- `register()`: Handles user registration
-- `admin_dashboard()`: Renders the admin dashboard
-- `update_password()`: Updates a user's password
-- `update_admin()`: Updates a user's admin status
-- `update_status()`: Updates a user's account status
-- `delete_user()`: Deletes a user account
+#### Authentication Functions (`auth.py`)
+- `init_auth(app)`: Initializes the authentication system and sets up the custom user class.
+- `login_required(func)`: Decorator to protect routes requiring authentication and "Active" status.
+- `async_login_required()`: Async decorator for authentication-required routes.
+- `UserWrapper`: Custom user class for async user lookup and admin/status checks.
+- `update_password(user_id)`: Updates a user's password (admin only).
+- `update_admin(user_id)`: Toggles a user's admin status (admin only).
+- `update_status(user_id)`: Updates a user's account status (admin only).
+- `admin_dashboard()`: Renders the admin dashboard (admin only).
+- `delete_user(user_id)`: Deletes a user account (admin only).
+- `login()`: Handles user login requests.
+- `logout()`: Handles user logout requests.
+- `register()`: Handles user registration.
 
-### Embedding Store Functions (embedding_store.py)
-- `initialize()`: Initializes the Pinecone connection
-- `generate_db_identifier()`: Creates a unique identifier for the database
-- `get_embed_model()`: Returns the embedding model
-- `get_storage_context()`: Creates a storage context for vector operations
-- `generate_namespace()`: Generates a unique namespace for a system message
+#### Embedding Store Functions (`services/embedding_store.py`)
+- `initialize()`: Initializes the Pinecone connection and embedding model.
+- `generate_db_identifier(db_url)`: Creates a unique identifier for the database.
+- `get_embed_model()`: Returns the embedding model instance.
+- `get_storage_context(system_message_id)`: Creates a storage context for vector operations for a given system message.
+- `generate_namespace(system_message_id)`: Generates a unique namespace for a system message.
 
-### File Utility Functions (file_utils.py)
-- `get_user_folder()`: Gets the base folder for a user
-- `get_system_message_folder()`: Gets the folder for a system message
-- `get_uploads_folder()`: Gets the uploads folder
-- `get_processed_texts_folder()`: Gets the processed texts folder
-- `get_llmwhisperer_output_folder()`: Gets the LLMWhisperer output folder
-- `get_web_search_results_folder()`: Gets the web search results folder
-- `ensure_folder_exists()`: Creates folders if they don't exist
-- `get_file_path()`: Gets the full path for a file
-- `check_file_exists()`: Checks if a file exists
-- `get_file_size()`: Gets the size of a file
-- `remove_file()`: Removes a file
-- `move_file()`: Moves a file from one location to another
+#### File Utility Functions (`utils/file_utils.py`)
+- `FileUtils`: Class for all file/folder path management and async file operations.
+- `get_user_folder(user_id)`: Gets the base folder for a user.
+- `get_system_message_folder(user_id, system_message_id)`: Gets the folder for a system message.
+- `get_uploads_folder(user_id, system_message_id)`: Gets the uploads folder.
+- `get_processed_texts_folder(user_id, system_message_id)`: Gets the processed texts folder.
+- `get_llmwhisperer_output_folder(user_id, system_message_id)`: Gets the LLMWhisperer output folder.
+- `get_web_search_results_folder(user_id, system_message_id)`: Gets the web search results folder.
+- `ensure_folder_exists(folder_path)`: Creates folders if they don't exist.
+- `get_file_path(user_id, system_message_id, filename, folder_type)`: Gets the full path for a file.
+- `check_file_exists(file_path)`: Checks if a file exists.
+- `get_file_size(file_path)`: Gets the size of a file.
+- `remove_file(file_path)`: Removes a file.
+- `move_file(src, dst)`: Moves a file from one location to another.
+- `allowed_file(filename)`: Checks if a file extension is allowed.
 
-### LLM Whisper Processor Functions (llm_whisper_processor.py)
-- `process_file()`: Processes a file using LLMWhisperer
-- `highlight_text()`: Highlights text in a processed document
-- `get_document_metadata()`: Retrieves metadata for a processed document
+#### Conversation Orchestrator Functions (`orchestration/conversation.py`)
+- `get_all_conversations_as_dicts()`: Fetches all conversations as dicts (admin/debug).
+- `get_conversations(user_id, page, per_page)`: Returns paginated conversations for a user.
+- `get_conversation_dict(conversation_id)`: Returns a conversation as a dict.
+- `get_conversation(conversation_id)`: Fetches a conversation by ID.
+- `update_title(conversation_id, new_title)`: Updates the title of a conversation.
+- `delete_conversation(conversation_id)`: Deletes a conversation.
+- `create_conversation(title, folder_id, user_id)`: Creates a new conversation in a folder.
+- `get_folders()`: Returns all folder titles.
+- `create_folder(title)`: Creates a new folder.
+- `get_folder_conversations(folder_id)`: Gets all conversation titles in a folder.
 
-### Backend Functions (app.py)
-- `setup_logging()`: Configures application logging with proper formatting and handlers
-- `startup()`: Initializes application components during startup
-- `shutdown()`: Cleans up resources during application shutdown
-- `get_response_from_model()`: Routes requests to appropriate AI model API
-- `perform_web_search_process()`: Orchestrates web search with query understanding and result summarization
-- `chat()`: Main route for processing chat messages and integrating various capabilities
-- `count_tokens()`: Estimates token usage for different AI models
-- `update_status()`: Sends status updates via WebSocket
-- `test_db_connection()`: Verifies database connectivity
-- `get_conversations()`: Retrieves user conversations with pagination
-- `get_system_messages()`: Fetches available system message templates
-- `add_website()`: Adds a website for indexing
-- `upload_file()`: Processes file uploads and initiates indexing
-- `handle_exception()`: Global exception handler
-- `unauthorized_handler()`: Handles unauthorized access attempts
-- `not_found_error()`: Handles 404 errors
-- `internal_error()`: Handles 500 errors
-- `create_system_message()`: Creates a new system message template
-- `update_system_message()`: Updates an existing system message template
-- `delete_system_message()`: Deletes a system message template
-- `get_system_messages()`: Retrieves all system message templates
-- `toggle_search()`: Toggles web search settings for a system message
+#### System Message Orchestrator Functions (`orchestration/system_message_orchestrator.py`)
+- `create(data, current_user)`: Creates a new system message.
+- `get_all()`: Retrieves all system messages.
+- `update(message_id, data, current_user)`: Updates a system message.
+- `delete(message_id, current_user)`: Deletes a system message.
+- `get_by_id(message_id)`: Retrieves a system message by ID.
+- `toggle_search(system_message_id, enable_web_search, enable_deep_search, current_user)`: Toggles web search settings for a system message.
+- `get_default_model_name(default_message_name)`: Gets the model name from the default system message.
 
-### File Processing Functions (file_processing.py)
-- `process_file()`: Handles file processing based on file type
-- `process_pdf()`: Extracts text from PDF files using LLMWhisperer
-- `process_text_file()`: Processes plain text files
-- `create_index()`: Creates vector indices for document retrieval
-- `perform_semantic_search()`: Executes semantic search on indexed documents
-- `query_index()`: Performs RAG (Retrieval-Augmented Generation) queries
-- `run_in_executor()`: Runs blocking operations in a thread pool
-- `ensure_directory_exists()`: Creates directories if they don't exist
-- `save_processed_text()`: Saves processed text to a file
+#### Chat Orchestrator Functions (`orchestration/chat_orchestrator.py`)
+- `run_chat(...)`: Main entry point for processing chat requests, including context management, semantic search, web search, and response generation.
 
-### Web Scraper Functions (flexible_spider.py)
-- `parse()`: Extracts content from web pages
-- `clean_html()`: Cleans HTML content
-- `extract_metadata()`: Extracts metadata from web pages
+#### File Processing Functions (`orchestration/file_processing.py`)
+- `FileProcessor`: Main class for file processing and vectorization.
+- `process_file(file_path, storage_context, file_id, user_id, system_message_id)`: Processes a file and creates a vector index.
+- `process_text(text_content, metadata, storage_context)`: Processes raw text and creates a vector index.
+- `extract_text_from_file(file_path, user_id, system_message_id, file_id)`: Extracts text from a file (PDF or text).
+- `query_index(query_text, storage_context)`: Performs semantic search on indexed documents.
+- `highlight_text(whisper_hash, search_text)`: Highlights text in a processed document.
+- `cleanup()`: Cleans up resources (thread pool).
 
-### Time Utility Functions (time_utils.py)
-- `clean_and_update_time_context()`: Processes and updates time context in messages
-- `generate_time_context()`: Generates current time information for the AI
+#### Session Attachment Handler Functions (`orchestration/session_attachment_handler.py`)
+- `save_attachment(file, user_id)`: Saves a session-scoped file attachment.
+- `remove_attachment(attachment_id, user_id)`: Removes a session attachment.
+- `get_attachment_content(attachment_id, user_id, system_message_id)`: Extracts and returns content from a session attachment.
 
-### Frontend Functions (main.js)
-- `initStatusWebSocket()`: Initializes WebSocket connection for status updates
-- `handleWebSocketMessage()`: Processes incoming WebSocket messages
-- `addStatusUpdate()`: Adds a status update to the UI
-- `clearStatusUpdates()`: Clears status updates from the UI
-- `loadWebsitesForSystemMessage()`: Fetches and displays websites for a system message
-- `removeWebsite()`: Deletes a website from the system
-- `reindexWebsite()`: Triggers re-indexing of a website's content
-- `uploadFile()`: Handles file upload process
-- `fetchFileList()`: Retrieves files associated with a system message
-- `viewOriginalFile()`: Opens the original file in a new window
-- `viewProcessedText()`: Opens the processed text in a new window
-- `saveSystemMessageChanges()`: Persists changes to system message templates
-- `updateTemperatureDisplay()`: Updates UI with current temperature setting
-- `displaySystemMessage()`: Shows system message in the chat interface
-- `populateSystemMessageModal()`: Populates the system message modal with data
-- `fetchAndProcessSystemMessages()`: Fetches and processes system messages
-- `modelNameMapping()`: Converts API model names to user-friendly display names
-- `renderOpenAIWithFootnotes()`: Renders AI responses with hyperlinked footnotes
-- `updateConversationList()`: Refreshes the conversation sidebar with pagination
-- `loadConversation()`: Loads a specific conversation with its history
-- `showConversationControls()`: Updates UI with conversation controls
-- `renderMarkdownAndCode()`: Renders markdown and code snippets
-- `escapeHtml()`: Escapes HTML characters
-- `handleLists()`: Processes markdown lists
-- `copyCodeToClipboard()`: Copies code snippets to clipboard
-- `setupInfiniteScroll()`: Sets up infinite scrolling for conversations
+#### Vector DB File Manager Functions (`orchestration/vectordb_file_manager.py`)
+- `upload_file(file, user_id, system_message_id)`: Handles file upload, processing, and indexing.
+- `remove_file(file_id, user_id)`: Removes a file and associated vectors.
+- `get_file_record(file_id)`: Retrieves a file record from the database.
+- `get_original_file_html(file_id, current_user_id)`: Returns HTML for viewing the original file.
+- `get_file_bytes(file_id, current_user_id)`: Returns the file as bytes for download/viewing.
+- `get_processed_text(file_id, current_user_id)`: Returns the processed text of a file.
 
-## File Structure
-├── static/
+#### Status Update Manager Functions (`orchestration/status.py`)
+- `create_session(user_id)`: Creates a new WebSocket status session.
+- `register_connection(session_id, websocket)`: Registers a WebSocket connection.
+- `send_status_update(session_id, message, status)`: Sends a status update to a session.
+- `send_ping(session_id)`: Sends a ping to keep the connection alive.
+- `remove_connection(session_id)`: Removes a WebSocket connection.
+- `update_status(message, session_id, status)`: Helper to send a status update.
+- `_cleanup_expired_sessions()`: Cleans up expired sessions.
 
-│   ├── css/
+#### LLM Router Functions (`orchestration/llm_router.py`)
+- `get_response_from_model(client, model, messages, temperature, ...)`: Routes requests to the correct LLM API and returns the response.
+- `count_tokens(model_name, messages, logger=None)`: Counts tokens for a given model and message list.
 
-│   │   └── styles.css
+#### Vector Search Utils Functions (`orchestration/vector_search_utils.py`)
+- `generate_concise_query_for_embedding(client, long_query_text, target_model)`: Summarizes a long query for embedding.
 
-│   ├── js/
+#### Web Search Orchestrator Functions (`orchestration/web_search_orchestrator.py`)
+- `perform_web_search_process(...)`: Orchestrates standard or deep web search and integrates results.
+- `understand_query(...)`: Analyzes the conversation and user query to generate a search query.
 
-│   │   ├── main.js
+#### Web Scraper Orchestrator Functions (`orchestration/web_scraper_orchestrator.py`)
+- `add_website(url, system_message_id, current_user)`: Adds a website for indexing.
+- `remove_website(website_id, current_user)`: Removes a website.
+- `extract_content(url, ...)`: (Placeholder) For future AI-powered web content extraction.
 
-│   │   ├── marked.min.js
+#### Logging Utils Functions (`utils/logging_utils.py`)
+- `setup_logging(app, debug_mode)`: Configures logging for the application.
+- `UnicodeFormatter`: Formatter for Unicode-safe log output.
+- `ColorFormatter`: Formatter for colorized log output.
 
-│   │   └── prism.js
+#### Debug Routes Functions (`utils/debug_routes.py`)
+- `websocket_diagnostic()`: Endpoint to check WebSocket configuration.
+- `debug_config()`: Endpoint to verify configuration.
+- `debug_config_full()`: Detailed configuration endpoint (login required).
+- `debug_websocket_config()`: Checks WebSocket configuration.
+- `check_directories()`: Checks directory structure and permissions.
+- `view_logs()`: Returns application logs as HTML.
+- `register_routes(app)`: Registers all debug routes with the app.
 
-│   └── images/
+#### Time Utility Functions (`utils/time_utils.py`)
+- `generate_time_context(user=None)`: Generates a string with current date, time, and timezone.
+- `clean_and_update_time_context(messages, user, enable_time_sense, logger=None)`: Cleans and updates time context in system messages.
 
-│       ├── BraveIcon.png
+#### Conversation Title Utility Functions (`utils/generate_title_utils.py`)
+- `generate_summary_title(messages, openai_client, ...)`: Generates a short summary/title for a conversation.
+- `summarize_text(text, openai_client, ...)`: Summarizes text using OpenAI.
+- `extract_user_assistant_content(messages, max_turns)`: Extracts recent user/assistant messages.
+- `extract_system_message(messages)`: Extracts the first system message.
+- `estimate_token_count(text, model)`: Estimates token count using tiktoken.
 
-│       ├── PineconeIcon.png
+#### Client Manager Functions (`services/client_manager.py`)
+- `initialize_all_clients()`: Initializes all external service clients.
+- `get_client(service_name)`: Returns a specific client by name.
+- `get_api_key(service_name)`: Returns a specific API key by name.
+- `get_all_clients()`: Returns all initialized clients.
+- `get_all_api_keys()`: Returns all API keys.
+- `is_service_available(service_name)`: Checks if a service is available.
+- `get_available_services()`: Returns a list of available services.
 
-│       └── SearchIcon.png
+#### API Blueprint Factory (`api/v1/chat.py`)
+- `create_chat_blueprint(chat_orchestrator, status_manager)`: Factory function to create the chat API blueprint with dependency injection.
 
-├── templates/
+#### Main Application Functions (`app.py`)
+- `startup()`: Initializes orchestrators, services, blueprints, and app context.
+- `setup_logging()`: Configures application logging.
+- `unauthorized_handler(error)`: Handles unauthorized access (401).
+- `handle_exception(error)`: Global exception handler.
+- `not_found_error(error)`: Handles 404 errors.
+- `internal_error(error)`: Handles 500 errors.
+- `static_files(filename)`: Serves static files.
+- `health_check()`: Simple health check endpoint.
+- `trigger_flash()`: Triggers a flash message for permission errors.
+- `ws_chat_status()`: WebSocket endpoint for real-time status updates.
+- `chat_status_health()`: Health check for WebSocket connections.
+- `database()`: (Admin/debug) View all conversations as JSON.
+- `clear_db()`: (Admin/debug) CLI command to clear and reinitialize the database.
+- `home()`: Main chat interface route (requires login).
+- `clear_session()`: Clears the user session.
 
-│   ├── chat.html
-
-│   ├── admin.html
-
-│   ├── login.html
-
-│   └── error.html
-
-├── user_files/
-
-│   └── [user_id]/
-
-│       └── [system_message_id]/
-
-│           ├── uploads/
-
-│           ├── processed_texts/
-
-│           ├── llmwhisperer_output/
-
-│           └── web_search_results/
-
-├── webscraper/
-
-│   ├── spiders/
-
-│   │   └── flexible_spider.py
-
-│   ├── items.py
-
-│   └── pipelines.py
-
+├── .env.example
+├── README.md
 ├── app.py
-
-├── models.py
-
 ├── auth.py
-
-├── file_processing.py
-
-├── file_utils.py
-
-├── time_utils.py
-
-├── embedding_store.py
-
-├── llm_whisper_processor.py
-
+├── config.py
+├── models.py
 ├── run.py
-
-└── README.md
+├── api/
+│   └── v1/
+│       ├── __init__.py
+│       ├── chat.py
+│       ├── conversations.py
+│       ├── image_generation.py
+│       ├── session_attachments.py
+│       ├── system_messages.py
+│       ├── vector_files.py
+│       └── websites.py
+├── orchestration/
+│   ├── chat_orchestrator.py
+│   ├── conversation.py
+│   ├── file_processing.py
+│   ├── image_generation.py
+│   ├── llm_router.py
+│   ├── session_attachment_handler.py
+│   ├── status.py
+│   ├── system_message_orchestrator.py
+│   ├── vector_search_utils.py
+│   ├── vectordb_file_manager.py
+│   ├── web_scraper_orchestrator.py
+│   ├── web_search_orchestrator.py
+│   ├── web_search_standard.py
+│   ├── web_search_deep.py
+│   ├── web_search_utils.py
+│   └── websocket_manager.py
+├── services/
+│   ├── client_manager.py
+│   ├── embedding_store.py
+│   └── llm_whisper_processor.py
+├── static/
+│   ├── css/
+│   │   └── styles.css
+│   ├── images/
+│   │   ├── BraveIcon.png
+│   │   ├── PineconeIcon.png
+│   │   ├── SearchIcon.png
+│   │   └── favicon.ico
+│   ├── js/
+│   │   ├── main.js
+│   │   ├── marked.min.js
+│   │   ├── prism.js
+│   │   └── file_handlers.js
+├── templates/
+│   ├── admin.html
+│   ├── chat.html
+│   ├── error.html
+│   └── login.html
+├── utils/
+│   ├── debug_routes.py
+│   ├── file_utils.py
+│   ├── generate_title_utils.py
+│   ├── logging_utils.py
+│   └── time_utils.py
 
 ## Modal-Based User Interface Guidelines
 
@@ -486,18 +578,82 @@ The admin dashboard provides interfaces for:
    - Reset user passwords
    - Secure password handling
 
-### Implementation Guidelines
-- Use Bootstrap 4.5.2 modal components for consistent styling. Do NOT use Bootstrap 5 APIs
-- Follow Bootstrap 4.x conventions for components and utilities
-- Ensure jQuery compatibility (Bootstrap 4.x requires jQuery)
-- Implement proper focus management for accessibility
-- Ensure keyboard navigation works correctly
-- Handle modal state in JavaScript
-- Implement proper validation before submission
-- Show loading indicators during asynchronous operations
-- Use consistent button placement and naming
-- Provide clear error messages within the modal
-- Implement confirmation for destructive actions
+## Implementation Guidelines
+
+ ### 1. Backend Development
+
+ - **API-First Design:**
+   - All business logic is exposed via versioned API endpoints (`/api/v1/...`).
+   - No business logic should be implemented directly in `app.py` routes.
+ - **Blueprint Factory Pattern:**
+   - Define all API endpoints in blueprint factory modules (e.g., `api/v1/chat.py`, `api/v1/conversations.py`, etc.).
+   - Use factory functions that accept orchestrators/services as arguments (dependency injection).
+   - Register blueprints in `app.py` during startup, passing the required orchestrators/services.
+ - **Orchestrators:**
+   - Encapsulate business logic for each domain (chat, file processing, web search, system messages, etc.) in orchestrator classes in the `orchestration/` directory.
+   - Orchestrators are instantiated in `app.py` and injected into blueprints.
+ - **Services:**
+   - Handle external integrations (OpenAI, Pinecone, etc.) in the `services/` directory.
+   - Services are instantiated in `app.py` and injected as needed.
+ - **Async/Await:**
+   - Use async/await for all I/O operations (database, file, network).
+   - Avoid blocking operations in request handlers.
+ - **Error Handling:**
+   - Implement comprehensive error handling in orchestrators and blueprints.
+   - Use structured logging for all errors and warnings.
+   - Return meaningful error responses from API endpoints.
+ - **WebSocket Endpoints:**
+   - WebSocket endpoints remain in `app.py` for direct access to app context and session management.
+   - Use the `WebSocketManager` and `StatusUpdateManager` for real-time status updates.
+
+ ### 2. Frontend Development
+
+ - **API-Driven UI:**
+   - All data interactions should use the API endpoints (no direct server-side rendering of business logic).
+   - Use AJAX/fetch for all CRUD operations.
+ - **Modal-Based Interfaces:**
+   - Use Bootstrap 4.5.2 modals for all user interactions (system messages, file uploads, admin actions, etc.).
+   - Implement modal state and validation in JavaScript.
+ - **Event Delegation:**
+   - Use event delegation for dynamic elements (e.g., conversation list, file badges).
+ - **Accessibility:**
+   - Follow ARIA guidelines for modals, forms, and navigation.
+ - **Progressive Enhancement:**
+   - Ensure core functionality works without JavaScript where possible.
+ - **Responsive Design:**
+   - Use Bootstrap grid and custom CSS for mobile-friendly layouts.
+
+ ### 3. Database Interactions
+
+ - **SQLAlchemy ORM:**
+   - Use async SQLAlchemy for all database operations.
+   - Maintain referential integrity and use proper indexing.
+ - **Migrations:**
+   - Use Alembic for schema changes.
+   - All schema changes must be accompanied by a migration script.
+ - **Session Management:**
+   - Use the async session context manager (`get_session`) for all DB access.
+
+ ### 4. Security Considerations
+
+ - **Input Validation:**
+   - Validate and sanitize all user input at the API layer.
+ - **Parameterized Queries:**
+   - Use SQLAlchemy's parameterized queries to prevent SQL injection.
+ - **CORS:**
+   - Configure CORS policies in `app.py` using `quart_cors`.
+ - **Session Management:**
+   - Use secure cookies and session timeouts.
+ - **Secrets Management:**
+   - Load all secrets and API keys via environment variables and `config.py`.
+
+ ### 5. Dependency Injection Pattern
+
+ - **No Global Imports:**
+   - Do not import orchestrators/services directly in blueprints.
+   - Always use blueprint factory functions for dependency injection.
+ - **Testability:**
+   - This pattern enables easy mocking and unit testing of API endpoints and orchestrators.
 
 ### Minimize Unnecessary Changes in Mature Code
 - Respect Stable Code: AI-assisted changes should be limited to the specific feature or bug in question. Avoid refactoring, updating, or “modernizing” mature, stable code unless it directly relates to the task at hand or addresses a known issue.
@@ -531,38 +687,41 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 ## External Libraries and Scripts
 
 ### Frontend Libraries
-- **jQuery**: DOM manipulation and AJAX requests
-- **Bootstrap 4.5.2**: UI components and responsive design
+
 - **jQuery 3.5.1**: DOM manipulation and AJAX requests
+- **Bootstrap 4.5.2**: UI components and responsive design (requires jQuery and Popper.js)
 - **Popper.js 1.14.3**: Required for Bootstrap 4.x tooltips and popovers
-- **Marked.js**: Markdown parsing and rendering
-- **Prism.js**: Code syntax highlighting
-- **MathJax**: LaTeX rendering for mathematical notation
-- **Autosize**: Textarea auto-resizing
-- **Font Awesome**: Icon library
-- **DOMPurify**: HTML sanitization
+- **Marked.js 9.0.2**: Markdown parsing and rendering (`static/js/marked.min.js`)
+- **Prism.js 1.29.0**: Code syntax highlighting (`static/js/prism.js`, `static/css/prism.css`)
+- **MathJax 3.2.2**: LaTeX rendering for mathematical notation
+- **Autosize 4.0.2**: Textarea auto-resizing
+- **Font Awesome 6.0.0-beta3**: Icon library
+- **DOMPurify 2.3.3**: HTML sanitization
+- **Chart.js**: (If used, as included in `chat.html`)
 
 ### Backend Libraries
+
 - **Quart**: Asynchronous web framework (async Flask)
 - **Quart-Auth**: Authentication for Quart
 - **Quart-CORS**: Cross-Origin Resource Sharing for Quart
 - **Quart-Schema**: Schema validation for Quart
 - **SQLAlchemy**: ORM for database operations
+- **sqlalchemy-utils**: LtreeType and other extensions for SQLAlchemy
 - **Alembic**: Database migration tool
 - **Pinecone**: Vector database client
 - **OpenAI**: API client for OpenAI models
 - **Anthropic**: API client for Claude models
 - **Google Generative AI**: API client for Gemini models
-- **LlamaIndex**: Framework for RAG applications
-- **BeautifulSoup**: HTML parsing for web scraping
-- **Scrapy**: Web crawling framework
-- **aiohttp**: Asynchronous HTTP client/server
+- **LlamaIndex**: Framework for RAG applications and vector storage
+- **BeautifulSoup**: HTML parsing for web search result extraction
+- **aiohttp**: Asynchronous HTTP client/server for web search
 - **aiofiles**: Asynchronous file operations
 - **tiktoken**: Tokenizer for counting tokens
 - **Hypercorn**: ASGI server for Quart
 - **python-dotenv**: Environment variable management
-- **Werkzeug**: WSGI utilities
-- **tenacity**: Retry library for API calls
+- **Werkzeug**: WSGI utilities and password hashing
+- **pytz**: Timezone handling
+- **tenacity**: Retry library for API calls (if used)
 
 ## External Services and APIs
 
@@ -593,7 +752,12 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 - `created_at`: DateTime
 - `updated_at`: DateTime
 - `last_login`: DateTime
-- Relationships: One-to-many with Conversation, UserUsage, SystemMessage
+- Relationships:
+    - One-to-many with Conversation (`conversations`)
+    - One-to-many with Folder (`folders`)
+    - One-to-many with UserUsage (`usage`)
+    - One-to-many with SystemMessage (`created_system_messages`)
+    - One-to-many with UploadedFile (`uploaded_files`)
 
 ### Conversation
 - `id`: Integer, primary key
@@ -618,12 +782,21 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 - `vector_search_results`: JSON
 - `generated_search_queries`: JSON
 - `web_search_results`: JSON
-- Relationships: Many-to-one with User and Folder
+- Relationships:
+    - Many-to-one with User (`user`)
+    - Many-to-one with Folder (`folder`)
+    - One-to-many with UploadedFile (`uploaded_files`)
 
 ### Folder
 - `id`: Integer, primary key
-- `title`: String(120), non-nullable
-- Relationships: One-to-many with Conversation
+- `name`: String(120), non-nullable
+- `path`: LtreeType, non-nullable (hierarchical path)
+- `user_id`: Integer, foreign key to User, non-nullable
+- `created_at`: DateTime
+- `updated_at`: DateTime
+- Relationships:
+    - Many-to-one with User (`user`)
+    - One-to-many with Conversation (`conversations`)
 
 ### SystemMessage
 - `id`: Integer, primary key
@@ -637,21 +810,26 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 - `updated_at`: DateTime
 - `source_config`: JSON
 - `enable_web_search`: Boolean, default False
+- `enable_deep_search`: Boolean, default False
 - `enable_time_sense`: Boolean, default False
-- Relationships: Many-to-one with User, One-to-many with Website and UploadedFile
+- Relationships:
+    - Many-to-one with User (`creator`)
+    - One-to-many with Website (`websites`)
+    - One-to-many with UploadedFile (`uploaded_files`)
 
 ### Website
 - `id`: Integer, primary key
 - `url`: String(2048), non-nullable
 - `site_metadata`: JSON
-- `system_message_id`: Integer, foreign key to SystemMessage
+- `system_message_id`: Integer, foreign key to SystemMessage, non-nullable
 - `indexed_at`: DateTime
 - `indexing_status`: String(50), default 'Pending'
 - `last_error`: Text
 - `indexing_frequency`: Integer
 - `created_at`: DateTime
 - `updated_at`: DateTime
-- Relationships: Many-to-one with SystemMessage
+- Relationships:
+    - Many-to-one with SystemMessage (`system_message`)
 
 ### UploadedFile
 - `id`: String(36), primary key, UUID
@@ -662,8 +840,15 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 - `upload_timestamp`: DateTime
 - `file_size`: Integer
 - `mime_type`: String(100)
-- `system_message_id`: Integer, foreign key to SystemMessage, non-nullable
-- Relationships: Many-to-one with User and SystemMessage
+- `system_message_id`: Integer, foreign key to SystemMessage, nullable
+- `conversation_id`: Integer, foreign key to Conversation, nullable
+- `processing_status`: String(50), default 'pending', non-nullable
+- `token_count`: Integer, nullable
+- `is_temporary`: Boolean, default True, non-nullable
+- Relationships:
+    - Many-to-one with User (`user`)
+    - Many-to-one with SystemMessage (`system_message`)
+    - Many-to-one with Conversation (`conversation`)
 
 ### UserUsage
 - `id`: Integer, primary key
@@ -673,11 +858,18 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 - `session_start`: DateTime
 - `session_end`: DateTime
 - `cost`: Float
-- Relationships: Many-to-one with User
+- Relationships:
+    - Many-to-one with User (`user`)
 
 ## API Keys and Environmental Variables
 
 ### Required Environment Variables
+
+All environment variables are loaded and managed via `config.py`.  
+See `.env.example` for a template.
+
+- `DATABASE_URL`: PostgreSQL connection string (**required**)
+- `SECRET_KEY`: Application secret key for session management (**required**)
 - `OPENAI_API_KEY`: OpenAI API key
 - `ANTHROPIC_API_KEY`: Anthropic API key
 - `GOOGLE_API_KEY`: Google AI API key
@@ -685,14 +877,18 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 - `PINECONE_API_KEY`: Pinecone API key
 - `PINECONE_CLOUD`: Pinecone cloud provider (aws, gcp, azure)
 - `PINECONE_REGION`: Pinecone region (us-east-1, etc.)
-- `BRAVE_SEARCH_API_KEY`: Brave Search API key
-- `DATABASE_URL`: PostgreSQL connection string
-- `SECRET_KEY`: Application secret key for session management
 - `LLMWHISPERER_API_KEY`: Unstract LLMWhisperer API key
+- `BRAVE_SEARCH_API_KEY`: Brave Search API key
 - `ADMIN_USERNAME`: Default admin username
 - `ADMIN_PASSWORD`: Default admin password
 - `PORT`: Application port (default: 8080)
 - `WEBSOCKET_PATH`: WebSocket endpoint path
+- `APP_ENV`: Application environment (development, production, digitalocean, azure, etc.)
+
+> **Note:**  
+> - All configuration is centralized in `config.py`, which selects the appropriate config class based on `APP_ENV`.
+> - The upload folder is set via `BASE_UPLOAD_FOLDER` in `config.py` (defaults to `user_files/` in the project root).
+> - If you add new environment variables for features, document them here and in `.env.example`.
 
 ### Configuration Best Practices
 - Use `.env` files for local development
@@ -715,18 +911,91 @@ Our login_required decorator and current_user wrapper enforce additional checks 
 - Windows 11 with VS Code (primary development environment)
 
 ## Deployment Considerations
-- Use async-compatible ASGI servers (Hypercorn)
-- Configure appropriate worker counts based on CPU cores
-- Implement proper database connection pooling
-- Set up monitoring and logging
-- Configure CORS policies
-- Set up SSL/TLS
-- Implement rate limiting
-- Configure proper caching headers
-- Set up regular database backups
-- Implement CI/CD pipeline
-- Use DigitalOcean App Platform for production
-- All commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/) standard for clarity and automation.
+
+### 1. ASGI Server & App Startup
+
+- **Use Hypercorn** as the ASGI server for async support.
+  - Local development: run with `python run.py` (binds to `127.0.0.1:5000`).
+  - Production (DigitalOcean): Hypercorn is started as per `.do/app.yaml` (binds to `0.0.0.0:8080`).
+- **Do not use Gunicorn** (not async-compatible for Quart).
+
+### 2. Environment Configuration
+
+- All configuration is managed via `config.py` and environment variables.
+- Use `.env` for local development; set environment variables in DigitalOcean App Platform or your cloud provider.
+- The `APP_ENV` or `ENV` variable selects the config class (`DevelopmentConfig`, `DigitalOceanConfig`, etc.).
+- **Never commit secrets or API keys to version control.**
+
+### 3. DigitalOcean App Platform
+
+- Deployment is configured via `.do/app.yaml`:
+  - **Routes**: HTTP and WebSocket (`/ws/chat/status`) are both routed.
+  - **Environment variables**: Set all required keys (see `.env.example` and README).
+  - **Health check**: Uses `/health` endpoint.
+  - **WebSocket**: Explicitly enabled and routed.
+  - **Instance size**: Set via `instance_size_slug`.
+  - **Concurrency**: Set via `WEB_CONCURRENCY` (number of Hypercorn workers).
+- **Static files**: Served from `/static/` by Quart.
+- **Uploads**: Ensure `user_files/` is writable by the app.
+
+### 4. Database
+
+- Use **PostgreSQL 13+**.
+- Connection string is set via `DATABASE_URL`.
+- Connection pooling is configured in `models.py` (see `pool_size`, `max_overflow`, etc.).
+- **Run Alembic migrations** before starting the app in production.
+
+### 5. Vector Store
+
+- **Pinecone** is used for vector storage.
+- API key, cloud, and region are set via environment variables.
+- Ensure Pinecone region and cloud match your deployment.
+
+### 6. WebSocket Support
+
+- **WebSocket endpoint**: `/ws/chat/status`
+- Ensure your deployment platform and any reverse proxies (e.g., DigitalOcean, Nginx) support and route WebSocket traffic.
+- WebSocket timeout and ping intervals are set in `config.py` and `.do/app.yaml`.
+
+### 7. CORS and Security
+
+- CORS is configured via `quart_cors` in `app.py`.
+- All secrets and API keys are loaded via environment variables and `config.py`.
+- Use HTTPS in production (DigitalOcean provides SSL by default).
+
+### 8. Monitoring and Logging
+
+- Logging is configured via `utils/logging_utils.py` (rotating file and colorized console).
+- Log file: `app.log` (rotated).
+- Health endpoints: `/health`, `/chat/status/health`
+- Monitor error rates and system health.
+
+### 9. CI/CD
+
+- Use a CI/CD pipeline to automate testing, linting, and deployment.
+- All commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/) standard.
+
+### 10. Backups and Data Safety
+
+- Set up regular **database backups**.
+- Monitor Pinecone usage and costs.
+
+### 11. Scaling
+
+- Scale horizontally by increasing `WEB_CONCURRENCY` (Hypercorn workers).
+- Use connection pooling for both database and Pinecone.
+
+### 12. SSL/TLS
+
+- SSL is terminated by DigitalOcean App Platform (or your reverse proxy).
+- All traffic to the app should be encrypted in production.
+
+### 13. Error Handling
+
+- Custom error templates and flash messages are used for user feedback.
+- All exceptions are logged with context.
+
+---
 
 ## Error Handling and Logging
 - Structured logging with UnicodeFormatter
