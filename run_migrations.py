@@ -7,8 +7,6 @@ from alembic.config import Config
 from alembic import command
 from dotenv import load_dotenv
 
-# Import your custom migration
-from migrate_add_deep_search import run_migration as run_deep_search_migration
 
 # Load environment variables
 load_dotenv()
@@ -29,19 +27,6 @@ def convert_async_url_to_sync(async_url):
         return sync_url
     return async_url
 
-async def run_custom_migrations():
-    """Run custom migrations that need to happen before Alembic"""
-    try:
-        logger.info("Running custom migrations...")
-        
-        # Run the deep search migration
-        await run_deep_search_migration()
-        
-        logger.info("Custom migrations completed successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to run custom migrations: {str(e)}", exc_info=True)
-        return False
 
 def run_alembic_migrations():
     """Run database migrations using Alembic"""
@@ -99,30 +84,10 @@ def run_alembic_migrations():
         return False
 
 
-async def run_migrations():
-    """Run only the custom migrations needed for application startup"""
-    try:
-        logger.info("Starting migration process...")
-        
-        # Run custom migrations
-        custom_success = await run_custom_migrations()
-        if not custom_success:
-            logger.error("Custom migrations failed, stopping migration process")
-            return False
-        
-        logger.info("All critical migrations completed successfully")
-        logger.info("Skipping Alembic migrations during startup for reliability")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Migration process failed: {str(e)}", exc_info=True)
-        return False
 
-
-# For backwards compatibility when called as subprocess
 def run_migrations_sync():
     """Synchronous wrapper for backwards compatibility"""
-    return asyncio.run(run_migrations())
+    return run_alembic_migrations()
 
 if __name__ == "__main__":
     success = run_migrations_sync()

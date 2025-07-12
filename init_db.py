@@ -7,29 +7,6 @@ from sqlalchemy import inspect, select, text
 from sqlalchemy_utils import Ltree
 import asyncio
 import logging
-import sqlalchemy
-
-import sys
-
-# Run database migrations using Alembic
-async def run_migrations():
-    """Run database migrations using external script"""
-    try:
-        logger.info("Running database migrations...")
-        
-        # Import and run the migration function directly
-        from run_migrations import run_migrations as run_migration_process
-        success = await run_migration_process()
-        
-        if success:
-            logger.info("Database migrations completed successfully")
-        else:
-            logger.error("Migration failed")
-            raise Exception("Migration failed")
-    except Exception as e:
-        logger.error(f"Failed to run migrations: {str(e)}", exc_info=True)
-        raise
-
 
 # Configure logging
 logging.basicConfig(
@@ -114,69 +91,65 @@ async def init_db():
 
     try:
         async with engine.begin() as conn:
-            # Ensure ltree extension is installed
+            # Ensure ltree extension is installed (safe to run repeatedly)
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS ltree"))
             logger.info("Ltree extension check completed")
             
             tables = await get_table_names(conn)
             logger.info("Database connection established")
 
-            if not tables:
-                # If no tables exist, create them and run migrations
-                await conn.run_sync(Base.metadata.create_all)
-                logger.info("Database tables created")
-                await run_migrations()
+        # Insert default data only if tables are empty
+        async with get_session() as session:
+            # Check if there are any users
+            result = await session.execute(select(User))
+            user_exists = result.scalars().first()
 
+            if not user_exists:
+                # Create admin user if credentials are provided
                 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
                 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
-                
                 if ADMIN_USERNAME and ADMIN_PASSWORD:
-                    async with get_session() as session:
-                        new_admin = User(
-                            username=ADMIN_USERNAME,
-                            email="admin@backup.com",
-                            password_hash=generate_password_hash(ADMIN_PASSWORD, method='pbkdf2:sha256'),
-                            is_admin=True,
-                            status="Active"
-                        )
-                        try:
-                            session.add(new_admin)
-                            await session.commit()
-                            logger.info("Admin user created")
-                            
-                            # Create root folder for admin
-                            root_folder = Folder(
-                                name="Root",
-                                path=Ltree('0'),
-                                user_id=new_admin.id
-                            )
-                            session.add(root_folder)
-                            await session.commit()
-                            logger.info("Admin root folder created")
-                            
-                            await create_default_system_message(session, new_admin.id)
-                        except Exception as e:
-                            logger.error("Failed to create admin user", exc_info=True)
-                            await session.rollback()
-            else:
-                # If tables exist, just run migrations to catch up
-                await run_migrations()
-
-                async with get_session() as session:
-                    # Ensure all users have root folders
-                    await ensure_root_folders(session)
-                    
-                    result = await session.execute(
-                        select(SystemMessage).filter_by(name="Default System Message")
+                    new_admin = User(
+                        username=ADMIN_USERNAME,
+                        email="admin@backup.com",
+                        password_hash=generate_password_hash(ADMIN_PASSWORD, method='pbkdf2:sha256'),
+                        is_admin=True,
+                        status="Active"
                     )
-                    if not result.scalar_one_or_none():
-                        result = await session.execute(select(User).filter_by(is_admin=True))
-                        admin_user = result.scalars().first()
-                        if admin_user:
-                            await create_default_system_message(session, admin_user.id)
-                        else:
-                            logger.warning("No admin user found")
-
+                    try:
+                        session.add(new_admin)
+                        await session.commit()
+                        logger.info("Admin user created")
+                        
+                        # Create root folder for admin
+                        root_folder = Folder(
+                            name="Root",
+                            path=Ltree('0'),
+                            user_id=new_admin.id
+                        )
+                        session.add(root_folder)
+                        await session.commit()
+                        logger.info("Admin root folder created")
+                        
+                        await create_default_system_message(session, new_admin.id)
+                    except Exception as e:
+                        logger.error("Failed to create admin user", exc_info=True)
+                        await session.rollback()
+            else:
+                # Ensure all users have root folders
+                await ensure_root_folders(session)
+                
+                # Ensure default system message exists
+                result = await session.execute(
+                    select(SystemMessage).filter_by(name="Default System Message")
+                )
+                if not result.scalar_one_or_none():
+                    result = await session.execute(select(User).filter_by(is_admin=True))
+                    admin_user = result.scalars().first()
+                    if admin_user:
+                        await create_default_system_message(session, admin_user.id)
+                    else:
+                        logger.warning("No admin user found")
 
         logger.info("Database initialization completed")
 
