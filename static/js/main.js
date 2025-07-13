@@ -538,7 +538,7 @@ async function uploadContextFile(file, placeholderId) {
                     if (statusText && percentComplete < 100) {
                         statusText.textContent = `Uploading ${escapeHtml(file.name)}: ${percentComplete}%`;
                     } else if (statusText) {
-                        statusText.textContent = `Loading ${escapeHtml(file.name)}...`;
+                        statusText.textContent = "Loading...";
                         // Add processing animation class
                         statusText.classList.add('processing-animation');
                     }
@@ -724,13 +724,15 @@ function setSendButtonState(isEnabled, message = null) {
     } else {
         sendBtn.prop('disabled', true);
         sendBtn.html('<span class="spinner-border spinner-border-sm mr-1"></span> <span>Wait for file...</span>');
-        // Optionally show a message below the input
+        // Show a message below the input group, inside the form
         if (!$('#send-wait-message').length) {
-            $('<div id="send-wait-message" class="text-warning mt-2" style="font-size:0.95em;">File is uploading. Please wait...</div>')
+            $('<div id="send-wait-message" class="session-attachment-uploading-message">File is uploading. Please wait...</div>')
                 .insertAfter('#chat-form');
         }
     }
 }
+
+
 
 
 // --- End Context File Attachment Functions ---

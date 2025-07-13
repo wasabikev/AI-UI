@@ -943,7 +943,85 @@ See `.env.example` for a template.
 - Use **PostgreSQL 13+**.
 - Connection string is set via `DATABASE_URL`.
 - Connection pooling is configured in `models.py` (see `pool_size`, `max_overflow`, etc.).
-- **Run Alembic migrations** before starting the app in production.
+
+#### Automated Migration Workflow
+
+- Schema management is handled exclusively via Alembic migrations.
+- All schema changes must be made via Alembic migration scripts (see Alembic documentation).
+- The app does **not** create or modify tables/schema directly at startup.
+
+#### How Migrations Are Run
+
+**Production:**
+- The app is deployed with a `run_command` in `.do/app.yaml`:
+  ```yaml
+  run_command: |
+    python run_migrations.py && python run.py
+  ```
+- This ensures all Alembic migrations are applied before the app starts.
+- If there are no new migrations, the command is a no-op and the app starts normally.
+- If a migration fails, the app will not start and errors will be visible in the DigitalOcean logs.
+
+**Development:**
+- Developers are responsible for running Alembic migrations after making changes to `models.py`:
+  1. **Generate a migration:**
+     ```sh
+     alembic revision --autogenerate -m "Describe your change"
+     ```
+  2. **Apply the migration:**
+     ```sh
+     python run_migrations.py
+     ```
+  3. **Start the app:**
+     ```sh
+     python run.py
+     ```
+- Alternatively, you can use:
+  ```sh
+  python run_migrations.py && python run.py
+  ```
+  to mirror production startup.
+
+#### First-Time Deployments
+
+- On first deploy to a new environment (empty database), Alembic will create all tables, indexes, and extensions as defined in migration scripts.
+- The app will then run `init_db.py` at startup, which populates default data (admin user, root folders, default system messages) if the tables are empty.
+- Extensions (such as ltree) are created on startup as a fallback, unless already handled in migrations.
+
+#### Key Files for Database Management
+
+- **run_migrations.py**:  
+  The only migration runner script. Runs Alembic migrations in both development and production.  
+  (Legacy `migrations.py` is deprecated and should not be used.)
+- **init_db.py**:  
+  Handles default data population (admin user, root folders, default system message) only.  
+  Does not create or modify tables/schema.
+- **.do/app.yaml**:  
+  Configured to always run migrations before starting the app via `run_command`.
+
+#### Best Practices
+
+- Do **not** use `Base.metadata.create_all()` for schema changes. All schema updates must go through Alembic.
+- Never run migrations inside your app logic. Always use `run_migrations.py` before app startup.
+- Always commit Alembic migration scripts (`migrations/versions/`) to version control when changing models.
+- Review migration scripts before applying, especially for destructive changes.
+
+#### Example Developer Workflow
+
+```sh
+# Make changes to models.py...
+
+# Generate migration script
+alembic revision --autogenerate -m "Add new field to Conversation"
+
+# Apply migration
+python run_migrations.py
+
+# Start the app
+python run.py
+```
+
+> **Note:** If you are deploying to a brand new environment, the process above will initialize the schema and populate all required default data on first run.
 
 ### 5. Vector Store
 
