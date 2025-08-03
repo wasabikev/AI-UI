@@ -4,11 +4,11 @@ quart-auth==0.10.1
 quart-cors==0.7.0
 quart-schema==0.20.0
 hypercorn==0.17.3
-gunicorn>=22.0.0  # Only needed if you run non-async services
-uvicorn==0.27.0   # Only needed if you run other ASGI apps
+gunicorn>=22.0.0
+uvicorn==0.27.0
 async-timeout>=4.0.0
 dnspython>=2.4.0
-psycopg2-binary
+psycopg2-binary==2.9.7
 greenlet>=2.0.2
 
 # Database
@@ -41,23 +41,23 @@ cerebras-cloud-sdk
 
 # External Utilities
 tenacity==8.5.0
-pinecone-client==5.0.1  # Official Pinecone package
+pinecone-client==5.0.1
 
-# LlamaIndex Integrations
+# Llama Index Itegrations
 llama-index==0.12.21
-llama-index-core==0.12.21
-llama-index-legacy==0.9.48
 llama-index-agent-openai==0.4.0
 llama-index-cli>=0.4.1,<0.5.0
+llama-index-core==0.12.21
 llama-index-embeddings-openai==0.3.1
 llama-index-indices-managed-llama-cloud==0.6.4
+llama-index-legacy==0.9.48
 llama-index-llms-openai==0.3.0
 llama-index-multi-modal-llms-openai==0.4.0
 llama-index-program-openai==0.3.0
 llama-index-question-gen-openai==0.3.0
 llama-index-readers-file==0.4.0
 llama-index-readers-llama-parse==0.4.0
-llama-index-vector-stores-pinecone==0.6.0
+llama-index-vector-stores-pinecone==0.4.2
 llamaindex-py-client==0.1.19
 llmwhisperer-client==2.0.0
 
@@ -74,4 +74,4 @@ aiodns==3.2.0
 beautifulsoup4==4.12.3
 
 # Files Processing
-docx2txt==0.8 # Needs to be replaced with an alternate solution.
+docx2txt==0.8 # Needs to be replaced with an alternate solution. 
