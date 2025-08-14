@@ -2170,9 +2170,14 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
         enable_web_search: enableWebSearch,
         enable_time_sense: enableTimeSense
     };
+
     const url = messageId ? `/api/v1/system_messages/${messageId}` : '/api/v1/system_messages';
     const method = messageId ? 'PUT' : 'POST';
 
+    // console.log statements here, AFTER the declarations
+    console.log('Sending message data:', messageData);
+    console.log('Message ID:', messageId);
+    console.log('Method:', method);
 
     saveButton.disabled = true;
     saveButton.textContent = 'Saving...';
@@ -2209,6 +2214,33 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
                 displaySystemMessage(updatedMessage);
                 $('#dropdownMenuButton').text(modelNameMapping(updatedMessage.model_name));
                 initializeSearchToggles(updatedMessage);
+                
+                // UPDATE THE DROPDOWN IMMEDIATELY
+                // Add a small delay to ensure the array is updated
+                setTimeout(() => {
+                    updateSystemMessageDropdown();
+                    
+                    // Also ensure the new message is selected in the dropdown
+                    const dropdownButton = document.getElementById('systemMessageDropdown');
+                    if (dropdownButton) {
+                        dropdownButton.textContent = updatedMessage.name;
+                    }
+                }, 100);
+
+                // Also update the main system message select dropdown if it exists
+                const mainDropdown = document.getElementById('systemMessageSelect');
+                if (mainDropdown) {
+                    const option = mainDropdown.querySelector(`option[value="${updatedMessage.id}"]`);
+                    if (option) {
+                        option.textContent = updatedMessage.name;
+                    } else {
+                        // Add new option if it doesn't exist
+                        const newOption = document.createElement('option');
+                        newOption.value = updatedMessage.id;
+                        newOption.textContent = updatedMessage.name;
+                        mainDropdown.appendChild(newOption);
+                    }
+                }
             }
             
             console.log('About to hide modal...');
@@ -2241,8 +2273,36 @@ document.getElementById('saveSystemMessageChanges').addEventListener('click', fu
             saveButton.textContent = 'Save Changes';
         }
     });
-
 });
+
+
+// Add this new function to update the dropdown
+function updateSystemMessageDropdown(updatedMessage) {
+    const dropdown = document.getElementById('systemMessageSelect');
+    if (!dropdown) return;
+    
+    // Check if this is an update or a new message
+    let option = dropdown.querySelector(`option[value="${updatedMessage.id}"]`);
+    
+    if (option) {
+        // Update existing option
+        option.textContent = updatedMessage.name;
+    } else {
+        // Add new option
+        option = document.createElement('option');
+        option.value = updatedMessage.id;
+        option.textContent = updatedMessage.name;
+        dropdown.appendChild(option);
+    }
+    
+    // If this is the currently selected system message, update the selection
+    if (currentSystemMessage && currentSystemMessage.id === updatedMessage.id) {
+        dropdown.value = updatedMessage.id;
+        currentSystemMessage = updatedMessage;
+        currentSystemMessageDescription = updatedMessage.description;
+    }
+}
+
 
 
 
@@ -2488,10 +2548,12 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
 
     // Clear the messageId from the modal's data attributes to indicate creation mode
     document.getElementById('systemMessageModal').dataset.messageId = '';
+    
+    // IMPORTANT: Also clear the activeSystemMessageId
+    activeSystemMessageId = null;  
 
     // Reset dropdown button text
     document.getElementById('systemMessageDropdown').textContent = 'Select System Message';
-
 
     // Set the model to a default (e.g., GPT-3.5)
     const defaultModelApi = 'gpt-3.5-turbo';
@@ -2507,7 +2569,6 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
     document.getElementById('enableWebSearch').checked = false;
     document.getElementById('enableTimeSense').checked = false;
 
-
     // Clear the sidebar (websites list)
     const sidebar = document.getElementById('modal-sidebar');
     if (sidebar) {
@@ -2521,7 +2582,6 @@ document.getElementById('new-system-message-btn').addEventListener('click', func
     if (fileList) fileList.innerHTML = '';
     if(noFilesMessage) noFilesMessage.style.display = 'block'; // Show 'no files' message
     if(fileListError) fileListError.style.display = 'none'; // Hide errors
-
 
     // Clear active website ID and website details form
     activeWebsiteId = null;

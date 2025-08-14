@@ -14,8 +14,9 @@ def create_system_message_blueprint(system_message_orchestrator, DEFAULT_SYSTEM_
     @login_required
     async def create_system_message():
         user = await current_user.get_user()
-        if not user or not user.is_admin:
+        if not user:
             return jsonify({'error': 'Unauthorized'}), 401
+        # Remove admin check - all users can create their own system messages
         data = await request.get_json()
         result, status = await system_message_orchestrator.create(data, user)
         return jsonify(result), status
@@ -23,13 +24,40 @@ def create_system_message_blueprint(system_message_orchestrator, DEFAULT_SYSTEM_
     @bp.route('', methods=['GET'])
     @login_required
     async def get_system_messages():
-        result, status = await system_message_orchestrator.get_all()
+        user = await current_user.get_user()
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        # Check if admin wants to see all messages
+        show_all = request.args.get('show_all', 'false').lower() == 'true'
+        
+        if show_all and user.is_admin:
+            # Admin viewing all messages
+            result, status = await system_message_orchestrator.get_all(user_id=None)
+        else:
+            # Regular user or admin viewing their own messages
+            result, status = await system_message_orchestrator.get_all(user_id=user.id)
+        
+        return jsonify(result), status
+
+    @bp.route('/<int:message_id>', methods=['GET'])
+    @login_required
+    async def get_system_message(message_id):
+        user = await current_user.get_user()
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        # Pass user_id for access control (None for admins to see all)
+        user_id = None if user.is_admin else user.id
+        result, status = await system_message_orchestrator.get_by_id(message_id, user_id)
         return jsonify(result), status
 
     @bp.route('/<int:message_id>', methods=['PUT'])
     @login_required
     async def update_system_message(message_id):
         user = await current_user.get_user()
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
         data = await request.get_json()
         result, status = await system_message_orchestrator.update(message_id, data, user)
         return jsonify(result), status
@@ -38,6 +66,8 @@ def create_system_message_blueprint(system_message_orchestrator, DEFAULT_SYSTEM_
     @login_required
     async def delete_system_message(message_id):
         user = await current_user.get_user()
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
         result, status = await system_message_orchestrator.delete(message_id, user)
         return jsonify(result), status
 
@@ -59,6 +89,9 @@ def create_system_message_blueprint(system_message_orchestrator, DEFAULT_SYSTEM_
                 return jsonify({'error': 'enableWebSearch must be a boolean value'}), 400
 
             user = await current_user.get_user()
+            if not user:
+                return jsonify({'error': 'Unauthorized'}), 401
+                
             result, status = await system_message_orchestrator.toggle_search(
                 system_message_id=system_message_id,
                 enable_web_search=enable_web_search,

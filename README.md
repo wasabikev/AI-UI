@@ -633,6 +633,8 @@ The admin dashboard provides interfaces for:
    - All schema changes must be accompanied by a migration script.
  - **Session Management:**
    - Use the async session context manager (`get_session`) for all DB access.
+ - **Alembic env.py customization:**
+   - The migration environment is configured to use environment variables for secrets, supporting both async and sync driver URLs for application and migration needs.
 
  ### 4. Security Considerations
 
@@ -964,23 +966,8 @@ See `.env.example` for a template.
 
 **Development:**
 - Developers are responsible for running Alembic migrations after making changes to `models.py`:
-  1. **Generate a migration:**
-     ```sh
-     alembic revision --autogenerate -m "Describe your change"
-     ```
-  2. **Apply the migration:**
-     ```sh
-     python run_migrations.py
-     ```
-  3. **Start the app:**
-     ```sh
-     python run.py
-     ```
-- Alternatively, you can use:
-  ```sh
-  python run_migrations.py && python run.py
-  ```
-  to mirror production startup.
+- migrations/env.py	Loads .env, injects ALEMBIC_DATABASE_URL, or converts DATABASE_URL for Alembic
+- Use run_migrations.py for both development and production
 
 #### First-Time Deployments
 
@@ -992,7 +979,6 @@ See `.env.example` for a template.
 
 - **run_migrations.py**:  
   The only migration runner script. Runs Alembic migrations in both development and production.  
-  (Legacy `migrations.py` is deprecated and should not be used.)
 - **init_db.py**:  
   Handles default data population (admin user, root folders, default system message) only.  
   Does not create or modify tables/schema.
