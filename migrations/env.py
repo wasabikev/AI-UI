@@ -13,12 +13,28 @@ from pathlib import Path
 # Add the project root directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # Import your models (adjust the import path as needed)
 from models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# -- START: Patch for environment variable URL support --
+alembic_db_url = os.environ.get("ALEMBIC_DATABASE_URL")
+if alembic_db_url:
+    config.set_main_option("sqlalchemy.url", alembic_db_url)
+else:
+    db_url = os.environ.get("DATABASE_URL")
+    if db_url and db_url.startswith("postgresql+asyncpg://"):
+        db_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+    if db_url:
+        config.set_main_option("sqlalchemy.url", db_url)
+# -- END: Patch for environment variable URL support --
+
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -171,15 +171,7 @@
     </div>
 </div>
 
-<script>
-    $('#passwordUpdateModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget); // Button that triggered the modal
-        var userId = button.data('userid'); // Extract user ID from data-* attributes
-        var formAction = `/update-password/${userId}`;
-        var modal = $(this);
-        modal.find('#passwordUpdateForm').attr('action', formAction);
-    });
-</script>
+
 
 
 <script>
@@ -240,6 +232,20 @@ function updateAdminStatus() {
         var formAction = `/delete-user/${userId}`;
         var modal = $(this);
         modal.find('#deleteUserForm').attr('action', formAction);
+    });
+    </script>
+
+    <script>
+    $('#passwordUpdateModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var userId = button.data('userid');
+        if (!userId) {
+            alert("Error: User ID is missing for password update!");
+            return;
+        }
+        var formAction = `/update-password/${userId}`;
+        var modal = $(this);
+        modal.find('#passwordUpdateForm').attr('action', formAction);
     });
     </script>
   

@@ -216,7 +216,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(80), unique=True, nullable=False)
     email = Column(String(120), unique=True, nullable=False)
-    password_hash = Column(String(128))
+    password_hash = Column(String(512))
     is_admin = Column(Boolean, default=False)
     status = Column(String(20), default="Pending")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
