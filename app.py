@@ -352,9 +352,16 @@ def health_check():
     return 'OK', 200
 
 @app.route('/trigger-flash')
-def trigger_flash():
-    flash("You do not have user admin privileges.", "warning")  # Adjust the message and category as needed
-    return redirect(url_for('the_current_page'))  # Replace with the appropriate endpoint
+@login_required
+async def trigger_flash():
+    """Trigger a flash message for permission errors."""
+    await flash("You do not have user admin privileges.", "warning")
+    # Redirect to the referring page or home if no referrer
+    referrer = request.referrer
+    if referrer:
+        return redirect(referrer)
+    return redirect(url_for('home'))
+
 
 # =========================
 # 11. WebSocket Routes

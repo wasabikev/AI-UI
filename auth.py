@@ -1,5 +1,6 @@
 # auth.py
-__all__ = ['auth_bp', 'init_auth', 'UserWrapper', 'async_login_required']
+__all__ = ['auth_bp', 'init_auth', 'UserWrapper', 'async_login_required', 'login_required', 'admin_required']
+
 
 from functools import wraps
 from quart import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
@@ -104,7 +105,51 @@ def login_required(func: RouteCallable) -> RouteCallable:
                 
         return await func(*args, **kwargs)
     return cast(RouteCallable, wrapped)
+
+def admin_required(func: RouteCallable) -> RouteCallable:
+    """
+    Decorator that requires both login and admin privileges.
+    """
+    @wraps(func)
+    async def wrapped(*args: Any, **kwargs: Any) -> Any:
+        current_app.logger.info(f"Admin required check for route: {request.endpoint}")
         
+        # First check if user is logged in
+        if not current_user or not current_user.is_authenticated:
+            current_app.logger.warning("Admin check failed: User not authenticated")
+            if request.is_json:
+                return jsonify({'error': 'Unauthorized'}), 401
+            return redirect(url_for("auth.login"))
+        
+        # Then check user status and admin privileges
+        try:
+            user = await current_user.get_user()
+            if user is None or user.status != 'Active':
+                current_app.logger.warning(f"Admin check failed: User not active or not found")
+                if request.is_json:
+                    return jsonify({'error': 'Unauthorized'}), 401
+                return redirect(url_for("auth.login"))
+            
+            # Check admin status
+            current_app.logger.info(f"Checking admin status for user: {user.username}, is_admin: {user.is_admin}")
+            if not user.is_admin:
+                current_app.logger.warning(f"Admin check failed: User {user.username} is not an admin")
+                if request.is_json:
+                    return jsonify({'error': 'Admin privileges required'}), 403
+                await flash("You do not have admin privileges.", "warning")
+                return redirect(url_for('home'))
+                
+        except Exception as e:
+            current_app.logger.error(f"Error checking admin status: {str(e)}")
+            if request.is_json:
+                return jsonify({'error': 'Authentication error'}), 401
+            return redirect(url_for("auth.login"))
+        
+        current_app.logger.info(f"Admin check passed for user: {user.username}")
+        return await func(*args, **kwargs)
+    return cast(RouteCallable, wrapped)
+
+
 def async_login_required():
     def decorator(f):
         @wraps(f)
@@ -130,7 +175,7 @@ def init_auth(app):
     auth_manager.init_app(app)
 
 @auth_bp.route('/update-password/<int:user_id>', methods=['POST'])
-@login_required
+@admin_required
 async def update_password(user_id):
     async with get_session() as session:
         result = await session.execute(
@@ -150,7 +195,7 @@ async def update_password(user_id):
     return redirect(url_for('auth.admin_dashboard'))
 
 @auth_bp.route('/update-admin/<int:user_id>', methods=['POST'])
-@login_required
+@admin_required
 async def update_admin(user_id):
     async with get_session() as session:
         result = await session.execute(
@@ -168,7 +213,7 @@ async def update_admin(user_id):
     return redirect(url_for('auth.admin_dashboard'))
 
 @auth_bp.route('/update-status/<int:user_id>', methods=['POST'])
-@login_required
+@admin_required
 async def update_status(user_id):
     async with get_session() as session:
         result = await session.execute(
@@ -187,21 +232,15 @@ async def update_status(user_id):
     return redirect(url_for('auth.admin_dashboard'))
 
 @auth_bp.route('/admin')
-@login_required
+@admin_required
 async def admin_dashboard():
     try:
-        current_user_obj = await current_user.get_user()
-        
-        if not current_user_obj or not current_user_obj.is_admin:
-            await flash("Sorry, you do not have permission to access the admin dashboard.", "danger")
-            return redirect(url_for('home'))
-
         async with get_session() as session:
             result = await session.execute(
                 select(User).order_by(User.username)
             )
             users = result.scalars().all()
-        
+        current_app.logger.info("Rendering admin.html with users: %s", [u.username for u in users])
         return await render_template('admin.html', users=users)
     except Exception as e:
         current_app.logger.error(f"Error in admin_dashboard: {str(e)}")
@@ -209,8 +248,9 @@ async def admin_dashboard():
         await flash("An error occurred while accessing the admin dashboard.", "danger")
         return redirect(url_for('home'))
 
+
 @auth_bp.route('/delete-user/<int:user_id>', methods=['POST'])
-@login_required
+@admin_required
 async def delete_user(user_id):
     async with get_session() as session:
         result = await session.execute(

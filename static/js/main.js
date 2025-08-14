@@ -1860,28 +1860,6 @@ function showModalFlashMessage(message, category) { // Usage Example: showModalF
 }
 
 
-function checkAdminStatus(e) {
-    if (!isAdmin) {
-        e.preventDefault(); // Prevent the default action (e.g., navigating to /admin)
-        // Trigger a flash message on the server side and reload to show it
-        $.ajax({
-            url: "/trigger-flash", // URL to a route that triggers the flash message
-            type: "GET",
-            success: function() {
-                location.reload(); // Reload the page to display the flash message
-            },
-            error: function(xhr) {
-                console.error("Failed to trigger flash message:", xhr.responseText);
-                // Fallback: show a simple alert
-                alert("You do not have permission to access this page.");
-            }
-        });
-    } else {
-        // If admin, allow the default action (or redirect explicitly if needed)
-        // window.location.href = '/admin'; // Uncomment if explicit redirect is always desired
-    }
-}
-
 // Function to open the modal and set the user ID and current status (for admin user management)
 function openStatusModal(userId, currentStatus) {
     // Set the action URL for the form
