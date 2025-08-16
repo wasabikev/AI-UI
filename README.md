@@ -1,5 +1,14 @@
 # AI ∞ UI Technical Documentation
 
+AI ∞ UI is no longer under active feature development in this public repository.
+
+**Why forked?**
+
+Ongoing development - including new features, security enhancements, and industry-specific integrations continues in private forks maintained by AsgardSystems.AI.
+This transition supports our commercial roadmap, compliance requirements, and protection of proprietary workflows for public accounting and professional services.
+This repository remains available as a reference implementation. The last major public effort was a full backend refactor to a modular, API-first architecture.
+Note: The frontend is functional but somewhat outdated and in need of modernization.
+
 ## Overview
 
 **AI ∞ UI** is a modular, API-first platform for orchestrating advanced AI workflows.  
@@ -1086,3 +1095,11 @@ python run.py
 - Optimize asset loading
 - Use connection pooling for external APIs
 - Implement retry mechanisms with exponential backoff
+
+
+## Project Status
+AI ∞ UI is now in maintenance mode as an open-source reference implementation.
+- Active feature development and commercial deployments will continue in private forks maintained by AsgardSystems.AI.
+- This public repository will remain available for community reference, learning, and non-commercial experimentation.
+- Security patches and critical bug fixes may still be applied here as needed.
+- For enterprise/commercial use, partnership inquiries, or to learn about the next-generation platform, please contact Kevin Atkinson or visit https://asgardsystems.ai/.
